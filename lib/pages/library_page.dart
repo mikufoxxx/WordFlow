@@ -1,0 +1,1422 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import '../models/word_book.dart';
+import '../utils/github_api_service.dart';
+import '../utils/cache_service.dart';
+import '../utils/app_theme.dart';
+
+/// 词库状态枚举
+enum WordBookStatus {
+  notDownloaded,  // 未下载
+  downloading,    // 下载中
+  downloaded,     // 已下载
+  selected,       // 已选择（当前使用中）
+  error,         // 下载错误
+}
+
+/// 词库项，包含状态信息和动画控制器
+class WordBookItem {
+  WordBook wordBook;
+  WordBookStatus status;
+  List<WordData>? wordData;
+  String? errorMessage;
+  
+  // 独立的动画控制器
+  AnimationController? animationController;
+  Animation<double>? fadeAnimation;
+  Animation<Offset>? slideAnimation;
+
+  WordBookItem({
+    required this.wordBook,
+    this.status = WordBookStatus.notDownloaded,
+    this.wordData,
+    this.errorMessage,
+  });
+  
+  /// 初始化动画
+  void initializeAnimation(TickerProvider vsync) {
+    animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: vsync,
+    );
+    
+    // 透明度动画 - 使用贝塞尔曲线
+    fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: animationController!,
+      curve: const Cubic(0.4, 0.0, 0.2, 1.0), // 贝塞尔曲线
+    ));
+    
+    // 向上滑动动画 - 减少滑动距离，使用贝塞尔曲线
+    slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15), // 减少移动距离
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: animationController!,
+      curve: const Cubic(0.4, 0.0, 0.2, 1.0), // 贝塞尔曲线
+    ));
+  }
+  
+  /// 启动动画
+  void startAnimation({Duration delay = Duration.zero}) {
+    if (animationController != null) {
+      Timer(delay, () {
+        animationController!.forward();
+      });
+    }
+  }
+  
+  /// 销毁动画控制器
+  void dispose() {
+    animationController?.dispose();
+  }
+  
+  /// 更新单词数量
+  void updateWordCount(int count) {
+    wordBook = WordBook(
+      name: wordBook.name,
+      translationUrl: wordBook.translationUrl,
+      wordCount: count,
+    );
+  }
+}
+
+/// 词库选择页面
+class LibraryPage extends StatefulWidget {
+  const LibraryPage({super.key});
+
+  @override
+  State<LibraryPage> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends State<LibraryPage> 
+    with TickerProviderStateMixin {
+  
+  // 词库数据
+  List<WordBookItem> _allWordBookItems = [];
+  List<WordBookItem> _filteredWordBookItems = [];
+  
+  // 分页控制
+  static const int _pageSize = 20;
+  int _currentPage = 0;
+  List<WordBookItem> _displayedItems = [];
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  
+  // 搜索相关
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  bool _isSearching = false;
+  
+  // 加载状态
+  bool _isLoading = true;
+  String? _errorMessage;
+  
+  // 主动画控制器
+  late AnimationController _fadeController;
+  
+  // 添加选中的词库索引
+  int? _selectedWordBookIndex;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+    _loadWordBooks();
+    _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    _fadeController.dispose();
+    _scrollController.dispose();
+    
+    // 销毁所有词库卡片的动画控制器
+    for (var item in _allWordBookItems) {
+      item.dispose();
+    }
+    
+    super.dispose();
+  }
+  
+  /// 初始化动画控制器
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+  }
+  
+  /// 滚动监听 - 实现无限滚动
+  void _onScroll() {
+    if (_scrollController.position.pixels >= 
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreItems();
+    }
+  }
+  
+  /// 加载词库数据 - 支持缓存
+  Future<void> _loadWordBooks() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      
+      // 首先尝试从缓存加载
+      List<WordBook> cachedWordBooks = await CacheService.getCachedWordBooks();
+      List<WordBook> wordBooks;
+      
+      if (cachedWordBooks.isNotEmpty) {
+        print('📦 从缓存加载词库数据');
+        wordBooks = cachedWordBooks;
+      } else {
+        print('🌐 从网络加载词库数据');
+        wordBooks = await GitHubApiService.getWordBooks();
+        // 缓存词库列表
+        await CacheService.cacheWordBooks(wordBooks);
+      }
+      
+      // 转换为WordBookItem并初始化动画
+      final wordBookItems = await Future.wait(
+        wordBooks.map((book) async {
+          final item = WordBookItem(
+            wordBook: book,
+            status: WordBookStatus.notDownloaded,
+          );
+          
+          // 检查是否已下载
+          final isDownloaded = await CacheService.isWordBookDownloaded(book.name);
+          if (isDownloaded) {
+            final cachedWordData = await CacheService.getCachedWordData(book.name);
+            if (cachedWordData != null) {
+              item.wordData = cachedWordData;
+              item.status = WordBookStatus.downloaded;
+              item.updateWordCount(cachedWordData.length);
+            }
+          }
+          
+          // 检查是否已选中
+          final selectedWordBook = await CacheService.getSelectedWordBook();
+          if (selectedWordBook == book.name) {
+            item.status = WordBookStatus.selected;
+            _selectedWordBookIndex = wordBooks.indexOf(book);
+          }
+          
+          item.initializeAnimation(this);
+          return item;
+        }),
+      );
+      
+      setState(() {
+        _allWordBookItems = wordBookItems;
+        _filteredWordBookItems = wordBookItems;
+        _isLoading = false;
+        _currentPage = 0;
+      });
+      
+      // 启动主动画
+      _fadeController.forward();
+      
+      // 延迟加载第一页数据，让搜索栏先显示
+      await Future.delayed(const Duration(milliseconds: 300));
+      _loadMoreItems();
+      
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '加载词库失败：$e';
+      });
+    }
+  }
+  
+  /// 加载更多项目 - 分页加载并启动独立动画
+  void _loadMoreItems() {
+    if (_isLoadingMore) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    // 模拟网络延迟
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      
+      final startIndex = _currentPage * _pageSize;
+      final endIndex = (startIndex + _pageSize).clamp(0, _filteredWordBookItems.length);
+      
+      if (startIndex < _filteredWordBookItems.length) {
+        final newItems = _filteredWordBookItems.sublist(startIndex, endIndex);
+        
+        setState(() {
+          _displayedItems.addAll(newItems);
+          _currentPage++;
+          _isLoadingMore = false;
+          _isSearching = false;
+        });
+        
+        // 为新添加的卡片启动流水般的独立动画
+        for (int i = 0; i < newItems.length; i++) {
+          final item = newItems[i];
+          final delay = Duration(milliseconds: i * 80);
+          item.startAnimation(delay: delay);
+        }
+      } else {
+        setState(() {
+          _isLoadingMore = false;
+          _isSearching = false;
+        });
+      }
+    });
+  }
+  
+  /// 搜索词库
+  void _onSearchChanged() {
+    if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final query = _searchController.text.toLowerCase().trim();
+      
+      setState(() {
+        _isSearching = true;
+        
+        if (query.isEmpty) {
+          _filteredWordBookItems = _allWordBookItems;
+        } else {
+          _filteredWordBookItems = _allWordBookItems.where((item) {
+            return item.wordBook.name.toLowerCase().contains(query);
+          }).toList();
+        }
+        
+        // 重置分页和动画状态
+        _currentPage = 0;
+        _displayedItems.clear();
+        
+        // 重置所有动画控制器
+        for (var item in _allWordBookItems) {
+          item.animationController?.reset();
+        }
+      });
+      
+      // 重新加载第一页
+      _loadMoreItems();
+    });
+  }
+
+  /// 选择词库 - 支持缓存
+  Future<void> _selectWordBook(WordBookItem item) async {
+    // 如果还未下载，先下载词库内容
+    if (item.status == WordBookStatus.notDownloaded) {
+      await _downloadWordBook(item);
+    }
+    
+    if (item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected) {
+      setState(() {
+        // 取消之前选中的词库，但保持已下载状态
+        for (var i = 0; i < _allWordBookItems.length; i++) {
+          if (_allWordBookItems[i].status == WordBookStatus.selected) {
+            _allWordBookItems[i].status = WordBookStatus.downloaded;
+          }
+        }
+        
+        // 设置当前词库为选中状态
+        item.status = WordBookStatus.selected;
+        _selectedWordBookIndex = _allWordBookItems.indexOf(item);
+      });
+      
+      // 保存选中的词库到缓存
+      await CacheService.saveSelectedWordBook(item.wordBook.name);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '词库《${item.wordBook.name}》已选择',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.accentGreen,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else if (item.status == WordBookStatus.error) {
+      // 显示错误信息并提供重试选项
+      final retry = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('下载失败'),
+          content: Text('词库下载失败：${item.errorMessage ?? "未知错误"}\n\n是否重试？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                '取消',
+                style: TextStyle(color: AppTheme.coolGray500),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      );
+      
+      if (retry == true) {
+        await _downloadWordBook(item);
+      }
+    }
+  }
+  
+  /// 下载词库内容 - 支持缓存
+  Future<void> _downloadWordBook(WordBookItem item) async {
+    setState(() {
+      item.status = WordBookStatus.downloading;
+      item.errorMessage = null;
+    });
+    
+    try {
+      print('📚 开始下载词库: ${item.wordBook.name}');
+      
+      // 首先检查缓存
+      final cachedWordData = await CacheService.getCachedWordData(item.wordBook.name);
+      List<WordData> wordData;
+      
+      if (cachedWordData != null) {
+        print('📦 从缓存加载词库数据');
+        wordData = cachedWordData;
+      } else {
+        print('🌐 从网络下载词库数据');
+        wordData = await GitHubApiService.getWordData(item.wordBook.translationUrl);
+        // 缓存下载的数据
+        await CacheService.cacheWordData(item.wordBook.name, wordData);
+      }
+      
+      setState(() {
+        item.wordData = wordData;
+        item.status = WordBookStatus.downloaded;
+        item.updateWordCount(wordData.length);
+      });
+      
+      print('✅ 词库下载完成: ${wordData.length} 个单词');
+      
+    } catch (e) {
+      setState(() {
+        item.status = WordBookStatus.error;
+        item.errorMessage = e.toString();
+      });
+      
+      print('❌ 词库下载失败: $e');
+    }
+  }
+
+  /// 查看已下载词库 - 修复黑色遮罩问题
+  void _showDownloadedBooks() {
+    final downloadedBooks = _allWordBookItems
+        .where((item) => item.status == WordBookStatus.downloaded || 
+                        item.status == WordBookStatus.selected)
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => Container(
+        color: Colors.black54,
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                // 拖拽指示器
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.coolGray300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // 标题
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '已下载词库',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.darkGray,
+                        ),
+                      ),
+                      Spacer(),
+                      Text(
+                        '${downloadedBooks.length} 个',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppTheme.coolGray500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Divider(color: AppTheme.coolGray200),
+                
+                // 词库列表
+                Expanded(
+                  child: downloadedBooks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.download_outlined,
+                                size: 64,
+                                color: AppTheme.coolGray300,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                '暂无已下载的词库',
+                                style: TextStyle(
+                                  color: AppTheme.coolGray500,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: downloadedBooks.length,
+                          itemBuilder: (context, index) => _buildDownloadedBookCard(
+                            downloadedBooks[index],
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建已下载词库卡片
+  Widget _buildDownloadedBookCard(WordBookItem item) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: item.status == WordBookStatus.selected 
+            ? Border.all(color: AppTheme.accentGreen, width: 2)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(16),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Color(item.wordBook.coverColor),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.menu_book_rounded,
+            color: Color(item.wordBook.iconColor),
+            size: 24,
+          ),
+        ),
+        title: Text(
+          item.wordBook.name,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.darkGray,
+          ),
+        ),
+        subtitle: Text(
+          '${item.wordBook.wordCount} 个单词',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppTheme.coolGray500,
+          ),
+        ),
+        trailing: item.status == WordBookStatus.selected
+            ? Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreen.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '使用中',
+                  style: TextStyle(
+                    color: AppTheme.accentGreen,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            : TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _selectWordBook(item);
+                },
+                child: Text('选择'),
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+    );
+  }
+  
+  /// 构建应用栏 - 添加查看已下载按钮
+  PreferredSizeWidget _buildAppBar() {
+    final downloadedCount = _allWordBookItems
+        .where((item) => item.status == WordBookStatus.downloaded || 
+                        item.status == WordBookStatus.selected)
+        .length;
+
+    return AppBar(
+      title: Text(
+        '词库选择 (${_allWordBookItems.length})',
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.darkGray,
+        ),
+      ),
+      backgroundColor: AppTheme.backgroundColor,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        // 查看已下载词库按钮
+        Stack(
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.download_done_rounded,
+                color: AppTheme.primaryGray,
+                size: 24,
+              ),
+              onPressed: _showDownloadedBooks,
+              tooltip: '查看已下载词库',
+            ),
+            if (downloadedCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$downloadedCount',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(width: 8),
+      ],
+    );
+  }
+
+  /// 构建主体内容
+  Widget _buildBody() {
+    return FadeTransition(
+      opacity: _fadeController,
+      child: Column(
+        children: [
+          _buildSearchBar(),
+          _buildStatsBar(),
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建搜索栏
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: '搜索词库...',
+          hintStyle: TextStyle(
+            color: AppTheme.primaryGray.withOpacity(0.6),
+            fontSize: 16,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppTheme.primaryGray.withOpacity(0.6),
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    color: AppTheme.primaryGray.withOpacity(0.6),
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        style: const TextStyle(
+          color: AppTheme.darkGray,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+  
+  /// 构建统计栏
+  Widget _buildStatsBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Row(
+        children: [
+          Text(
+            '共 ${_filteredWordBookItems.length} 个词库',
+            style: TextStyle(
+              color: AppTheme.primaryGray.withOpacity(0.8),
+              fontSize: 14,
+            ),
+          ),
+          const Spacer(),
+          if (_searchController.text.isNotEmpty)
+            Text(
+              '显示 ${_displayedItems.length} 项',
+              style: TextStyle(
+                color: AppTheme.primaryGray.withOpacity(0.8),
+                fontSize: 14,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建内容区域
+  Widget _buildContent() {
+    if (_isLoading) {
+      return _buildLoadingState();
+    } else if (_errorMessage != null) {
+      return _buildErrorState();
+    } else if (_isSearching) {
+      return _buildSearchingState();
+    } else if (_displayedItems.isEmpty && _filteredWordBookItems.isEmpty) {
+      return _buildEmptyState();
+    } else {
+      return _buildWordBookList();
+    }
+  }
+  
+  /// 构建搜索状态
+  Widget _buildSearchingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '搜索中...',
+            style: TextStyle(
+              color: AppTheme.primaryGray.withOpacity(0.8),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建加载状态
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+          ),
+          SizedBox(height: 16),
+          Text(
+            '正在加载词库...',
+            style: TextStyle(
+              color: AppTheme.primaryGray,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建错误状态
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppTheme.primaryGray,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.primaryGray,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadWordBooks,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGray,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text('重新加载'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// 构建空状态
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: AppTheme.primaryGray,
+          ),
+          SizedBox(height: 16),
+          Text(
+            '未找到匹配的词库',
+            style: TextStyle(
+              color: AppTheme.primaryGray,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建词库列表
+  Widget _buildWordBookList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      itemCount: _displayedItems.length + (_isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _displayedItems.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+              ),
+            ),
+          );
+        }
+        
+        return _buildAnimatedWordBookCard(_displayedItems[index]);
+      },
+    );
+  }
+  
+  /// 构建带动画的词库卡片
+  Widget _buildAnimatedWordBookCard(WordBookItem item) {
+    if (item.animationController == null || 
+        item.fadeAnimation == null || 
+        item.slideAnimation == null) {
+      return _buildWordBookCard(item);
+    }
+    
+    return AnimatedBuilder(
+      animation: item.animationController!,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: item.fadeAnimation!,
+          child: SlideTransition(
+            position: item.slideAnimation!,
+            child: _buildWordBookCard(item),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 构建词库卡片 - 修改单词数量显示逻辑
+  Widget _buildWordBookCard(WordBookItem item) {
+    final isSelected = item.status == WordBookStatus.selected;
+    final isDownloaded = item.status == WordBookStatus.downloaded || 
+                        item.status == WordBookStatus.selected;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: isSelected 
+            ? Border.all(color: AppTheme.accentGreen, width: 2)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: isSelected 
+                ? AppTheme.accentGreen.withOpacity(0.2)
+                : AppTheme.coolGray200.withOpacity(0.3),
+            blurRadius: isSelected ? 16 : 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _selectWordBook(item),
+          borderRadius: BorderRadius.circular(20),
+          splashColor: AppTheme.coolGray100.withOpacity(0.5),
+          highlightColor: AppTheme.coolGray50.withOpacity(0.8),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // 优化的封面设计
+                    _buildModernCover(item),
+                    const SizedBox(width: 16),
+                    
+                    // 词库信息
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 词库名称
+                          Text(
+                            item.wordBook.name,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.coolGray800,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          
+                          // 单词数量 - 只有下载后才显示
+                          if (isDownloaded && item.wordBook.wordCount > 0)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.coolGray100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${item.wordBook.wordCount} 个单词',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.coolGray600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    
+                    // 状态指示器
+                    _buildStatusIndicator(item.status),
+                  ],
+                ),
+                
+                // 底部操作区域
+                const SizedBox(height: 16),
+                _buildActionArea(item),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建现代化封面设计
+  Widget _buildModernCover(WordBookItem item) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(item.wordBook.coverColor),
+            Color(item.wordBook.coverColor).withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(item.wordBook.coverColor).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.2),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.menu_book_rounded,
+            color: Color(item.wordBook.iconColor),
+            size: 32,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建操作区域 - 修改按钮文字，保持状态标签
+  Widget _buildActionArea(WordBookItem item) {
+    switch (item.status) {
+      case WordBookStatus.notDownloaded:
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.accentGreen.withOpacity(0.1),
+                AppTheme.accentGreen.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.accentGreen.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _selectWordBook(item),
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.download_outlined,
+                      color: AppTheme.accentGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '下载词库',
+                      style: TextStyle(
+                        color: AppTheme.accentGreen,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        
+      case WordBookStatus.downloading:
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.amber.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade600),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '下载中...',
+                  style: TextStyle(
+                    color: Colors.amber.shade700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        
+      case WordBookStatus.downloaded:
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.coolGray600,
+                AppTheme.coolGray700,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.coolGray600.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _selectWordBook(item),
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.touch_app_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      '选择词书',  // 修改文字
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+      case WordBookStatus.selected:
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.accentGreen,
+                AppTheme.accentGreen.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentGreen.withOpacity(0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  '使用中',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        
+      case WordBookStatus.error:
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _selectWordBook(item),
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.refresh,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      '重试下载',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    }
+  }
+
+  /// 构建状态指示器 - 保持原有的"已下载"/"未下载"标签
+  Widget _buildStatusIndicator(WordBookStatus status) {
+    switch (status) {
+      case WordBookStatus.notDownloaded:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.coolGray100,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '未下载',
+            style: TextStyle(
+              color: AppTheme.coolGray500,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      case WordBookStatus.downloading:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '下载中',
+            style: TextStyle(
+              color: Colors.amber.shade700,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      case WordBookStatus.downloaded:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.coolGray200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '已下载', // 保持"已下载"标签
+            style: TextStyle(
+              color: AppTheme.coolGray600,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      case WordBookStatus.selected:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.coolGray200, // 选中状态也显示"已下载"
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '已下载', // 不显示"已选择"，保持"已下载"
+            style: TextStyle(
+              color: AppTheme.coolGray600,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      case WordBookStatus.error:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            '错误',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+    }
+  }
+} 
