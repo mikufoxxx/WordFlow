@@ -41,6 +41,10 @@ class _HomePageState extends State<HomePage>
   // 水滴球相关
   late AnimationController _dropController; // 水滴球动画控制器
   late AnimationController _hintController; // 提示区域动画控制器
+  
+  // 新增：呼吸动画控制器
+  late AnimationController _waveIdleController;
+  
   Offset _dragOffset = Offset.zero; // 当前拖拽偏移
   Offset _initialPosition = Offset.zero; // 初始位置
   bool _isDragging = false; // 是否正在拖拽
@@ -106,6 +110,12 @@ class _HomePageState extends State<HomePage>
     _initializeAudioPlayer();
     _initializeMainAnimations();
     _loadWordsFromSelectedWordBook();
+    
+    // 新增：初始化呼吸动画控制器
+    _waveIdleController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 8), // 慢速呼吸
+    )..repeat();
   }
 
   /// 加载选中词库的单词数据
@@ -633,8 +643,25 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      body: SafeArea(
-        child: _buildBody(),
+      body: Stack(
+        children: [
+          // 主体内容
+          Positioned.fill(
+            child: SafeArea(child: _buildBody()),
+          ),
+          // 悬浮小球
+          Positioned(
+            left: 0, right: 0,
+            bottom: 90, // 小球位置
+            child: _buildFluidDragBall(),
+          ),
+          // 底部提示
+          Positioned(
+            left: 0, right: 0,
+            bottom: 16,
+            child: _buildAnimatedHintText(),
+          ),
+        ],
       ),
     );
   }
@@ -714,7 +741,7 @@ class _HomePageState extends State<HomePage>
     }
 
     return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: MediaQuery.of(context).size.height - 
@@ -724,29 +751,13 @@ class _HomePageState extends State<HomePage>
         ),
         child: IntrinsicHeight(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              // 词库名称显示
+              SizedBox(height: 64), // 由32改为64，单词部分下移
               _buildWordBookHeader(),
-              
-              const SizedBox(height: 30),
-              
-              // 单词卡片
-              Flexible(
-                child: _buildWordCard(_currentWord!),
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // 水滴拖拽球
-              _buildFluidDragBall(),
-              
-              const SizedBox(height: 15),
-              
-              // 提示文字
-              _buildAnimatedHintText(),
-              
-              SizedBox(height: 20),
+              SizedBox(height: 24),
+              Flexible(child: _buildWordCard(_currentWord!)),
+              SizedBox(height: 120), // 为悬浮小球留出空间
             ],
           ),
         ),
@@ -796,7 +807,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建水滴状拖拽球
+  /// 构建呼吸状拖拽球
   Widget _buildFluidDragBall() {
     return AnimatedBuilder(
       animation: _buttonsController,
@@ -807,28 +818,28 @@ class _HomePageState extends State<HomePage>
             opacity: _buttonsOpacityAnimation.value,
             child: IgnorePointer(
               ignoring: !_wordAnimationCompleted,
-          child: Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
-            children: [
+                children: [
                   // 拖拽提示（上方）
                   AnimatedOpacity(
                     opacity: _isDragging && _getDragDirection() == 'up' ? 1.0 : 0.0,
                     duration: Duration(milliseconds: 200),
                     child: _buildHintBubble(
                       _showMeaning ? '隐藏释义' : '已隐藏',
-                      Icons.visibility_off,
-                      Colors.orange,
+                      Icons.keyboard_arrow_up,
+                      Colors.grey.shade600,
                       _getDragDirection() == 'up',
                     ),
                   ),
                   
-                  SizedBox(height: 20),
+                  SizedBox(height: 24),
                   
-                  // 水滴球主体
+                  // 呼吸球主体
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                    children: [
                       // 左侧提示
                       AnimatedOpacity(
                         opacity: _isDragging && _getDragDirection() == 'left' ? 1.0 : 0.0,
@@ -836,14 +847,14 @@ class _HomePageState extends State<HomePage>
                         child: _buildHintBubble(
                           '不认识',
                           Icons.close,
-                          Colors.red,
+                          Colors.grey.shade600,
                           _getDragDirection() == 'left',
                         ),
                       ),
                       
-                      SizedBox(width: 20),
+                      SizedBox(width: 32),
                       
-                      // 水滴球
+                      // 呼吸球
                       GestureDetector(
                         onPanStart: _onPanStart,
                         onPanUpdate: _onPanUpdate,
@@ -858,7 +869,7 @@ class _HomePageState extends State<HomePage>
                                 child: Transform.rotate(
                                   angle: _dropRotationAnimation.value * 
                                          (_dragOffset.dx / 100),
-                                  child: _buildDropShape(),
+                                  child: _buildBreathBall(),
                                 ),
                               ),
                             );
@@ -866,7 +877,7 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
-                      SizedBox(width: 20),
+                      SizedBox(width: 32),
                       
                       // 右侧提示
                       AnimatedOpacity(
@@ -875,14 +886,14 @@ class _HomePageState extends State<HomePage>
                         child: _buildHintBubble(
                           '认识',
                           Icons.check,
-                          Colors.green,
+                          Colors.grey.shade600,
                           _getDragDirection() == 'right',
-                ),
-              ),
-            ],
+                        ),
+                      ),
+                    ],
                   ),
                   
-                  SizedBox(height: 20),
+                  SizedBox(height: 24),
                   
                   // 拖拽提示（下方）
                   AnimatedOpacity(
@@ -890,8 +901,8 @@ class _HomePageState extends State<HomePage>
                     duration: Duration(milliseconds: 200),
                     child: _buildHintBubble(
                       _showMeaning ? '已显示' : '显示释义',
-                      Icons.visibility,
-                      Colors.blue,
+                      Icons.keyboard_arrow_down,
+                      Colors.grey.shade600,
                       _getDragDirection() == 'down',
                     ),
                   ),
@@ -904,47 +915,57 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建水滴形状
-  Widget _buildDropShape() {
-    return Container(
-      width: 80,
-      height: 80,
-      child: CustomPaint(
-        painter: _DropPainter(
-          color: Theme.of(context).primaryColor,
-          dragOffset: _dragOffset,
-          isDragging: _isDragging,
-        ),
-        child: Center(
-          child: Icon(
-            _isDragging ? Icons.drag_indicator : Icons.touch_app,
-            color: Colors.white,
-            size: _isDragging ? 24 : 28,
+  /// 构建呼吸球
+  Widget _buildBreathBall() {
+    return AnimatedBuilder(
+      animation: _waveIdleController,
+      builder: (context, child) {
+        return Container(
+          width: 160,
+          height: 160,
+          child: CustomPaint(
+            painter: _BreathLinesPainter(
+              color: Theme.of(context).primaryColor,
+              phase: _waveIdleController.value * 2 * pi,
+              dragOffset: _dragOffset,
+              isDragging: _isDragging,
+            ),
+            child: Center(
+              child: Icon(
+                _isDragging ? Icons.drag_indicator : Icons.blur_circular,
+                color: Colors.white.withOpacity(0.85),
+                size: _isDragging ? 48 : 54,
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  /// 构建提示气泡
+  /// 构建简约提示气泡
   Widget _buildHintBubble(String text, IconData icon, Color color, bool isActive) {
     return AnimatedContainer(
       duration: Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       constraints: BoxConstraints(
-        minWidth: 60,
-        maxWidth: 100,
-        minHeight: 32,
-        maxHeight: 40,
+        minWidth: 60, // 由50改为60，容器稍大
+        maxWidth: 90, // 由80改为90，容器稍大
+        minHeight: 32, // 由28改为32，容器稍高
+        maxHeight: 38, // 由32改为38，容器稍高
       ),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 增加内边距
       decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.9) : color.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: isActive ? color.withOpacity(0.20) : Colors.transparent, // 由0.15改为0.20，更显眼
+        borderRadius: BorderRadius.circular(16), // 由14改为16，更圆润
+        border: Border.all(
+          color: isActive ? color.withOpacity(0.5) : Colors.transparent, // 由0.4改为0.5，边框更显眼
+          width: 1.5, // 由1改为1.5，边框更粗
+        ),
         boxShadow: isActive ? [
           BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 8,
+            color: color.withOpacity(0.2),
+            blurRadius: 6,
             offset: Offset(0, 2),
           ),
         ] : [],
@@ -955,17 +976,17 @@ class _HomePageState extends State<HomePage>
         children: [
           Icon(
             icon,
-            color: isActive ? Colors.white : color,
-            size: 14,
+            color: isActive ? color : color.withOpacity(0.6), // 由0.5改为0.6，图标更显眼
+            size: 20, // 由28改为20，图标更大但不过大
           ),
-          SizedBox(width: 3),
+          SizedBox(width: 6), // 由4改为6，间距稍大
           Flexible(
             child: Text(
               text,
               style: TextStyle(
-                color: isActive ? Colors.white : color,
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                color: isActive ? color : color.withOpacity(0.7), // 由0.6改为0.7，文字更显眼
+                fontSize: 12, // 由11改为12，文字稍大
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500, // 字重更粗
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -1168,7 +1189,7 @@ class _HomePageState extends State<HomePage>
                   children: [
                     // 单词本体
                     Container(
-                      constraints: BoxConstraints(minHeight: 65, maxHeight: 80),
+                      constraints: BoxConstraints(minHeight: 75, maxHeight: 95), // 适当调高容器高度
                       child: _buildAnimatedText(
                         word.word,
                         _wordSlideAnimations,
@@ -1176,11 +1197,12 @@ class _HomePageState extends State<HomePage>
                         Theme.of(context).textTheme.headlineLarge!.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2.0,
+                          fontSize: 42, // 显式设置更大的字体大小
                         ),
                       ),
                     ),
                     
-                    const SizedBox(height: 2), // 从8改为4，使音标与单词更近
+                    const SizedBox(height: 2),
                     
                     // 音标
                     AnimatedOpacity(
@@ -1192,6 +1214,7 @@ class _HomePageState extends State<HomePage>
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).primaryColor,
                           fontStyle: FontStyle.italic,
+                          fontSize: 18, // 音标也稍微调大一点
                         ),
                       ),
                     ),
@@ -1365,12 +1388,13 @@ class _HomePageState extends State<HomePage>
               switchOutCurve: Curves.easeOutCubic,
               child: Text(
                 _wordAnimationCompleted 
-                    ? '拖拽水滴进行操作\n← 不认识  → 认识  ↓ 显示释义  ↑ 隐藏释义'
+                    ? '拖拽呼吸球进行操作\n'
                     : '单词加载中...',
-                key: ValueKey('${_wordAnimationCompleted}_fluid'),
+                key: ValueKey('${_wordAnimationCompleted}_breath'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade500,
+                  color: Colors.grey.shade400,
                   height: 1.4,
+                  fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1392,6 +1416,7 @@ class _HomePageState extends State<HomePage>
     _hintController.dispose();
     _disposeCharacterControllers();
     _audioPlayer.dispose();
+    _waveIdleController.dispose(); // 新增：释放呼吸动画控制器
     super.dispose();
   }
 }
@@ -1444,93 +1469,81 @@ class ExtendedWordData {
   }
 }
 
-/// 水滴形状绘制器
-class _DropPainter extends CustomPainter {
+/// 呼吸线条绘制器
+class _BreathLinesPainter extends CustomPainter {
   final Color color;
+  final double phase;
   final Offset dragOffset;
   final bool isDragging;
 
-  _DropPainter({
+  _BreathLinesPainter({
     required this.color,
-    required this.dragOffset,
-    required this.isDragging,
+    required this.phase,
+    this.dragOffset = Offset.zero,
+    this.isDragging = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
     final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = size.width / 3;
+    final baseRadius = size.width / 2.2;
+    final lines = 5; // 呼吸线条数量
     
-    if (!isDragging) {
-      // 静态水滴形状
-      final path = Path();
-      
-      // 绘制水滴的主体部分（圆形）
-      path.addOval(Rect.fromCircle(
-        center: center,
-        radius: baseRadius,
-      ));
-      
-      // 绘制水滴的尖端
-      final tipHeight = baseRadius * 0.6;
-      path.moveTo(center.dx, center.dy - baseRadius);
-      path.quadraticBezierTo(
-        center.dx - baseRadius * 0.5, center.dy - baseRadius - tipHeight * 0.5,
-        center.dx, center.dy - baseRadius - tipHeight,
-      );
-      path.quadraticBezierTo(
-        center.dx + baseRadius * 0.5, center.dy - baseRadius - tipHeight * 0.5,
-        center.dx, center.dy - baseRadius,
-      );
-      
-      canvas.drawPath(path, paint);
-    } else {
-      // 拖拽时的形变效果
-      final stretchAmount = dragOffset.distance / 10;
-      final normalizedOffset = dragOffset.distance > 0 
-          ? Offset(dragOffset.dx / dragOffset.distance, dragOffset.dy / dragOffset.distance)
-          : Offset.zero;
-      
-      // 绘制拉伸的椭圆
-      final rect = Rect.fromCenter(
-        center: center,
-        width: baseRadius * 2 + stretchAmount * normalizedOffset.dx.abs(),
-        height: baseRadius * 2 + stretchAmount * normalizedOffset.dy.abs(),
-      );
-      
-      canvas.drawOval(rect, paint);
-      
-      // 在拖拽方向绘制拉伸效果
-      if (stretchAmount > 5) {
-        final stretchPaint = Paint()
-          ..color = color.withOpacity(0.6)
-          ..style = PaintingStyle.fill;
-        
-        final stretchCenter = center - normalizedOffset * stretchAmount * 0.3;
-        canvas.drawCircle(stretchCenter, baseRadius * 0.7, stretchPaint);
-      }
+    // 拖拽时的形变计算
+    double stretchX = 1.0, stretchY = 1.0;
+    if (isDragging && dragOffset.distance > 0) {
+      stretchX = 1.0 + dragOffset.dx.abs() / 200;
+      stretchY = 1.0 + dragOffset.dy.abs() / 200;
     }
     
-    // 添加高光效果
-    final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..style = PaintingStyle.fill;
+    for (int i = 0; i < lines; i++) {
+      final opacity = 0.5 - i * 0.08;
+      final paint = Paint()
+        ..color = color.withOpacity(opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+
+      // 每条线的呼吸相位和幅度略有不同
+      final breath = sin(phase * (1.1 + i * 0.13) + i) * (8 - i * 1.5);
+      final radius = baseRadius - i * 14 + breath;
+      
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.scale(stretchX, stretchY);
+      canvas.drawCircle(Offset.zero, radius, paint);
+      canvas.restore();
+    }
     
-    canvas.drawCircle(
-      center - Offset(baseRadius * 0.3, baseRadius * 0.3),
-      baseRadius * 0.2,
-      highlightPaint,
-    );
+    // 中心填充圆
+    final fillPaint = Paint()
+      ..color = color.withOpacity(0.92)
+      ..style = PaintingStyle.fill;
+    final fillRadius = baseRadius * 0.38 + sin(phase) * 2;
+    
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(stretchX, stretchY);
+    canvas.drawCircle(Offset.zero, fillRadius, fillPaint);
+    canvas.restore();
+
+    // 内部淡色圆
+    final innerPaint = Paint()
+      ..color = Colors.white.withOpacity(0.13)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(stretchX, stretchY);
+    canvas.drawCircle(Offset.zero, fillRadius * 0.7, innerPaint);
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _DropPainter oldDelegate) {
-    return oldDelegate.dragOffset != dragOffset || 
-           oldDelegate.isDragging != isDragging ||
-           oldDelegate.color != color;
+  bool shouldRepaint(covariant _BreathLinesPainter oldDelegate) {
+    return oldDelegate.phase != phase ||
+        oldDelegate.color != color ||
+        oldDelegate.dragOffset != dragOffset ||
+        oldDelegate.isDragging != isDragging;
   }
 } 
