@@ -40,6 +40,9 @@ dependencies:
   animated_text_kit: ^4.2.2
   # 用于HTTP请求，获取GitHub API数据
   http: ^1.1.0
+  lordicon: ^1.0.3
+  # 用于播放音频文件
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -64,8 +67,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/icon/
+    - assets/sound/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

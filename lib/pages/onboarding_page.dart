@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lordicon/lordicon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_theme.dart';
 import '../utils/animated_text_helper.dart';
@@ -259,9 +260,17 @@ class _OnboardingPageState extends State<OnboardingPage>
   
   /// 构建欢迎页图标
   Widget _buildWelcomeIcon(OnboardingPageData page) {
+    var controller = IconController.assets('assets/icon/wired-outline-112-book-hover-pinch.json');
+
+    controller.addStatusListener((status) {
+      if (status == ControllerStatus.ready) {
+        controller.playFromBeginning();
+      }
+    });
+
     return Container(
-      width: 120,
-      height: 120,
+      width: 150,
+      height: 150,
       decoration: BoxDecoration(
         color: page.color.withOpacity(0.1),
         shape: BoxShape.circle,
@@ -273,10 +282,10 @@ class _OnboardingPageState extends State<OnboardingPage>
           ),
         ],
       ),
-      child: Icon(
-        page.icon,
-        size: 60,
-        color: page.color,
+      child: IconViewer(
+        controller: controller,
+        width: 100,
+        height: 100,
       ),
     );
   }
@@ -376,13 +385,21 @@ class _OnboardingPageState extends State<OnboardingPage>
   
   /// 构建Token输入图标 - 不使用动画
   Widget _buildTokenInputIcon(OnboardingPageData page) {
+    var controllerlink = IconController.assets('assets/icon/wired-outline-11-link-unlink-hover-bounce.json');
+
+    controllerlink.addStatusListener((status) {
+      if (status == ControllerStatus.ready) {
+        controllerlink.playFromBeginning();
+      }
+    });
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // API连接图标
         Container(
-          width: 100,
-          height: 100,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             color: page.color.withOpacity(0.1),
             shape: BoxShape.circle,
@@ -394,10 +411,10 @@ class _OnboardingPageState extends State<OnboardingPage>
               ),
             ],
           ),
-          child: Icon(
-            page.icon,
-            size: 50,
-            color: page.color,
+          child: IconViewer(
+            controller: controllerlink,
+            width: 60,
+            height: 60,
           ),
         ),
         

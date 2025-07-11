@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
@@ -12,6 +13,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> 
     with TickerProviderStateMixin {
+  
+  // 音频播放器
+  late AudioPlayer _audioPlayer;
   
   // 当前单词索引
   int _currentWordIndex = 0;
@@ -97,9 +101,35 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    _initializeAudioPlayer();
     _initializeMainAnimations();
     _initializeCharacterAnimations();
     _startWordAnimation();
+  }
+
+  /// 初始化音频播放器
+  void _initializeAudioPlayer() {
+    _audioPlayer = AudioPlayer();
+  }
+
+  /// 播放设置页面音效
+  void _playSettingSound() async {
+    try {
+      await _audioPlayer.setVolume(1); // 设置音量为50%，你可以调整为0.1~1.0之间
+      await _audioPlayer.play(AssetSource('sound/settingpage.mp3'));
+    } catch (e) {
+      print('播放音效失败: $e');
+    }
+  }
+
+  /// 播放词库选择音效
+  void _playBookPageSound() async {
+    try {
+      await _audioPlayer.setVolume(1); // 设置音量，按需调整
+      await _audioPlayer.play(AssetSource('sound/bookpage.mp3'));
+    } catch (e) {
+      print('播放音效失败: $e');
+    }
   }
 
   /// 初始化主要动画控制器
@@ -443,20 +473,65 @@ class _HomePageState extends State<HomePage>
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WordFlow'),
-        leading: IconButton(
-          icon: const Icon(Icons.library_books_outlined),
-          onPressed: () => Navigator.pushNamed(context, '/library'),
-          tooltip: '词库选择',
+        title: Text(
+          'WordFlow',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 28, // 标题更大
+          ),
+        ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+            ),
+            child: IconButton(
+              enableFeedback: false, // 关闭系统点击音
+              icon: const Icon(Icons.library_books_outlined),
+              iconSize: 40,
+              onPressed: () {
+                _playBookPageSound(); // 播放你自己的音效
+                Navigator.pushNamed(context, '/library');
+              },
+              tooltip: '词库选择',
+              color: Theme.of(context).primaryColor,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+            ),
+          ),
         ),
         actions: [
-          // 设置按钮 - 添加悬停动画
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            child: IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
+              ),
+              child: IconButton(
+                enableFeedback: false, // 关闭系统点击音
+                icon: const Icon(Icons.settings_outlined),
+                iconSize: 40,
+                onPressed: () {
+                  _playSettingSound(); // 播放你自己的音效
+                  Navigator.pushNamed(context, '/settings');
+                },
+                color: Theme.of(context).primaryColor,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 48,
+                ),
+              ),
             ),
           ),
         ],
@@ -1006,6 +1081,7 @@ class _HomePageState extends State<HomePage>
     _progressController.dispose();
     _buttonsController.dispose();
     _disposeCharacterControllers();
+    _audioPlayer.dispose(); // 释放音频播放器资源
     super.dispose();
   }
 }
