@@ -949,18 +949,18 @@ class _HomePageState extends State<HomePage>
       duration: Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       constraints: BoxConstraints(
-        minWidth: 60, // 由50改为60，容器稍大
-        maxWidth: 90, // 由80改为90，容器稍大
-        minHeight: 32, // 由28改为32，容器稍高
-        maxHeight: 38, // 由32改为38，容器稍高
+        minWidth: 80,
+        maxWidth: 120,
+        minHeight: 32,
+        maxHeight: 40,
       ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 增加内边距
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.20) : Colors.transparent, // 由0.15改为0.20，更显眼
-        borderRadius: BorderRadius.circular(16), // 由14改为16，更圆润
+        color: isActive ? color.withOpacity(0.20) : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isActive ? color.withOpacity(0.5) : Colors.transparent, // 由0.4改为0.5，边框更显眼
-          width: 1.5, // 由1改为1.5，边框更粗
+          color: isActive ? color.withOpacity(0.5) : Colors.transparent,
+          width: 1.5,
         ),
         boxShadow: isActive ? [
           BoxShadow(
@@ -976,19 +976,20 @@ class _HomePageState extends State<HomePage>
         children: [
           Icon(
             icon,
-            color: isActive ? color : color.withOpacity(0.6), // 由0.5改为0.6，图标更显眼
-            size: 20, // 由28改为20，图标更大但不过大
+            color: isActive ? color : color.withOpacity(0.6),
+            size: 18,
           ),
-          SizedBox(width: 6), // 由4改为6，间距稍大
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               text,
               style: TextStyle(
-                color: isActive ? color : color.withOpacity(0.7), // 由0.6改为0.7，文字更显眼
-                fontSize: 12, // 由11改为12，文字稍大
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500, // 字重更粗
+                color: isActive ? color : color.withOpacity(0.7),
+                fontSize: isActive ? 14 : 11, // 激活时字体更大，非激活时保持原大小
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],
