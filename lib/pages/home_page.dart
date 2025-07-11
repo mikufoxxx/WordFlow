@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import '../models/word_book.dart';
+import '../utils/cache_service.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
+/// 支持无限流模式，从词库中随机获取单词
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,8 +21,8 @@ class _HomePageState extends State<HomePage>
   // 音频播放器
   late AudioPlayer _audioPlayer;
   
-  // 当前单词索引
-  int _currentWordIndex = 0;
+  // 当前学习的单词数量（无限流模式）
+  int _studiedWordsCount = 0;
   
   // 是否显示单词释义
   bool _showMeaning = false;
@@ -30,16 +34,28 @@ class _HomePageState extends State<HomePage>
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late AnimationController _meaningController; // 释义框动画控制器
-  late AnimationController _progressController; // 进度条动画控制器
   late AnimationController _buttonsController; // 按钮动画控制器
+  
+  // 水滴球相关
+  late AnimationController _dropController; // 水滴球动画控制器
+  late AnimationController _hintController; // 提示区域动画控制器
+  Offset _dragOffset = Offset.zero; // 当前拖拽偏移
+  Offset _initialPosition = Offset.zero; // 初始位置
+  bool _isDragging = false; // 是否正在拖拽
+  String _dragHint = ''; // 拖拽提示文字
+  Color _hintColor = Colors.grey; // 提示颜色
+  
+  // 拖拽阈值和动画
+  final double _dragThreshold = 80.0;
+  late Animation<double> _dropScaleAnimation;
+  late Animation<double> _dropRotationAnimation;
+  late Animation<double> _hintOpacityAnimation;
+  late Animation<double> _hintScaleAnimation;
   
   // 释义框动画
   late Animation<double> _meaningHeightAnimation;
   late Animation<double> _meaningOpacityAnimation;
   late Animation<double> _meaningScaleAnimation;
-  
-  // 进度条动画
-  late Animation<double> _progressAnimation;
   
   // 按钮动画
   late Animation<double> _buttonsOpacityAnimation;
@@ -70,41 +86,85 @@ class _HomePageState extends State<HomePage>
   // 单词动画完成计数器
   int _completedWordAnimations = 0;
   
-  // 示例单词列表（实际应用中应该从数据库或API获取）
-  final List<WordData> _words = [
-    WordData(
-      word: "serendipity",
-      pronunciation: "/ˌserənˈdɪpəti/",
-      meaning: "意外发现珍奇事物的能力；机缘巧合",
-      translation: "偶然发现",
-      example: "It was pure serendipity that led to this discovery.",
-      exampleTranslation: "这一发现纯属偶然。",
-    ),
-    WordData(
-      word: "eloquent",
-      pronunciation: "/ˈeləkwənt/",
-      meaning: "雄辩的；有说服力的；富于表现力的",
-      translation: "雄辩的",
-      example: "She gave an eloquent speech about climate change.",
-      exampleTranslation: "她就气候变化发表了一篇雄辩的演讲。",
-    ),
-    WordData(
-      word: "ephemeral",
-      pronunciation: "/ɪˈfemərəl/",
-      meaning: "短暂的；朝生暮死的",
-      translation: "短暂的",
-      example: "The beauty of cherry blossoms is ephemeral.",
-      exampleTranslation: "樱花之美是短暂的。",
-    ),
-  ];
+  // 词库数据 - 从缓存加载
+  List<WordData> _words = [];
+  bool _isLoadingWords = true;
+  String? _currentWordBookName;
+  String? _errorMessage;
+  
+  // 随机数生成器（用于无限流模式）
+  final Random _random = Random();
+  
+  // 当前显示的单词（扩展版本，包含音标、例句等）
+  ExtendedWordData? _currentWord;
 
   @override
   void initState() {
     super.initState();
     _initializeAudioPlayer();
     _initializeMainAnimations();
+    _loadWordsFromSelectedWordBook();
+  }
+
+  /// 加载选中词库的单词数据
+  Future<void> _loadWordsFromSelectedWordBook() async {
+    try {
+      setState(() {
+        _isLoadingWords = true;
+        _errorMessage = null;
+      });
+      
+      // 获取当前选中的词库名称
+      final selectedWordBookName = await CacheService.getSelectedWordBook();
+      
+      if (selectedWordBookName == null || selectedWordBookName.isEmpty) {
+        setState(() {
+          _errorMessage = '请先选择一个词库';
+          _isLoadingWords = false;
+        });
+        return;
+      }
+      
+      // 从缓存加载词库数据
+      final wordData = await CacheService.getCachedWordData(selectedWordBookName);
+      
+      if (wordData == null || wordData.isEmpty) {
+        setState(() {
+          _errorMessage = '词库数据为空，请重新下载词库';
+          _isLoadingWords = false;
+        });
+        return;
+      }
+      
+      setState(() {
+        _words = wordData;
+        _currentWordBookName = selectedWordBookName;
+        _isLoadingWords = false;
+      });
+      
+      // 生成第一个单词
+      _generateNextWord();
     _initializeCharacterAnimations();
     _startWordAnimation();
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = '加载词库失败: $e';
+        _isLoadingWords = false;
+      });
+    }
+  }
+
+  /// 生成下一个单词（扩展版本）
+  void _generateNextWord() {
+    if (_words.isEmpty) return;
+    
+    // 随机选择一个单词
+    final randomIndex = _random.nextInt(_words.length);
+    final wordData = _words[randomIndex];
+    
+    // 创建扩展的单词数据（为演示目的生成示例数据）
+    _currentWord = ExtendedWordData.fromWordData(wordData);
   }
 
   /// 初始化音频播放器
@@ -115,7 +175,7 @@ class _HomePageState extends State<HomePage>
   /// 播放设置页面音效
   void _playSettingSound() async {
     try {
-      await _audioPlayer.setVolume(1); // 设置音量为50%，你可以调整为0.1~1.0之间
+      await _audioPlayer.setVolume(1);
       await _audioPlayer.play(AssetSource('sound/settingpage.mp3'));
     } catch (e) {
       print('播放音效失败: $e');
@@ -125,7 +185,7 @@ class _HomePageState extends State<HomePage>
   /// 播放词库选择音效
   void _playBookPageSound() async {
     try {
-      await _audioPlayer.setVolume(1); // 设置音量，按需调整
+      await _audioPlayer.setVolume(1);
       await _audioPlayer.play(AssetSource('sound/bookpage.mp3'));
     } catch (e) {
       print('播放音效失败: $e');
@@ -151,26 +211,68 @@ class _HomePageState extends State<HomePage>
       vsync: this,
     );
     
-    // 进度条动画控制器
-    _progressController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    
     // 按钮动画控制器
     _buttonsController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     
-    // 释义框动画 - 使用优雅的贝塞尔曲线，支持正向和反向
+    // 水滴球动画控制器
+    _dropController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    // 提示区域动画控制器
+    _hintController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    
+    // 水滴球缩放动画
+    _dropScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _dropController,
+      curve: Curves.elasticOut,
+    ));
+    
+    // 水滴球旋转动画
+    _dropRotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.1,
+    ).animate(CurvedAnimation(
+      parent: _dropController,
+      curve: Curves.easeOutBack,
+    ));
+    
+    // 提示文字透明度动画
+    _hintOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _hintController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    // 提示文字缩放动画
+    _hintScaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _hintController,
+      curve: Curves.easeOutBack,
+    ));
+    
+    // 释义框动画
     _meaningHeightAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _meaningController,
-      curve: Curves.easeOutQuart, // 展开时使用
-      reverseCurve: Curves.easeInQuart, // 收起时使用
+      curve: Curves.easeOutQuart,
+      reverseCurve: Curves.easeInQuart,
     ));
     
     _meaningOpacityAnimation = Tween<double>(
@@ -179,7 +281,7 @@ class _HomePageState extends State<HomePage>
     ).animate(CurvedAnimation(
       parent: _meaningController,
       curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic, // 收起时使用
+      reverseCurve: Curves.easeInCubic,
     ));
     
     _meaningScaleAnimation = Tween<double>(
@@ -187,17 +289,8 @@ class _HomePageState extends State<HomePage>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _meaningController,
-      curve: Curves.easeOutBack, // 展开时的弹性效果
-      reverseCurve: Curves.easeInBack, // 收起时的弹性效果
-    ));
-    
-    // 进度条动画
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeOutQuint, // 五次方缓出曲线
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInBack,
     ));
     
     // 按钮动画
@@ -220,7 +313,9 @@ class _HomePageState extends State<HomePage>
 
   /// 初始化字符级动画
   void _initializeCharacterAnimations() {
-    final currentWord = _words[_currentWordIndex];
+    if (_currentWord == null) return;
+    
+    final currentWord = _currentWord!;
     
     // 重置状态
     _wordAnimationCompleted = false;
@@ -244,7 +339,6 @@ class _HomePageState extends State<HomePage>
         if (status == AnimationStatus.completed) {
           _completedWordAnimations++;
           if (_completedWordAnimations >= _wordControllers.length) {
-            // 所有单词字符动画完成
             _onWordAnimationCompleted();
           }
         }
@@ -252,7 +346,7 @@ class _HomePageState extends State<HomePage>
     }
     
     _wordSlideAnimations = _wordControllers.map((controller) =>
-      Tween<double>(begin: 15.0, end: 0.0).animate( // 缩短浮现距离到15px
+      Tween<double>(begin: 15.0, end: 0.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutQuart,
@@ -279,7 +373,7 @@ class _HomePageState extends State<HomePage>
     );
     
     _translationSlideAnimations = _translationControllers.map((controller) =>
-      Tween<double>(begin: 12.0, end: 0.0).animate( // 更短的浮现距离
+      Tween<double>(begin: 12.0, end: 0.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutQuart,
@@ -296,17 +390,9 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 释义字符动画
-    _meaningControllers = List.generate(
-      currentWord.meaning.length,
-      (index) => AnimationController(
-        duration: const Duration(milliseconds: 400),
-        vsync: this,
-      ),
-    );
     
     _meaningSlideAnimations = _meaningControllers.map((controller) =>
-      Tween<double>(begin: 10.0, end: 0.0).animate( // 更短的浮现距离
+      Tween<double>(begin: 10.0, end: 0.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutQuart,
@@ -395,7 +481,7 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 启动字符动画（只支持正向）
+  /// 启动字符动画
   void _startCharacterAnimation(List<AnimationController> controllers, int delayMs) {
     for (int i = 0; i < controllers.length; i++) {
       Timer timer = Timer(Duration(milliseconds: i * delayMs), () {
@@ -409,10 +495,8 @@ class _HomePageState extends State<HomePage>
 
   /// 立即重置所有释义框相关的字符动画状态
   void _resetMeaningCharacterAnimations() {
-    // 取消所有待执行的动画Timer
     _cancelAllAnimationTimers();
     
-    // 立即停止并重置所有释义相关的字符动画
     for (var controller in _translationControllers) {
       controller.stop();
       controller.reset();
@@ -441,7 +525,6 @@ class _HomePageState extends State<HomePage>
 
   /// 清理字符控制器
   void _disposeCharacterControllers() {
-    // 先取消所有Timer
     _cancelAllAnimationTimers();
     
     for (var controller in _wordControllers) {
@@ -469,15 +552,13 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    final currentWord = _words[_currentWordIndex];
-    
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'WordFlow',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 28, // 标题更大
+            fontSize: 28,
           ),
         ),
         leading: Padding(
@@ -490,11 +571,11 @@ class _HomePageState extends State<HomePage>
               focusColor: Colors.transparent,
             ),
             child: IconButton(
-              enableFeedback: false, // 关闭系统点击音
+              enableFeedback: false,
               icon: const Icon(Icons.library_books_outlined),
               iconSize: 40,
               onPressed: () {
-                _playBookPageSound(); // 播放你自己的音效
+                _playBookPageSound();
                 Navigator.pushNamed(context, '/library');
               },
               tooltip: '词库选择',
@@ -518,11 +599,11 @@ class _HomePageState extends State<HomePage>
                 focusColor: Colors.transparent,
               ),
               child: IconButton(
-                enableFeedback: false, // 关闭系统点击音
+                enableFeedback: false,
                 icon: const Icon(Icons.settings_outlined),
                 iconSize: 40,
                 onPressed: () {
-                  _playSettingSound(); // 播放你自己的音效
+                  _playSettingSound();
                   Navigator.pushNamed(context, '/settings');
                 },
                 color: Theme.of(context).primaryColor,
@@ -536,32 +617,120 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      body: GestureDetector(
-        // 只有当单词动画完成后才允许点击切换释义
-        onTap: _wordAnimationCompleted ? _toggleMeaning : null,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  /// 构建主体内容
+  Widget _buildBody() {
+    if (_isLoadingWords) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).primaryColor,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              '正在加载词库...',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 进度指示器 - 添加动画
-              _buildAnimatedProgressIndicator(),
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/library');
+                },
+                icon: Icon(Icons.library_books),
+                label: Text('选择词库'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_currentWord == null) {
+      return Center(
+        child: Text(
+          '词库为空',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Colors.grey.shade600,
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height - 
+                     kToolbarHeight - 
+                     MediaQuery.of(context).padding.top - 
+                     MediaQuery.of(context).padding.bottom - 40,
+        ),
+        child: IntrinsicHeight(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 词库名称显示
+              _buildWordBookHeader(),
               
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
               
               // 单词卡片
-              _buildWordCard(currentWord),
+              Flexible(
+                child: _buildWordCard(_currentWord!),
+              ),
               
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
               
-              // 操作按钮 - 只有单词动画完成后才显示
-              _buildAnimatedActionButtons(),
+              // 水滴拖拽球
+              _buildFluidDragBall(),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
               
-              // 提示文字 - 只有单词动画完成后才显示
+              // 提示文字
               _buildAnimatedHintText(),
+              
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -569,57 +738,407 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建动画进度指示器
-  Widget _buildAnimatedProgressIndicator() {
+  /// 构建词库名称头部
+  Widget _buildWordBookHeader() {
+    if (_currentWordBookName == null) return SizedBox.shrink();
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.menu_book_rounded,
+            color: Theme.of(context).primaryColor,
+            size: 16,
+          ),
+          SizedBox(width: 6),
+          Text(
+            _currentWordBookName!,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(width: 8),
+          Text(
+            '已学 $_studiedWordsCount 词',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).primaryColor.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建水滴状拖拽球
+  Widget _buildFluidDragBall() {
     return AnimatedBuilder(
-      animation: _progressAnimation,
+      animation: _buttonsController,
       builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+        return Transform.translate(
+          offset: Offset(0, _buttonsSlideAnimation.value),
+          child: Opacity(
+            opacity: _buttonsOpacityAnimation.value,
+            child: IgnorePointer(
+              ignoring: !_wordAnimationCompleted,
           child: Column(
+                mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // 拖拽提示（上方）
+                  AnimatedOpacity(
+                    opacity: _isDragging && _getDragDirection() == 'up' ? 1.0 : 0.0,
+                    duration: Duration(milliseconds: 200),
+                    child: _buildHintBubble(
+                      _showMeaning ? '隐藏释义' : '已隐藏',
+                      Icons.visibility_off,
+                      Colors.orange,
+                      _getDragDirection() == 'up',
+                    ),
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // 水滴球主体
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    style: Theme.of(context).textTheme.bodyMedium!,
-                    child: const Text('今日进度'),
-                  ),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    style: Theme.of(context).textTheme.bodyMedium!,
-                    child: Text('${_currentWordIndex + 1} / ${_words.length}'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: _progressAnimation.value * ((_currentWordIndex + 1) / _words.length),
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).primaryColor,
-                  ),
+                      // 左侧提示
+                      AnimatedOpacity(
+                        opacity: _isDragging && _getDragDirection() == 'left' ? 1.0 : 0.0,
+                        duration: Duration(milliseconds: 200),
+                        child: _buildHintBubble(
+                          '不认识',
+                          Icons.close,
+                          Colors.red,
+                          _getDragDirection() == 'left',
+                        ),
+                      ),
+                      
+                      SizedBox(width: 20),
+                      
+                      // 水滴球
+                      GestureDetector(
+                        onPanStart: _onPanStart,
+                        onPanUpdate: _onPanUpdate,
+                        onPanEnd: _onPanEnd,
+                        child: AnimatedBuilder(
+                          animation: _dropController,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: _dragOffset,
+                              child: Transform.scale(
+                                scale: _dropScaleAnimation.value,
+                                child: Transform.rotate(
+                                  angle: _dropRotationAnimation.value * 
+                                         (_dragOffset.dx / 100),
+                                  child: _buildDropShape(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      
+                      SizedBox(width: 20),
+                      
+                      // 右侧提示
+                      AnimatedOpacity(
+                        opacity: _isDragging && _getDragDirection() == 'right' ? 1.0 : 0.0,
+                        duration: Duration(milliseconds: 200),
+                        child: _buildHintBubble(
+                          '认识',
+                          Icons.check,
+                          Colors.green,
+                          _getDragDirection() == 'right',
                 ),
               ),
             ],
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // 拖拽提示（下方）
+                  AnimatedOpacity(
+                    opacity: _isDragging && _getDragDirection() == 'down' ? 1.0 : 0.0,
+                    duration: Duration(milliseconds: 200),
+                    child: _buildHintBubble(
+                      _showMeaning ? '已显示' : '显示释义',
+                      Icons.visibility,
+                      Colors.blue,
+                      _getDragDirection() == 'down',
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
+  /// 构建水滴形状
+  Widget _buildDropShape() {
+    return Container(
+      width: 80,
+      height: 80,
+      child: CustomPaint(
+        painter: _DropPainter(
+          color: Theme.of(context).primaryColor,
+          dragOffset: _dragOffset,
+          isDragging: _isDragging,
+        ),
+        child: Center(
+          child: Icon(
+            _isDragging ? Icons.drag_indicator : Icons.touch_app,
+            color: Colors.white,
+            size: _isDragging ? 24 : 28,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建提示气泡
+  Widget _buildHintBubble(String text, IconData icon, Color color, bool isActive) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      constraints: BoxConstraints(
+        minWidth: 60,
+        maxWidth: 100,
+        minHeight: 32,
+        maxHeight: 40,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive ? color.withOpacity(0.9) : color.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isActive ? [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ] : [],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isActive ? Colors.white : color,
+            size: 14,
+          ),
+          SizedBox(width: 3),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isActive ? Colors.white : color,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 获取拖拽方向
+  String _getDragDirection() {
+    final dx = _dragOffset.dx.abs();
+    final dy = _dragOffset.dy.abs();
+    
+    if (dx > dy) {
+      return _dragOffset.dx > 0 ? 'right' : 'left';
+    } else {
+      return _dragOffset.dy > 0 ? 'down' : 'up';
+    }
+  }
+
+  /// 拖拽开始
+  void _onPanStart(DragStartDetails details) {
+    _isDragging = true;
+    _initialPosition = details.localPosition;
+    _dropController.forward();
+    _hintController.forward();
+    setState(() {});
+  }
+
+  /// 拖拽更新
+  void _onPanUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragOffset = details.localPosition - _initialPosition;
+      
+      // 添加阻尼效果
+      final distance = _dragOffset.distance;
+      if (distance > _dragThreshold) {
+        final dampening = _dragThreshold / distance;
+        _dragOffset = Offset(
+          _dragOffset.dx * dampening,
+          _dragOffset.dy * dampening,
+        );
+      }
+    });
+  }
+
+  /// 拖拽结束
+  void _onPanEnd(DragEndDetails details) {
+    final distance = _dragOffset.distance;
+    final direction = _getDragDirection();
+    
+    // 判断是否达到触发阈值
+    if (distance > _dragThreshold * 0.6) {
+      _triggerAction(direction);
+    }
+    
+    // 重置状态
+    _isDragging = false;
+    _dragOffset = Offset.zero;
+    _dropController.reverse();
+    _hintController.reverse();
+    setState(() {});
+  }
+
+  /// 触发对应操作
+  void _triggerAction(String direction) {
+    switch (direction) {
+      case 'left':
+        _markAsUnknown();
+        break;
+      case 'right':
+        _markAsKnown();
+        break;
+      case 'down':
+        if (!_showMeaning) _toggleMeaning();
+        break;
+      case 'up':
+        if (_showMeaning) _toggleMeaning();
+        break;
+    }
+  }
+
+  /// 开始单词动画
+  void _startWordAnimation() {
+    _fadeController.forward();
+    _slideController.forward();
+    
+    // 启动单词字符动画
+    Timer timer = Timer(const Duration(milliseconds: 300), () {
+      _startCharacterAnimation(_wordControllers, 60);
+    });
+    _animationTimers.add(timer);
+  }
+
+  /// 开始释义动画
+  void _startMeaningAnimation() {
+    if (_showMeaning) {
+      _meaningController.forward();
+      
+      Timer timer1 = Timer(const Duration(milliseconds: 100), () {
+        _startCharacterAnimation(_translationControllers, 40);
+      });
+      _animationTimers.add(timer1);
+      
+      Timer timer2 = Timer(const Duration(milliseconds: 200), () {
+        _startCharacterAnimation(_meaningControllers, 30);
+      });
+      _animationTimers.add(timer2);
+      
+      Timer timer3 = Timer(const Duration(milliseconds: 300), () {
+        _startCharacterAnimation(_exampleControllers, 35);
+      });
+      _animationTimers.add(timer3);
+      
+      Timer timer4 = Timer(const Duration(milliseconds: 400), () {
+        _startCharacterAnimation(_exampleTranslationControllers, 40);
+      });
+      _animationTimers.add(timer4);
+    } else {
+      _resetMeaningCharacterAnimations();
+      _meaningController.reverse();
+    }
+  }
+
+  /// 切换释义显示
+  void _toggleMeaning() {
+    if (!_wordAnimationCompleted) return;
+    
+    setState(() {
+      _showMeaning = !_showMeaning;
+    });
+    
+    if (_showMeaning) {
+      _resetMeaningCharacterAnimations();
+    } else {
+      _resetMeaningCharacterAnimations();
+    }
+    
+    _startMeaningAnimation();
+  }
+
+  /// 标记为不认识
+  void _markAsUnknown() {
+    if (!_wordAnimationCompleted) return;
+    _nextWord();
+  }
+
+  /// 标记为认识
+  void _markAsKnown() {
+    if (!_wordAnimationCompleted) return;
+    _nextWord();
+  }
+
+  /// 下一个单词（无限流模式）
+  void _nextWord() {
+    // 重置动画状态
+    _fadeController.reset();
+    _slideController.reset();
+    _meaningController.reset();
+    _buttonsController.reset();
+    
+    // 取消所有动画Timer
+    _cancelAllAnimationTimers();
+    
+    setState(() {
+      _studiedWordsCount++;
+      _showMeaning = false;
+      _wordAnimationCompleted = false;
+      _completedWordAnimations = 0;
+    });
+    
+    // 生成新单词
+    _generateNextWord();
+    
+    // 重新初始化字符动画
+    _initializeCharacterAnimations();
+    
+    // 开始新单词动画
+    _startWordAnimation();
+  }
+
   /// 构建单词卡片
-  Widget _buildWordCard(WordData word) {
+  Widget _buildWordCard(ExtendedWordData word) {
     return AnimatedBuilder(
       animation: _slideController,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(0, 30 * (1 - _slideController.value)), // 缩短卡片进入距离
+          offset: Offset(0, 30 * (1 - _slideController.value)),
           child: FadeTransition(
             opacity: _fadeController,
             child: Card(
@@ -627,12 +1146,13 @@ class _HomePageState extends State<HomePage>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutQuart,
                 width: double.infinity,
-                padding: const EdgeInsets.all(30),
+                padding: const EdgeInsets.all(25),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 单词本体 - 每个字母独立浮现
-                    SizedBox(
-                      height: 80,
+                    // 单词本体
+                    Container(
+                      constraints: BoxConstraints(minHeight: 65, maxHeight: 80),
                       child: _buildAnimatedText(
                         word.word,
                         _wordSlideAnimations,
@@ -644,9 +1164,9 @@ class _HomePageState extends State<HomePage>
                       ),
                     ),
                     
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 2), // 从8改为4，使音标与单词更近
                     
-                    // 音标 - 添加淡入动画
+                    // 音标
                     AnimatedOpacity(
                       duration: const Duration(milliseconds: 600),
                       curve: Curves.easeOutCubic,
@@ -660,7 +1180,7 @@ class _HomePageState extends State<HomePage>
                       ),
                     ),
                     
-                    // 释义部分 - 优雅的展开/收起动画
+                    // 释义部分
                     _buildAnimatedMeaningSection(word),
                   ],
                 ),
@@ -673,7 +1193,7 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 构建动画释义部分
-  Widget _buildAnimatedMeaningSection(WordData word) {
+  Widget _buildAnimatedMeaningSection(ExtendedWordData word) {
     return AnimatedBuilder(
       animation: _meaningController,
       builder: (context, child) {
@@ -686,13 +1206,14 @@ class _HomePageState extends State<HomePage>
               child: Opacity(
                 opacity: _meaningOpacityAnimation.value,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.only(top: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 中文释义 - 字符独立动画
-                      SizedBox(
-                        height: 50,
+                      // 中文释义
+                      Container(
+                        constraints: BoxConstraints(minHeight: 35, maxHeight: 50),
                         child: _buildAnimatedText(
                           word.translation,
                           _translationSlideAnimations,
@@ -704,26 +1225,17 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
+                      const SizedBox(height: 8),
+                      
+                      // 详细释义部分被删除了，因为现在直接使用translation作为meaning
+                      
                       const SizedBox(height: 12),
                       
-                      // 详细释义 - 字符独立动画
-                      SizedBox(
-                        height: 80,
-                        child: _buildAnimatedText(
-                          word.meaning,
-                          _meaningSlideAnimations,
-                          _meaningOpacityAnimations,
-                          Theme.of(context).textTheme.bodyLarge!,
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // 例句容器 - 添加动画
+                      // 例句容器
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
                         curve: Curves.easeOutQuart,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -736,10 +1248,11 @@ class _HomePageState extends State<HomePage>
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // 例句 - 字符独立动画
-                            SizedBox(
-                              height: 60,
+                            // 例句
+                            Container(
+                              constraints: BoxConstraints(minHeight: 40, maxHeight: 55),
                               child: _buildAnimatedText(
                                 word.example,
                                 _exampleSlideAnimations,
@@ -749,10 +1262,10 @@ class _HomePageState extends State<HomePage>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            // 例句翻译 - 字符独立动画
-                            SizedBox(
-                              height: 40,
+                            const SizedBox(height: 1), // 从3改为1，使例句翻译更近
+                            // 例句翻译
+                            Container(
+                              constraints: BoxConstraints(minHeight: 30, maxHeight: 40),
                               child: _buildAnimatedText(
                                 word.exampleTranslation,
                                 _exampleTranslationSlideAnimations,
@@ -787,7 +1300,6 @@ class _HomePageState extends State<HomePage>
       child: Wrap(
         alignment: WrapAlignment.center,
         children: List.generate(text.length, (index) {
-          // 如果是空格，返回固定宽度的空白
           if (text[index] == ' ') {
             return SizedBox(
               width: style.fontSize! * 0.3,
@@ -795,7 +1307,6 @@ class _HomePageState extends State<HomePage>
             );
           }
           
-          // 确保不会越界
           if (index >= slideAnimations.length || index >= opacityAnimations.length) {
             return Text(
               text[index],
@@ -823,79 +1334,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建动画操作按钮
-  Widget _buildAnimatedActionButtons() {
-    return AnimatedBuilder(
-      animation: _buttonsController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _buttonsSlideAnimation.value),
-          child: Opacity(
-            opacity: _buttonsOpacityAnimation.value,
-            child: IgnorePointer(
-              // 单词动画未完成时禁用按钮交互
-              ignoring: !_wordAnimationCompleted,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // 不认识按钮 - 添加悬停和点击动画
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    tween: Tween(begin: 1.0, end: 1.0),
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: ElevatedButton.icon(
-                          onPressed: _wordAnimationCompleted ? _markAsUnknown : null,
-                          icon: const Icon(Icons.close, color: Colors.red),
-                          label: const Text('不认识'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade50,
-                            foregroundColor: Colors.red,
-                            elevation: 2,
-                            shadowColor: Colors.red.withOpacity(0.3),
-                          ).copyWith(
-                            animationDuration: const Duration(milliseconds: 200),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  
-                  // 认识按钮 - 添加悬停和点击动画
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    tween: Tween(begin: 1.0, end: 1.0),
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: ElevatedButton.icon(
-                          onPressed: _wordAnimationCompleted ? _markAsKnown : null,
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          label: const Text('认识'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade50,
-                            foregroundColor: Colors.green,
-                            elevation: 2,
-                            shadowColor: Colors.green.withOpacity(0.3),
-                          ).copyWith(
-                            animationDuration: const Duration(milliseconds: 200),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   /// 构建动画提示文字
   Widget _buildAnimatedHintText() {
     return AnimatedBuilder(
@@ -911,164 +1349,19 @@ class _HomePageState extends State<HomePage>
               switchOutCurve: Curves.easeOutCubic,
               child: Text(
                 _wordAnimationCompleted 
-                    ? (_showMeaning ? '点击屏幕隐藏释义' : '点击屏幕查看释义')
+                    ? '拖拽水滴进行操作\n← 不认识  → 认识  ↓ 显示释义  ↑ 隐藏释义'
                     : '单词加载中...',
-                key: ValueKey('${_wordAnimationCompleted}_$_showMeaning'),
+                key: ValueKey('${_wordAnimationCompleted}_fluid'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey.shade500,
+                  height: 1.4,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
         );
       },
-    );
-  }
-
-  /// 开始单词动画
-  void _startWordAnimation() {
-    _fadeController.forward();
-    _slideController.forward();
-    _progressController.forward();
-    
-    // 启动单词字符动画
-    Timer timer = Timer(const Duration(milliseconds: 300), () {
-      _startCharacterAnimation(_wordControllers, 60); // 每60ms一个字符
-    });
-    _animationTimers.add(timer);
-  }
-
-  /// 开始释义动画
-  void _startMeaningAnimation() {
-    if (_showMeaning) {
-      // 展开动画 - 框先展开，然后文字流式出现
-      _meaningController.forward();
-      
-      // 依次启动释义相关的字符动画
-      Timer timer1 = Timer(const Duration(milliseconds: 100), () {
-        _startCharacterAnimation(_translationControllers, 40); // 翻译
-      });
-      _animationTimers.add(timer1);
-      
-      Timer timer2 = Timer(const Duration(milliseconds: 200), () {
-        _startCharacterAnimation(_meaningControllers, 30); // 详细释义
-      });
-      _animationTimers.add(timer2);
-      
-      Timer timer3 = Timer(const Duration(milliseconds: 300), () {
-        _startCharacterAnimation(_exampleControllers, 35); // 例句
-      });
-      _animationTimers.add(timer3);
-      
-      Timer timer4 = Timer(const Duration(milliseconds: 400), () {
-        _startCharacterAnimation(_exampleTranslationControllers, 40); // 例句翻译
-      });
-      _animationTimers.add(timer4);
-    } else {
-      // 收起动画 - 立即重置所有文字状态，然后框收起
-      _resetMeaningCharacterAnimations();
-      _meaningController.reverse();
-    }
-  }
-
-  /// 切换释义显示
-  void _toggleMeaning() {
-    // 只有当单词动画完成后才允许切换释义
-    if (!_wordAnimationCompleted) return;
-    
-    setState(() {
-      _showMeaning = !_showMeaning;
-    });
-    
-    if (_showMeaning) {
-      // 展开时重置释义动画并开始播放
-      _resetMeaningCharacterAnimations();
-    } else {
-      // 收起时立即停止所有相关动画和Timer
-      _resetMeaningCharacterAnimations();
-    }
-    
-    _startMeaningAnimation();
-  }
-
-  /// 标记为不认识
-  void _markAsUnknown() {
-    // 只有当单词动画完成后才允许操作
-    if (!_wordAnimationCompleted) return;
-    _nextWord();
-    // TODO: 实际应用中应该记录用户的学习数据
-  }
-
-  /// 标记为认识
-  void _markAsKnown() {
-    // 只有当单词动画完成后才允许操作
-    if (!_wordAnimationCompleted) return;
-    _nextWord();
-    // TODO: 实际应用中应该记录用户的学习数据
-  }
-
-  /// 下一个单词
-  void _nextWord() {
-    if (_currentWordIndex < _words.length - 1) {
-      // 重置动画状态
-      _fadeController.reset();
-      _slideController.reset();
-      _meaningController.reset();
-      _progressController.reset();
-      _buttonsController.reset();
-      
-      // 取消所有动画Timer
-      _cancelAllAnimationTimers();
-      
-      setState(() {
-        _currentWordIndex++;
-        _showMeaning = false;
-        _wordAnimationCompleted = false;
-        _completedWordAnimations = 0;
-      });
-      
-      // 重新初始化字符动画
-      _initializeCharacterAnimations();
-      
-      // 开始新单词动画
-      _startWordAnimation();
-    } else {
-      // 所有单词完成
-      _showCompletionDialog();
-    }
-  }
-
-  /// 显示完成对话框
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('恭喜完成！'),
-        content: const Text('你已经完成了今天的单词学习任务！'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // 重置到第一个单词
-              setState(() {
-                _currentWordIndex = 0;
-                _showMeaning = false;
-                _wordAnimationCompleted = false;
-                _completedWordAnimations = 0;
-              });
-              _fadeController.reset();
-              _slideController.reset();
-              _meaningController.reset();
-              _progressController.reset();
-              _buttonsController.reset();
-              _cancelAllAnimationTimers();
-              _initializeCharacterAnimations();
-              _startWordAnimation();
-            },
-            child: const Text('重新开始'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1078,29 +1371,150 @@ class _HomePageState extends State<HomePage>
     _fadeController.dispose();
     _slideController.dispose();
     _meaningController.dispose();
-    _progressController.dispose();
     _buttonsController.dispose();
+    _dropController.dispose();
+    _hintController.dispose();
     _disposeCharacterControllers();
-    _audioPlayer.dispose(); // 释放音频播放器资源
+    _audioPlayer.dispose();
     super.dispose();
   }
 }
 
-/// 单词数据模型
-class WordData {
-  final String word;           // 单词
-  final String pronunciation; // 音标
-  final String meaning;       // 详细释义
-  final String translation;   // 中文翻译
-  final String example;       // 例句
-  final String exampleTranslation; // 例句翻译
+/// 扩展的单词数据模型（包含音标、详细释义、例句等）
+class ExtendedWordData {
+  final String word;
+  final String pronunciation;
+  // final String meaning;
+  final String translation;
+  final String example;
+  final String exampleTranslation;
 
-  WordData({
+  ExtendedWordData({
     required this.word,
     required this.pronunciation,
-    required this.meaning,
+    // required this.meaning,
     required this.translation,
     required this.example,
     required this.exampleTranslation,
   });
+
+  /// 从基础WordData创建扩展数据
+  factory ExtendedWordData.fromWordData(WordData wordData) {
+    // 为演示目的，这里生成一些示例数据
+    // 实际应用中可以从词典API获取更详细的信息
+    return ExtendedWordData(
+      word: wordData.word,
+      pronunciation: _generatePronunciation(wordData.word),
+      // meaning: wordData.translation, // 直接使用翻译作为释义，不添加额外内容
+      translation: wordData.translation,
+      example: _generateExample(wordData.word),
+      exampleTranslation: _generateExampleTranslation(wordData.word),
+    );
+  }
+
+  static String _generatePronunciation(String word) {
+    // 简单的音标生成（实际应用中应该从词典API获取）
+    return "/${word.toLowerCase()}/";
+  }
+
+  static String _generateExample(String word) {
+    // 生成示例句子
+    return "This is an example sentence with the word '$word'.";
+  }
+
+  static String _generateExampleTranslation(String word) {
+    // 生成例句翻译
+    return "这是一个包含单词'$word'的例句。";
+  }
+}
+
+/// 水滴形状绘制器
+class _DropPainter extends CustomPainter {
+  final Color color;
+  final Offset dragOffset;
+  final bool isDragging;
+
+  _DropPainter({
+    required this.color,
+    required this.dragOffset,
+    required this.isDragging,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final baseRadius = size.width / 3;
+    
+    if (!isDragging) {
+      // 静态水滴形状
+      final path = Path();
+      
+      // 绘制水滴的主体部分（圆形）
+      path.addOval(Rect.fromCircle(
+        center: center,
+        radius: baseRadius,
+      ));
+      
+      // 绘制水滴的尖端
+      final tipHeight = baseRadius * 0.6;
+      path.moveTo(center.dx, center.dy - baseRadius);
+      path.quadraticBezierTo(
+        center.dx - baseRadius * 0.5, center.dy - baseRadius - tipHeight * 0.5,
+        center.dx, center.dy - baseRadius - tipHeight,
+      );
+      path.quadraticBezierTo(
+        center.dx + baseRadius * 0.5, center.dy - baseRadius - tipHeight * 0.5,
+        center.dx, center.dy - baseRadius,
+      );
+      
+      canvas.drawPath(path, paint);
+    } else {
+      // 拖拽时的形变效果
+      final stretchAmount = dragOffset.distance / 10;
+      final normalizedOffset = dragOffset.distance > 0 
+          ? Offset(dragOffset.dx / dragOffset.distance, dragOffset.dy / dragOffset.distance)
+          : Offset.zero;
+      
+      // 绘制拉伸的椭圆
+      final rect = Rect.fromCenter(
+        center: center,
+        width: baseRadius * 2 + stretchAmount * normalizedOffset.dx.abs(),
+        height: baseRadius * 2 + stretchAmount * normalizedOffset.dy.abs(),
+      );
+      
+      canvas.drawOval(rect, paint);
+      
+      // 在拖拽方向绘制拉伸效果
+      if (stretchAmount > 5) {
+        final stretchPaint = Paint()
+          ..color = color.withOpacity(0.6)
+          ..style = PaintingStyle.fill;
+        
+        final stretchCenter = center - normalizedOffset * stretchAmount * 0.3;
+        canvas.drawCircle(stretchCenter, baseRadius * 0.7, stretchPaint);
+      }
+    }
+    
+    // 添加高光效果
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+    
+    canvas.drawCircle(
+      center - Offset(baseRadius * 0.3, baseRadius * 0.3),
+      baseRadius * 0.2,
+      highlightPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DropPainter oldDelegate) {
+    return oldDelegate.dragOffset != dragOffset || 
+           oldDelegate.isDragging != isDragging ||
+           oldDelegate.color != color;
+  }
 } 
