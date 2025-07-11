@@ -21,6 +21,8 @@ class _HomePageState extends State<HomePage>
   // 音频播放器
   late AudioPlayer _audioPlayer;
   
+  // 移除音效播放状态管理，改为使用独立的播放器实例
+  
   // 当前学习的单词数量（无限流模式）
   int _studiedWordsCount = 0;
   
@@ -172,21 +174,35 @@ class _HomePageState extends State<HomePage>
     _audioPlayer = AudioPlayer();
   }
 
-  /// 播放设置页面音效
+  /// 播放设置页面音效（优化版本）
   void _playSettingSound() async {
     try {
-      await _audioPlayer.setVolume(1);
-      await _audioPlayer.play(AssetSource('sound/settingpage.mp3'));
+      // 为每次播放创建独立的音频播放器实例
+      final player = AudioPlayer();
+      await player.setVolume(1);
+      await player.play(AssetSource('sound/settingpage.mp3'));
+      
+      // 播放完成后释放资源
+      player.onPlayerComplete.listen((_) {
+        player.dispose();
+      });
     } catch (e) {
       print('播放音效失败: $e');
     }
   }
 
-  /// 播放词库选择音效
+  /// 播放词库选择音效（优化版本）
   void _playBookPageSound() async {
     try {
-      await _audioPlayer.setVolume(1);
-      await _audioPlayer.play(AssetSource('sound/bookpage.mp3'));
+      // 为每次播放创建独立的音频播放器实例
+      final player = AudioPlayer();
+      await player.setVolume(1);
+      await player.play(AssetSource('sound/bookpage.mp3'));
+      
+      // 播放完成后释放资源
+      player.onPlayerComplete.listen((_) {
+        player.dispose();
+      });
     } catch (e) {
       print('播放音效失败: $e');
     }
