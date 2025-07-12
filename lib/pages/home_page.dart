@@ -131,6 +131,26 @@ class _HomePageState extends State<HomePage>
     _loadWordsFromSelectedWordBook();
   }
 
+  /// 检查并重新加载词库（仅在词库发生变化时）
+  Future<void> _checkAndReloadWordBook() async {
+    try {
+      // 获取当前选中的词库名称
+      final selectedWordBookName = await CacheService.getSelectedWordBook();
+      
+      // 如果词库名称没有变化，则不需要重新加载
+      if (selectedWordBookName == _currentWordBookName) {
+        return;
+      }
+      
+      // 词库发生了变化，重新加载
+      await _loadWordsFromSelectedWordBook();
+    } catch (e) {
+      print('检查词库变化失败: $e');
+      // 如果检查失败，安全起见还是重新加载
+      await _loadWordsFromSelectedWordBook();
+    }
+  }
+
   /// 加载选中词库的单词数据
   Future<void> _loadWordsFromSelectedWordBook() async {
     try {
@@ -702,8 +722,8 @@ class _HomePageState extends State<HomePage>
               onPressed: () async {
                 _playBookPageSound();
                 await Navigator.pushNamed(context, '/library');
-                // 从词库页面返回时，重新加载词库数据
-                await _loadWordsFromSelectedWordBook();
+                // 从词库页面返回时，检查是否需要重新加载词库数据
+                await _checkAndReloadWordBook();
               },
               tooltip: '词库选择',
               color: Theme.of(context).primaryColor,
