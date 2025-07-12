@@ -6,6 +6,8 @@ import '../models/word_book.dart';
 import '../utils/cache_service.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
+import '../utils/english_word_api_service.dart';
+import '../utils/settings_helper.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
@@ -148,7 +150,7 @@ class _HomePageState extends State<HomePage>
       });
       
       // 生成第一个单词
-      _generateNextWord();
+      await _generateNextWord();
     _initializeCharacterAnimations();
     _startWordAnimation();
       
@@ -161,20 +163,40 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 生成下一个单词（扩展版本）
-  void _generateNextWord() {
+  Future<void> _generateNextWord() async {
     if (_words.isEmpty) return;
     
     // 随机选择一个单词
     final randomIndex = _random.nextInt(_words.length);
     final wordData = _words[randomIndex];
     
-    // 创建扩展的单词数据（为演示目的生成示例数据）
-    _currentWord = ExtendedWordData.fromWordData(wordData);
+    // 获取当前发音类型设置
+    final pronunciationType = await SettingsHelper.getPronunciationType();
+    
+    // 创建扩展的单词数据（从API获取详细信息）
+    _currentWord = await ExtendedWordData.fromWordData(wordData, pronunciationType);
   }
 
   /// 初始化音频播放器
   void _initializeAudioPlayer() {
     _audioPlayer = AudioPlayer();
+  }
+
+  /// 播放单词发音
+  Future<void> _playWordPronunciation() async {
+    if (_currentWord == null) return;
+    
+    final pronunciationType = await SettingsHelper.getPronunciationType();
+    final audioUrl = _currentWord!.getValidAudioUrl(pronunciationType);
+    
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      try {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(UrlSource(audioUrl));
+      } catch (e) {
+        print('播放发音失败: $e');
+      }
+    }
   }
 
   /// 播放设置页面音效（优化版本）
@@ -391,9 +413,10 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 翻译字符动画
+    // 翻译字符动画 - 优化为单个控制器处理长释义
+    final translationLength = currentWord.translation.length > 50 ? 1 : currentWord.translation.length;
     _translationControllers = List.generate(
-      currentWord.translation.length,
+      translationLength,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -437,9 +460,10 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句字符动画
+    // 例句字符动画 - 优化为单个控制器处理长文本
+    final exampleLength = currentWord.example.length > 30 ? 1 : currentWord.example.length;
     _exampleControllers = List.generate(
-      currentWord.example.length,
+      exampleLength,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -464,9 +488,10 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句翻译字符动画
+    // 例句翻译字符动画 - 优化为单个控制器处理长文本
+    final exampleTranslationLength = currentWord.exampleTranslation.length > 30 ? 1 : currentWord.exampleTranslation.length;
     _exampleTranslationControllers = List.generate(
-      currentWord.exampleTranslation.length,
+      exampleTranslationLength,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -504,9 +529,27 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 200),
         callback: () {
-          if (mounted) {
-            _buttonsController.forward();
-          }
+        if (mounted) {
+          _buttonsController.forward();
+        }
+        },
+      );
+      
+      // 检查并播放自动发音
+      _checkAndPlayAutoPronunciation();
+    }
+  }
+  
+  /// 检查并播放自动发音
+  void _checkAndPlayAutoPronunciation() async {
+    final autoPlay = await SettingsHelper.getAutoPlayPronunciation();
+    if (autoPlay) {
+      // 延迟一点时间再播放，让动画完成
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 500),
+        callback: () {
+          _playWordPronunciation();
         },
       );
     }
@@ -736,11 +779,22 @@ class _HomePageState extends State<HomePage>
 
     if (_currentWord == null) {
       return Center(
-        child: Text(
-          '词库为空',
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).primaryColor,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '正在加载新单词...',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Colors.grey.shade600,
           ),
+            ),
+          ],
         ),
       );
     }
@@ -1174,7 +1228,7 @@ class _HomePageState extends State<HomePage>
       poolKey: _timerPoolKey,
       duration: const Duration(milliseconds: 300),
       callback: () {
-        _startCharacterAnimation(_wordControllers, 60);
+      _startCharacterAnimation(_wordControllers, 60);
       },
     );
   }
@@ -1188,7 +1242,7 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 100),
         callback: () {
-          _startCharacterAnimation(_translationControllers, 40);
+        _startCharacterAnimation(_translationControllers, 40);
         },
       );
       
@@ -1196,7 +1250,7 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 200),
         callback: () {
-          _startCharacterAnimation(_meaningControllers, 30);
+        _startCharacterAnimation(_meaningControllers, 30);
         },
       );
       
@@ -1204,7 +1258,7 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 300),
         callback: () {
-          _startCharacterAnimation(_exampleControllers, 35);
+        _startCharacterAnimation(_exampleControllers, 35);
         },
       );
       
@@ -1212,7 +1266,7 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 400),
         callback: () {
-          _startCharacterAnimation(_exampleTranslationControllers, 40);
+        _startCharacterAnimation(_exampleTranslationControllers, 40);
         },
       );
     } else {
@@ -1251,7 +1305,7 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 下一个单词（无限流模式）
-  void _nextWord() {
+  Future<void> _nextWord() async {
     // 重置动画状态
     _fadeController.reset();
     _slideController.reset();
@@ -1266,68 +1320,77 @@ class _HomePageState extends State<HomePage>
       _showMeaning = false;
       _wordAnimationCompleted = false;
       _completedWordAnimations = 0;
+      // 立即清除当前单词，避免闪现
+      _currentWord = null;
     });
     
     // 生成新单词
-    _generateNextWord();
+    await _generateNextWord();
+    
+    // 只有在获取到新单词后才更新UI
+    if (_currentWord != null) {
+      setState(() {
+        // 新单词数据已准备好，触发重建
+      });
     
     // 重新初始化字符动画
     _initializeCharacterAnimations();
     
     // 开始新单词动画
     _startWordAnimation();
+    }
   }
 
   /// 构建单词卡片
   Widget _buildWordCard(ExtendedWordData word) {
     return RepaintBoundary(
       child: AnimatedBuilder(
-        animation: _slideController,
-        builder: (context, child) {
-          return Transform.translate(
+      animation: _slideController,
+      builder: (context, child) {
+        return Transform.translate(
             offset: Offset(0, 25 * (1 - _slideController.value)),
-            child: FadeTransition(
-              opacity: _fadeController,
-              child: Card(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutQuart,
-                  width: double.infinity,
+          child: FadeTransition(
+            opacity: _fadeController,
+            child: Card(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutQuart,
+                width: double.infinity,
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 单词本体
-                      Container(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 单词本体
+                    Container(
                         constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
-                        child: _buildAnimatedText(
-                          word.word,
-                          _wordSlideAnimations,
-                          _wordOpacityAnimations,
-                          Theme.of(context).textTheme.headlineLarge!.copyWith(
-                            fontWeight: FontWeight.bold,
+                      child: _buildAnimatedText(
+                        word.word,
+                        _wordSlideAnimations,
+                        _wordOpacityAnimations,
+                        Theme.of(context).textTheme.headlineLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                             fontSize: 34,
-                          ),
                         ),
                       ),
-                      
-                      const SizedBox(height: 2),
-                      
-                      // 音标
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeOutCubic,
-                        opacity: _fadeController.value,
-                        child: Text(
-                          word.pronunciation,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).primaryColor,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                    ),
+                    
+                      // 音标和发音按钮（动态显示）
+                    FutureBuilder<Map<String, dynamic>>(
+                      future: _getPhoneticData(word),
+                      builder: (context, snapshot) {
+                        final hasPhonetic = snapshot.hasData && 
+                                           (snapshot.data!['phonetic'] as String).isNotEmpty;
+                        
+                        return Column(
+                          children: [
+                            SizedBox(height: hasPhonetic ? 2 : 6), // 有音标时间距为2，无音标时为6
+                            _buildPhoneticSection(word),
+                            if (hasPhonetic) const SizedBox(height: 6), // 音标和释义之间的间距
+                          ],
+                        );
+                      },
+                    ),
                       
                       // 释义部分
                       _buildAnimatedMeaningSection(word),
@@ -1340,6 +1403,78 @@ class _HomePageState extends State<HomePage>
         },
       ),
     );
+  }
+
+  /// 构建音标和发音按钮部分
+  Widget _buildPhoneticSection(ExtendedWordData word) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getPhoneticData(word),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          // 加载中显示空容器
+          return SizedBox.shrink();
+        }
+        
+        final data = snapshot.data!;
+        final phonetic = data['phonetic'] as String;
+        final hasAudio = data['hasAudio'] as bool;
+        
+        // 如果没有音标，就不显示整个音标部分
+        if (phonetic.isEmpty) {
+          return SizedBox.shrink();
+        }
+        
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+          opacity: _fadeController.value,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                phonetic,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).primaryColor,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 16,
+                ),
+              ),
+              if (hasAudio) ...[
+                const SizedBox(width: 8),
+                // 发音按钮
+                GestureDetector(
+                  onTap: _playWordPronunciation,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.volume_up_outlined,
+                      size: 18,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  /// 获取当前发音设置对应的音标和音频可用性
+  Future<Map<String, dynamic>> _getPhoneticData(ExtendedWordData word) async {
+    final pronunciationType = await SettingsHelper.getPronunciationType();
+    final phonetic = await word.getPhonetic(pronunciationType);
+    final hasAudio = await word.hasAudio(pronunciationType);
+    
+    return {
+      'phonetic': phonetic,
+      'hasAudio': hasAudio,
+    };
   }
 
   /// 构建动画释义部分
@@ -1356,14 +1491,14 @@ class _HomePageState extends State<HomePage>
               child: Opacity(
                 opacity: _meaningOpacityAnimation.value,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.only(top: 2), // 减少到2，因为间距已经在上面处理
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 中文释义
+                      // 中文释义（包含所有词性，用 | 分割）
                       Container(
-                        constraints: BoxConstraints(minHeight: 35, maxHeight: 50),
+                        constraints: BoxConstraints(minHeight: 28, maxHeight: 70),
                         child: _buildAnimatedText(
                           word.translation,
                           _translationSlideAnimations,
@@ -1371,21 +1506,18 @@ class _HomePageState extends State<HomePage>
                           Theme.of(context).textTheme.titleLarge!.copyWith(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.w600,
+                            fontSize: 16,
                           ),
                         ),
                       ),
                       
-                      const SizedBox(height: 8),
-                      
-                      // 详细释义部分被删除了，因为现在直接使用translation作为meaning
-                      
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6), // 从10减少到6，更紧凑
                       
                       // 例句容器
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
                         curve: Curves.easeOutQuart,
-                        padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10), // 从12减少到10，更紧凑
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -1402,7 +1534,7 @@ class _HomePageState extends State<HomePage>
                           children: [
                             // 例句
                             Container(
-                              constraints: BoxConstraints(minHeight: 40, maxHeight: 55),
+                                constraints: BoxConstraints(minHeight: 30, maxHeight: 45), // 进一步减少高度
                               child: _buildAnimatedText(
                                 word.example,
                                 _exampleSlideAnimations,
@@ -1412,10 +1544,10 @@ class _HomePageState extends State<HomePage>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 1), // 从3改为1，使例句翻译更近
+                              const SizedBox(height: 3), // 从6减少到3，更紧凑
                             // 例句翻译
                             Container(
-                              constraints: BoxConstraints(minHeight: 30, maxHeight: 40),
+                                constraints: BoxConstraints(minHeight: 20, maxHeight: 32), // 进一步减少高度
                               child: _buildAnimatedText(
                                 word.exampleTranslation,
                                 _exampleTranslationSlideAnimations,
@@ -1446,6 +1578,37 @@ class _HomePageState extends State<HomePage>
     List<Animation<double>> opacityAnimations,
     TextStyle style,
   ) {
+    // 检查是否是长文本（例句或长释义）
+    final isLongText = text.length > 50;
+    
+    if (isLongText) {
+      // 对于长文本，使用简单的淡入动画而不是字符级动画
+      return Center(
+        child: Container(
+          width: double.infinity,
+          child: AnimatedBuilder(
+            animation: slideAnimations.isNotEmpty ? slideAnimations[0] : AlwaysStoppedAnimation(0.0),
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, slideAnimations.isNotEmpty ? slideAnimations[0].value : 0.0),
+                child: Opacity(
+                  opacity: opacityAnimations.isNotEmpty ? opacityAnimations[0].value : 1.0,
+                  child: Text(
+                    text,
+                    style: style,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+    
+    // 对于短文本，使用字符级动画
     return Center(
       child: Wrap(
         alignment: WrapAlignment.center,
@@ -1532,38 +1695,94 @@ class _HomePageState extends State<HomePage>
 class ExtendedWordData {
   final String word;
   final String pronunciation;
-  // final String meaning;
   final String translation;
   final String example;
   final String exampleTranslation;
+  final String? ukPhone;
+  final String? usPhone;
+  final String? ukSpeech;
+  final String? usSpeech;
 
   ExtendedWordData({
     required this.word,
     required this.pronunciation,
-    // required this.meaning,
     required this.translation,
     required this.example,
     required this.exampleTranslation,
+    this.ukPhone,
+    this.usPhone,
+    this.ukSpeech,
+    this.usSpeech,
   });
 
-  /// 从基础WordData创建扩展数据
-  factory ExtendedWordData.fromWordData(WordData wordData) {
-    // 为演示目的，这里生成一些示例数据
-    // 实际应用中可以从词典API获取更详细的信息
+  /// 从基础WordData创建扩展数据（使用API数据）
+  static Future<ExtendedWordData> fromWordData(WordData wordData, PronunciationType pronunciationType) async {
+    // 尝试从API获取详细信息
+    final apiResponse = await EnglishWordApiService.getWordDetails(wordData.word);
+    
+    if (apiResponse != null) {
+      // 获取并拼接所有词性的释义
+      String mainTranslation = wordData.translation; // 默认使用原始翻译
+      if (apiResponse.translations.isNotEmpty) {
+        final translationParts = <String>[];
+        
+        for (final translation in apiResponse.translations) {
+          final pos = translation.pos.trim();
+          final tranCn = translation.tranCn.trim();
+          
+          if (pos.isNotEmpty && tranCn.isNotEmpty) {
+            translationParts.add("$pos. $tranCn");
+          }
+        }
+        
+        if (translationParts.isNotEmpty) {
+          mainTranslation = translationParts.join(" | ");
+        }
+      }
+      
+      // 获取例句 - 增加数据验证
+      String example = _generateExample(wordData.word); // 默认使用生成的例句
+      String exampleTranslation = _generateExampleTranslation(wordData.word);
+      
+      if (apiResponse.sentences.isNotEmpty) {
+        final firstSentence = apiResponse.sentences.first;
+        final sContent = firstSentence.sContent.trim();
+        final sCn = firstSentence.sCn.trim();
+        
+        if (sContent.isNotEmpty && sCn.isNotEmpty) {
+          example = sContent;
+          exampleTranslation = sCn;
+        }
+      }
+      
+              return ExtendedWordData(
+          word: wordData.word,
+          pronunciation: "", // 不再使用这个字段
+          translation: mainTranslation,
+          example: example,
+          exampleTranslation: exampleTranslation,
+          ukPhone: apiResponse.ukPhone.isNotEmpty ? apiResponse.ukPhone : null,
+          usPhone: apiResponse.usPhone.isNotEmpty ? apiResponse.usPhone : null,
+          ukSpeech: apiResponse.ukSpeech.isNotEmpty ? apiResponse.ukSpeech : null,
+          usSpeech: apiResponse.usSpeech.isNotEmpty ? apiResponse.usSpeech : null,
+        );
+    } else {
+      // API调用失败，使用基础数据，不提供音标
     return ExtendedWordData(
       word: wordData.word,
-      pronunciation: _generatePronunciation(wordData.word),
-      // meaning: wordData.translation, // 直接使用翻译作为释义，不添加额外内容
+      pronunciation: "", // 不再使用这个字段
       translation: wordData.translation,
       example: _generateExample(wordData.word),
       exampleTranslation: _generateExampleTranslation(wordData.word),
+      ukPhone: null, // API失败时不提供音标
+      usPhone: null, // API失败时不提供音标
+      ukSpeech: null, // API失败时不提供音频
+      usSpeech: null, // API失败时不提供音频
     );
+    }
   }
 
-  static String _generatePronunciation(String word) {
-    // 简单的音标生成（实际应用中应该从词典API获取）
-    return "/${word.toLowerCase()}/";
-  }
+
 
   static String _generateExample(String word) {
     // 生成示例句子
@@ -1573,6 +1792,96 @@ class ExtendedWordData {
   static String _generateExampleTranslation(String word) {
     // 生成例句翻译
     return "这是一个包含单词'$word'的例句。";
+  }
+  
+  /// 获取当前发音类型的音频URL
+  String? getAudioUrl(PronunciationType pronunciationType) {
+    switch (pronunciationType) {
+      case PronunciationType.uk:
+        return ukSpeech;
+      case PronunciationType.us:
+        return usSpeech;
+    }
+  }
+  
+  /// 根据发音类型获取对应的音标（支持回退机制）
+  Future<String> getPhonetic(PronunciationType pronunciationType) async {
+    switch (pronunciationType) {
+      case PronunciationType.uk:
+        // 优先返回英音
+        if (ukPhone?.isNotEmpty == true) {
+          return "/${ukPhone!}/";
+        }
+        // 回退到美音
+        if (usPhone?.isNotEmpty == true) {
+          return "/${usPhone!}/";
+        }
+        // 两个都没有，返回空字符串
+        return "";
+      case PronunciationType.us:
+        // 优先返回美音
+        if (usPhone?.isNotEmpty == true) {
+          return "/${usPhone!}/";
+        }
+        // 回退到英音
+        if (ukPhone?.isNotEmpty == true) {
+          return "/${ukPhone!}/";
+        }
+        // 两个都没有，返回空字符串
+        return "";
+    }
+  }
+  
+  /// 检查是否有可用的音频（支持回退机制）
+  Future<bool> hasAudio(PronunciationType pronunciationType) async {
+    switch (pronunciationType) {
+      case PronunciationType.uk:
+        // 优先检查英音
+        if (ukSpeech?.isNotEmpty == true) {
+          return true;
+        }
+        // 回退到美音
+        if (usSpeech?.isNotEmpty == true) {
+          return true;
+        }
+        return false;
+      case PronunciationType.us:
+        // 优先检查美音
+        if (usSpeech?.isNotEmpty == true) {
+          return true;
+        }
+        // 回退到英音
+        if (ukSpeech?.isNotEmpty == true) {
+          return true;
+        }
+        return false;
+    }
+  }
+  
+  /// 获取有效的音频URL（支持回退机制）
+  String? getValidAudioUrl(PronunciationType pronunciationType) {
+    switch (pronunciationType) {
+      case PronunciationType.uk:
+        // 优先返回英音
+        if (ukSpeech?.isNotEmpty == true) {
+          return ukSpeech;
+        }
+        // 回退到美音
+        if (usSpeech?.isNotEmpty == true) {
+          return usSpeech;
+        }
+        return null;
+      case PronunciationType.us:
+        // 优先返回美音
+        if (usSpeech?.isNotEmpty == true) {
+          return usSpeech;
+        }
+        // 回退到英音
+        if (ukSpeech?.isNotEmpty == true) {
+          return ukSpeech;
+        }
+        return null;
+    }
   }
 }
 

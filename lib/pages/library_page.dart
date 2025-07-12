@@ -470,14 +470,14 @@ class _LibraryPageState extends State<LibraryPage>
           child: GestureDetector(
             // 阻止点击内容区域时关闭
             onTap: () {},
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              maxChildSize: 0.9,
-              minChildSize: 0.5,
-              builder: (context, scrollController) => Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -485,80 +485,80 @@ class _LibraryPageState extends State<LibraryPage>
                       offset: Offset(0, -2),
                     ),
                   ],
-                ),
-                child: Column(
-                  children: [
-                    // 拖拽指示器
-                    Container(
+            ),
+            child: Column(
+              children: [
+                // 拖拽指示器
+                Container(
                       margin: EdgeInsets.symmetric(vertical: 10), // 从12减少到10
                       width: 36, // 从40减少到36
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.coolGray300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    
-                    // 标题
-                    Padding(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.coolGray300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // 标题
+                Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 从8减少到6
-                      child: Row(
-                        children: [
-                          Text(
-                            '已下载词库',
-                            style: TextStyle(
+                  child: Row(
+                    children: [
+                      Text(
+                        '已下载词库',
+                        style: TextStyle(
                               fontSize: 18, // 从20减少到18
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.darkGray,
-                            ),
-                          ),
-                          Spacer(),
-                          Text(
-                            '${downloadedBooks.length} 个',
-                            style: TextStyle(
-                              fontSize: 14, // 从16减少到14
-                              color: AppTheme.coolGray500,
-                            ),
-                          ),
-                        ],
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.darkGray,
+                        ),
                       ),
-                    ),
-                    
+                      Spacer(),
+                      Text(
+                        '${downloadedBooks.length} 个',
+                        style: TextStyle(
+                              fontSize: 14, // 从16减少到14
+                          color: AppTheme.coolGray500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
                     Divider(color: AppTheme.coolGray200, height: 1), // 减少高度
-                    
-                    // 词库列表
-                    Expanded(
-                      child: downloadedBooks.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.download_outlined,
+                
+                // 词库列表
+                Expanded(
+                  child: downloadedBooks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.download_outlined,
                                     size: 52, // 从64减少到52
-                                    color: AppTheme.coolGray300,
-                                  ),
+                                color: AppTheme.coolGray300,
+                              ),
                                   SizedBox(height: 12), // 从16减少到12
-                                  Text(
-                                    '暂无已下载的词库',
-                                    style: TextStyle(
-                                      color: AppTheme.coolGray500,
+                              Text(
+                                '暂无已下载的词库',
+                                style: TextStyle(
+                                  color: AppTheme.coolGray500,
                                       fontSize: 14, // 从16减少到14
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            )
-                          : ListView.builder(
-                              controller: scrollController,
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
                               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
-                              itemCount: downloadedBooks.length,
-                              itemBuilder: (context, index) => _buildDownloadedBookCard(
-                                downloadedBooks[index],
-                              ),
-                            ),
-                    ),
-                  ],
+                          itemCount: downloadedBooks.length,
+                          itemBuilder: (context, index) => _buildDownloadedBookCard(
+                            downloadedBooks[index],
+                          ),
+                        ),
+                ),
+              ],
                 ),
               ),
             ),
@@ -715,9 +715,9 @@ class _LibraryPageState extends State<LibraryPage>
       leading: Padding(
         padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
         child: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
           iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-          onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.pop(context),
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(
             minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
@@ -730,48 +730,48 @@ class _LibraryPageState extends State<LibraryPage>
         Padding(
           padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
           child: Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.download_done_rounded,
-                  color: AppTheme.primaryGray,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.download_done_rounded,
+                color: AppTheme.primaryGray,
                   size: ResponsiveHelper.getResponsiveIconSize(context, 26),
-                ),
-                onPressed: _showDownloadedBooks,
-                tooltip: '查看已下载词库',
+              ),
+              onPressed: _showDownloadedBooks,
+              tooltip: '查看已下载词库',
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(
                   minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
                   minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
                 ),
-              ),
-              if (downloadedCount > 0)
-                Positioned(
+            ),
+            if (downloadedCount > 0)
+              Positioned(
                   right: 6, // 从8减少到6，适应新的图标大小
                   top: 6, // 从8减少到6，适应新的图标大小
-                  child: Container(
+                child: Container(
                     padding: EdgeInsets.all(3), // 从4减少到3
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: BoxConstraints(
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: BoxConstraints(
                       minWidth: 14, // 从16减少到14
                       minHeight: 14, // 从16减少到14
-                    ),
-                    child: Text(
-                      '$downloadedCount',
-                      style: TextStyle(
-                        color: Colors.white,
+                  ),
+                  child: Text(
+                    '$downloadedCount',
+                    style: TextStyle(
+                      color: Colors.white,
                         fontSize: 9, // 从10减少到9
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
+        ),
         ),
       ],
     );
@@ -835,7 +835,7 @@ class _LibraryPageState extends State<LibraryPage>
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), // 从16,14减少到14,12
-        ),
+          ),
         style: TextStyle(
           fontSize: 14, // 从16减少到14
           color: AppTheme.darkGray,
@@ -843,7 +843,7 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-
+  
   /// 构建统计栏
   Widget _buildStatsBar() {
     return Container(
@@ -879,14 +879,14 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+          Text(
                 '总计: ${_allWordBookItems.length}',
-                style: TextStyle(
+            style: TextStyle(
                   fontSize: 13, // 从14减少到13
                   color: AppTheme.coolGray600,
                   fontWeight: FontWeight.w500,
-                ),
-              ),
+            ),
+          ),
             ],
           ),
           
@@ -906,16 +906,16 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+            Text(
                 '已下载: ${_allWordBookItems.where((item) => item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected).length}',
-                style: TextStyle(
+              style: TextStyle(
                   fontSize: 13, // 从14减少到13
                   color: AppTheme.coolGray600,
                   fontWeight: FontWeight.w500,
-                ),
+              ),
               ),
             ],
-          ),
+            ),
         ],
       ),
     );
@@ -1211,11 +1211,11 @@ class _LibraryPageState extends State<LibraryPage>
             offset: const Offset(0, 3), // 从4减少到3
           ),
         ],
-      ),
-      child: Center(
-        child: Icon(
-          Icons.menu_book_rounded,
-          color: Color(item.wordBook.iconColor),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.menu_book_rounded,
+            color: Color(item.wordBook.iconColor),
           size: 26, // 从32减少到26
         ),
       ),
@@ -1242,7 +1242,7 @@ class _LibraryPageState extends State<LibraryPage>
                 color: AppTheme.accentGreen.withOpacity(0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
-              ),
+            ),
             ],
           ),
           child: Material(
@@ -1292,7 +1292,7 @@ class _LibraryPageState extends State<LibraryPage>
                 color: Colors.amber.withOpacity(0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
-              ),
+            ),
             ],
           ),
           child: Center(
@@ -1431,7 +1431,7 @@ class _LibraryPageState extends State<LibraryPage>
                 color: Colors.red.withOpacity(0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
-              ),
+            ),
             ],
           ),
           child: Material(

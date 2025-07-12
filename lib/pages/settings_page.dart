@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/english_word_api_service.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
 class SettingsPage extends StatefulWidget {
@@ -17,6 +18,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _enableDarkMode = false;
   int _dailyWordGoal = 20;
   String _selectedDifficulty = 'medium';
+  PronunciationType _pronunciationType = PronunciationType.uk;
 
   @override
   void initState() {
@@ -80,6 +82,37 @@ class _SettingsPageState extends State<SettingsPage> {
                       onChanged: (value) {
                         setState(() {
                           _dailyWordGoal = value.round();
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  // 发音设置部分
+                  _buildSectionHeader('发音设置'),
+                  _buildSettingsCard([
+                    _buildRadioListTile(
+                      title: '英音',
+                      subtitle: '使用英式发音和音标',
+                      value: PronunciationType.uk,
+                      groupValue: _pronunciationType,
+                      onChanged: (value) {
+                        setState(() {
+                          _pronunciationType = value!;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                    _buildRadioListTile(
+                      title: '美音',
+                      subtitle: '使用美式发音和音标',
+                      value: PronunciationType.us,
+                      groupValue: _pronunciationType,
+                      onChanged: (value) {
+                        setState(() {
+                          _pronunciationType = value!;
                         });
                         _saveSettings();
                       },
@@ -251,14 +284,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   /// 构建单选按钮设置项
-  Widget _buildRadioListTile({
+  Widget _buildRadioListTile<T>({
     required String title,
     required String subtitle,
-    required String value,
-    required String groupValue,
-    required ValueChanged<String?> onChanged,
+    required T value,
+    required T groupValue,
+    required ValueChanged<T?> onChanged,
   }) {
-    return RadioListTile<String>(
+    return RadioListTile<T>(
       title: Text(title),
       subtitle: Text(subtitle),
       value: value,
@@ -328,6 +361,8 @@ class _SettingsPageState extends State<SettingsPage> {
       _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
       _dailyWordGoal = prefs.getInt('daily_word_goal') ?? 20;
       _selectedDifficulty = prefs.getString('selected_difficulty') ?? 'medium';
+      final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
+      _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
     });
   }
 
@@ -339,6 +374,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setInt('daily_word_goal', _dailyWordGoal);
     await prefs.setString('selected_difficulty', _selectedDifficulty);
+    await prefs.setString('pronunciation_type', _pronunciationType.code);
   }
 
   /// 显示重置对话框

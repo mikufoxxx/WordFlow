@@ -175,34 +175,34 @@ class _OnboardingPageState extends State<OnboardingPage>
   Widget build(BuildContext context) {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
-        return Scaffold(
-          backgroundColor: AppTheme.backgroundColor,
-          body: SafeArea(
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: ResponsiveHelper.getMaxContentWidth(context),
                 ),
-                child: Column(
-                  children: [
-                    // 页面指示器
-                    _buildPageIndicator(),
-                    
-                    // 主要内容
-                    Expanded(
-                      child: PageView.builder(
-                        controller: _pageController,
-                        onPageChanged: _onPageChanged,
-                        itemCount: _pages.length,
-                        itemBuilder: (context, index) => _buildPage(index),
-                      ),
-                    ),
-                    
-                    // 底部按钮
-                    _buildBottomButtons(),
-                  ],
-                ),
+        child: Column(
+          children: [
+            // 页面指示器
+            _buildPageIndicator(),
+            
+            // 主要内容
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                itemCount: _pages.length,
+                itemBuilder: (context, index) => _buildPage(index),
               ),
+            ),
+            
+            // 底部按钮
+            _buildBottomButtons(),
+          ],
+        ),
+      ),
             ),
           ),
         );
