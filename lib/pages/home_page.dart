@@ -1941,48 +1941,126 @@ class _HomePageState extends State<HomePage>
       );
     }
     
-    // 使用Wrap布局，自动换行，保持字符全局索引
+    // 按单词分行，保持字符的全局索引
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.85,
         ),
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runAlignment: WrapAlignment.center,
-          spacing: 0, // 字符间距
-          runSpacing: 4, // 行间距
-          children: List.generate(text.length, (globalIndex) {
-            final char = text[globalIndex];
-            
-            // 处理空格
-            if (char == ' ') {
-              return SizedBox(
-                width: style.fontSize! * 0.3,
-                height: style.fontSize! * 1.2,
-              );
-            }
-            
-            // 处理超出动画范围的字符
-            if (globalIndex >= slideAnimations.length || globalIndex >= opacityAnimations.length) {
-              return Text(
-                char,
-                style: style,
-              );
-            }
-            
-            // 字符动画
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: _buildWordBasedAnimatedLines(text, slideAnimations, opacityAnimations, style),
+        ),
+      ),
+    );
+  }
+  
+  /// 按单词构建动画文本行
+  List<Widget> _buildWordBasedAnimatedLines(
+    String text,
+    List<Animation<double>> slideAnimations,
+    List<Animation<double>> opacityAnimations,
+    TextStyle style,
+  ) {
+    final words = text.split(' ');
+    final lines = <String>[];
+    String currentLine = '';
+    
+    // 按单词组织行，估算每行长度
+    for (final word in words) {
+      final testLine = currentLine.isEmpty ? word : '$currentLine $word';
+      // 根据字符数估算行宽度
+      if (testLine.length <= 30) { // 调整单行最大字符数
+        currentLine = testLine;
+      } else {
+        if (currentLine.isNotEmpty) {
+          lines.add(currentLine);
+          currentLine = word;
+        } else {
+          // 如果单个单词太长，直接添加为一行
+          lines.add(word);
+        }
+      }
+    }
+    if (currentLine.isNotEmpty) {
+      lines.add(currentLine);
+    }
+    
+    // 为每一行构建动画，维护全局字符索引
+    final result = <Widget>[];
+    int globalCharIndex = 0;
+    
+    for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      final line = lines[lineIndex];
+      
+      // 构建这一行的动画文本
+      final lineWidget = Padding(
+        padding: EdgeInsets.only(
+          bottom: lineIndex < lines.length - 1 ? 2.0 : 0.0,
+        ),
+        child: _buildAnimatedTextLine(
+          line, 
+          slideAnimations, 
+          opacityAnimations, 
+          style,
+          globalCharIndex,
+        ),
+      );
+      
+      result.add(lineWidget);
+      
+      // 更新全局字符索引（包括这一行的字符和后面的空格）
+      globalCharIndex += line.length;
+      if (lineIndex < lines.length - 1) {
+        globalCharIndex += 1; // 行间的空格
+      }
+    }
+    
+    return result;
+  }
+  
+  /// 构建单行动画文本，使用全局字符索引
+  Widget _buildAnimatedTextLine(
+    String line,
+    List<Animation<double>> slideAnimations,
+    List<Animation<double>> opacityAnimations,
+    TextStyle style,
+    int globalStartIndex,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(line.length, (localIndex) {
+        final char = line[localIndex];
+        final globalIndex = globalStartIndex + localIndex;
+        
+        // 处理空格
+        if (char == ' ') {
+          return SizedBox(
+            width: style.fontSize! * 0.3,
+            height: style.fontSize! * 1.2,
+          );
+        }
+        
+        // 确保所有字符都有动画，包括标点符号
+        // 如果超出动画范围，使用最后一个动画或创建静态文本
+        if (globalIndex >= slideAnimations.length || globalIndex >= opacityAnimations.length) {
+          // 使用最后一个动画的值，或者直接显示
+          final lastSlideIndex = slideAnimations.length - 1;
+          final lastOpacityIndex = opacityAnimations.length - 1;
+          
+          if (lastSlideIndex >= 0 && lastOpacityIndex >= 0) {
             return AnimatedBuilder(
               animation: Listenable.merge([
-                slideAnimations[globalIndex], 
-                opacityAnimations[globalIndex]
+                slideAnimations[lastSlideIndex], 
+                opacityAnimations[lastOpacityIndex]
               ]),
               builder: (context, child) {
                 return Transform.translate(
-                  offset: Offset(0, slideAnimations[globalIndex].value),
+                  offset: Offset(0, slideAnimations[lastSlideIndex].value),
                   child: Opacity(
-                    opacity: opacityAnimations[globalIndex].value,
+                    opacity: opacityAnimations[lastOpacityIndex].value,
                     child: Text(
                       char,
                       style: style,
@@ -1991,9 +2069,34 @@ class _HomePageState extends State<HomePage>
                 );
               },
             );
-          }),
-        ),
-      ),
+          } else {
+            return Text(
+              char,
+              style: style,
+            );
+          }
+        }
+        
+        // 正常的字符动画
+        return AnimatedBuilder(
+          animation: Listenable.merge([
+            slideAnimations[globalIndex], 
+            opacityAnimations[globalIndex]
+          ]),
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, slideAnimations[globalIndex].value),
+              child: Opacity(
+                opacity: opacityAnimations[globalIndex].value,
+                child: Text(
+                  char,
+                  style: style,
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 
