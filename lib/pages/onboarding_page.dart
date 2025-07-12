@@ -5,6 +5,7 @@ import '../utils/app_theme.dart';
 import '../utils/animated_text_helper.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
+import '../utils/deepseek_api_service.dart';
 import 'dart:async';
 
 /// 起始页面 - 重新设计的引导流程
@@ -54,13 +55,13 @@ class _OnboardingPageState extends State<OnboardingPage>
       icon: Icons.psychology_outlined,
       color: Color(0xFF8B5CF6), // 更柔和的紫色
     ),
-    OnboardingPageData(
-      title: "始于足下",
-      subtitle: "连接墨墨背单词",
-      description: "输入墨墨背单词的API Token\n同步您的学习进度",
-      icon: Icons.link_outlined,
-      color: Color(0xFF10B981), // 更柔和的绿色
-    ),
+          OnboardingPageData(
+        title: "始于足下",
+        subtitle: "连接DeepSeek AI",
+        description: "输入DeepSeek API Key\n开启智能造句判断",
+        icon: Icons.psychology_outlined,
+        color: Color(0xFF10B981), // 更柔和的绿色
+      ),
   ];
   
   // 学习流程数据 - 使用更柔和的颜色
@@ -446,9 +447,9 @@ class _OnboardingPageState extends State<OnboardingPage>
           padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
           child: TextField(
             controller: _tokenController,
-            decoration: InputDecoration(
-              labelText: '墨墨背单词 API Token',
-              hintText: '请输入您的API Token',
+                      decoration: InputDecoration(
+            labelText: 'DeepSeek API Key',
+            hintText: '请输入您的DeepSeek API Key',
               prefixIcon: Icon(Icons.key_outlined, color: page.color),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12), // 从16减少到12
@@ -475,7 +476,7 @@ class _OnboardingPageState extends State<OnboardingPage>
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
           child: Text(
-            '在墨墨背单词 APP 中：\n我的 → 更多设置 → 实验功能 → 开放API',
+            '在DeepSeek官网申请API Key：\nplatform.deepseek.com → API Keys → 创建新Key',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12, // 从13减少到12
@@ -560,7 +561,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             SizedBox(
               width: 110, // 从120减少到110
               child: TextButton(
-                onPressed: _skipToken,
+                onPressed: _skipApiKey,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14), // 从16减少到14
                   shape: RoundedRectangleBorder(
@@ -673,8 +674,8 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
   
-  /// 跳过Token输入
-  void _skipToken() async {
+  /// 跳过API Key输入
+  void _skipApiKey() async {
     await _completeOnboarding(skipToken: true);
   }
   
@@ -683,9 +684,9 @@ class _OnboardingPageState extends State<OnboardingPage>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
     
-    // 保存Token（如果有）
+    // 保存DeepSeek API Key（如果有）
     if (!skipToken && _isTokenValid) {
-      await prefs.setString('maimemo_token', _tokenController.text.trim());
+      await DeepSeekApiService.setApiKey(_tokenController.text.trim());
     }
     
     if (mounted) {

@@ -8,6 +8,8 @@ import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/english_word_api_service.dart';
 import '../utils/settings_helper.dart';
+import '../utils/deepseek_api_service.dart';
+import '../utils/app_theme.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
@@ -43,22 +45,7 @@ class _HomePageState extends State<HomePage>
   late AnimationController _slideController;
   late AnimationController _meaningController;
   late AnimationController _buttonsController;
-  late AnimationController _dropController;
-  late AnimationController _hintController;
-  late AnimationController _waveIdleController;
-  
-  Offset _dragOffset = Offset.zero; // 当前拖拽偏移
-  Offset _initialPosition = Offset.zero; // 初始位置
-  bool _isDragging = false; // 是否正在拖拽
-  String _dragHint = ''; // 拖拽提示文字
-  Color _hintColor = Colors.grey; // 提示颜色
-  
-  // 拖拽阈值和动画
-  final double _dragThreshold = 80.0;
-  late Animation<double> _dropScaleAnimation;
-  late Animation<double> _dropRotationAnimation;
-  late Animation<double> _hintOpacityAnimation;
-  late Animation<double> _hintScaleAnimation;
+
   
   // 释义框动画
   late Animation<double> _meaningHeightAnimation;
@@ -104,6 +91,37 @@ class _HomePageState extends State<HomePage>
   
   // 当前显示的单词（扩展版本，包含音标、例句等）
   ExtendedWordData? _currentWord;
+  
+  // 造句测试相关状态
+  bool _showSentenceInput = false;
+  bool _isTestingMode = false;
+  bool _isSentenceSubmitted = false;
+  bool _isJudging = false;
+  final TextEditingController _sentenceInputController = TextEditingController();
+  SentenceJudgmentResult? _judgmentResult;
+  String _userSentence = '';
+  late AnimationController _sentenceAnimationController;
+  late AnimationController _wordMoveController;
+  late Animation<double> _wordScaleAnimation;
+  late Animation<double> _wordMoveAnimation;
+  late Animation<double> _sentenceInputAnimation;
+  
+  // 逐字母浮现动画相关
+  List<AnimationController> _betterSentenceControllers = [];
+  List<Animation<double>> _betterSentenceAnimations = [];
+  String _betterSentenceText = '';
+  bool _showBetterSentenceAnimation = false;
+  bool _showAdvancedResults = false;
+  
+  // 结果区域向上浮现动画
+  late AnimationController _resultAreaController;
+  late Animation<double> _resultAreaAnimation;
+  
+  // 按钮淡出动画
+  late AnimationController _skipButtonFadeController;
+  late Animation<double> _skipButtonFadeAnimation;
+  late AnimationController _sendButtonFadeController;
+  late Animation<double> _sendButtonFadeAnimation;
 
   @override
   void initState() {
@@ -259,61 +277,21 @@ class _HomePageState extends State<HomePage>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
+
     
-    _dropController = PerformanceOptimizer.getAnimationController(
+    // 造句测试动画控制器
+    _sentenceAnimationController = PerformanceOptimizer.getAnimationController(
       poolKey: _animationPoolKey,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     
-    _hintController = PerformanceOptimizer.getAnimationController(
+    _wordMoveController = PerformanceOptimizer.getAnimationController(
       poolKey: _animationPoolKey,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
-    // 呼吸动画控制器
-    _waveIdleController = PerformanceOptimizer.getAnimationController(
-      poolKey: _animationPoolKey,
-      duration: const Duration(seconds: 8),
-      vsync: this,
-    )..repeat();
-    
-    // 水滴球缩放动画
-    _dropScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _dropController,
-      curve: Curves.elasticOut,
-    ));
-    
-    // 水滴球旋转动画
-    _dropRotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.1,
-    ).animate(CurvedAnimation(
-      parent: _dropController,
-      curve: Curves.easeOutBack,
-    ));
-    
-    // 提示文字透明度动画
-    _hintOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _hintController,
-      curve: Curves.easeOutCubic,
-    ));
-    
-    // 提示文字缩放动画
-    _hintScaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _hintController,
-      curve: Curves.easeOutBack,
-    ));
+
     
     // 释义框动画
     _meaningHeightAnimation = Tween<double>(
@@ -358,6 +336,76 @@ class _HomePageState extends State<HomePage>
     ).animate(CurvedAnimation(
       parent: _buttonsController,
       curve: Curves.easeOutQuart,
+    ));
+    
+    // 造句测试动画
+    _wordScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.8,
+    ).animate(CurvedAnimation(
+      parent: _wordMoveController,
+      curve: Curves.easeOutQuart,
+    ));
+    
+    _wordMoveAnimation = Tween<double>(
+      begin: 0.0,
+      end: -30.0,
+    ).animate(CurvedAnimation(
+      parent: _wordMoveController,
+      curve: Curves.easeOutQuart,
+    ));
+    
+    _sentenceInputAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _sentenceAnimationController,
+      curve: Curves.easeOutQuart,
+    ));
+    
+    // 结果区域向上浮现动画
+    _resultAreaController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _resultAreaAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _resultAreaController,
+      curve: Curves.easeOutQuart,
+    ));
+    
+    // 跳过按钮淡出动画
+    _skipButtonFadeController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _skipButtonFadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _skipButtonFadeController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    // 发送按钮淡出动画
+    _sendButtonFadeController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _sendButtonFadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _sendButtonFadeController,
+      curve: Curves.easeOutCubic,
     ));
   }
 
@@ -413,10 +461,9 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 翻译字符动画 - 优化为单个控制器处理长释义
-    final translationLength = currentWord.translation.length > 50 ? 1 : currentWord.translation.length;
+    // 翻译字符动画 - 始终使用字符级动画
     _translationControllers = List.generate(
-      translationLength,
+      currentWord.translation.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -441,6 +488,14 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
+    // 释义字符动画 - 始终使用字符级动画
+    _meaningControllers = List.generate(
+      currentWord.translation.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      ),
+    );
     
     _meaningSlideAnimations = _meaningControllers.map((controller) =>
       Tween<double>(begin: 10.0, end: 0.0).animate(
@@ -460,10 +515,9 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句字符动画 - 优化为单个控制器处理长文本
-    final exampleLength = currentWord.example.length > 30 ? 1 : currentWord.example.length;
+    // 例句字符动画 - 始终使用字符级动画
     _exampleControllers = List.generate(
-      exampleLength,
+      currentWord.example.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -488,10 +542,9 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句翻译字符动画 - 优化为单个控制器处理长文本
-    final exampleTranslationLength = currentWord.exampleTranslation.length > 30 ? 1 : currentWord.exampleTranslation.length;
+    // 例句翻译字符动画 - 始终使用字符级动画
     _exampleTranslationControllers = List.generate(
-      exampleTranslationLength,
+      currentWord.exampleTranslation.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -697,18 +750,20 @@ class _HomePageState extends State<HomePage>
           Positioned.fill(
             child: SafeArea(child: _buildBody()),
           ),
-          // 悬浮小球
-          Positioned(
-            left: 0, right: 0,
-            bottom: ResponsiveHelper.getResponsiveSpacing(context, 60),
-            child: _buildFluidDragBall(),
-          ),
+          // 悬浮小球（造句测试模式下隐藏）
+          if (!_isTestingMode)
+            Positioned(
+              left: 0, right: 0,
+              bottom: ResponsiveHelper.getResponsiveSpacing(context, 60),
+              child: _buildFluidDragBall(),
+            ),
           // 底部提示
-          Positioned(
-            left: 0, right: 0,
-            bottom: ResponsiveHelper.getResponsiveSpacing(context, 8),
-            child: _buildAnimatedHintText(),
-          ),
+          if (!_isTestingMode || !_isSentenceSubmitted)
+            Positioned(
+              left: 0, right: 0,
+              bottom: ResponsiveHelper.getResponsiveSpacing(context, 8),
+              child: _buildAnimatedHintText(),
+            ),
         ],
       ),
     );
@@ -803,31 +858,44 @@ class _HomePageState extends State<HomePage>
       );
     }
 
-    return SingleChildScrollView(
-      padding: ResponsiveHelper.getResponsivePadding(context),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height - 
-                     kToolbarHeight - 
-                     MediaQuery.of(context).padding.top - 
-                     MediaQuery.of(context).padding.bottom - 
-                     ResponsiveHelper.getResponsiveSpacing(context, 32),
-        ),
-        child: IntrinsicHeight(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: ResponsiveHelper.getMaxContentWidth(context),
-              ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
-                  _buildWordBookInfoSection(),
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-              Flexible(child: _buildWordCard(_currentWord!)),
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
-            ],
+    return GestureDetector(
+      onTap: () {
+        // 只在非测试模式且单词动画完成时响应点击
+        if (!_isTestingMode && _wordAnimationCompleted) {
+          _toggleMeaning();
+        }
+      },
+      child: SingleChildScrollView(
+        padding: ResponsiveHelper.getResponsivePadding(context),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height - 
+                       kToolbarHeight - 
+                       MediaQuery.of(context).padding.top - 
+                       MediaQuery.of(context).padding.bottom - 
+                       ResponsiveHelper.getResponsiveSpacing(context, 32),
+          ),
+          child: IntrinsicHeight(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+                ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
+                    // 书籍信息区域在造句模式下淡出
+                    AnimatedOpacity(
+                      opacity: _isTestingMode ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 400),
+                      child: _buildWordBookInfoSection(),
+                    ),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                Flexible(child: _buildWordCard(_currentWord!)),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
+              ],
+                ),
               ),
             ),
           ),
@@ -958,7 +1026,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建呼吸状拖拽球
+  /// 构建优雅按钮
   Widget _buildFluidDragBall() {
     return AnimatedBuilder(
       animation: _buttonsController,
@@ -969,95 +1037,38 @@ class _HomePageState extends State<HomePage>
             opacity: _buttonsOpacityAnimation.value,
             child: IgnorePointer(
               ignoring: !_wordAnimationCompleted,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 拖拽提示（上方）
-                  AnimatedOpacity(
-                    opacity: _isDragging && _getDragDirection() == 'up' ? 1.0 : 0.0,
-                    duration: Duration(milliseconds: 200),
-                    child: _buildHintBubble(
-                      _showMeaning ? '隐藏释义' : '已隐藏',
-                      Icons.keyboard_arrow_up,
-                      Colors.grey.shade600,
-                      _getDragDirection() == 'up',
-                    ),
-                  ),
-                  
-                  SizedBox(height: 16), // 从24减少到16
-                  
-                  // 呼吸球主体
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                              child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // 左侧提示
-                      AnimatedOpacity(
-                        opacity: _isDragging && _getDragDirection() == 'left' ? 1.0 : 0.0,
-                        duration: Duration(milliseconds: 200),
-                        child: _buildHintBubble(
-                          '不认识',
-                          Icons.close,
-                          Colors.grey.shade600,
-                          _getDragDirection() == 'left',
+                      // 不认识按钮
+                      Expanded(
+                        child: _buildElegantButton(
+                          onPressed: _markAsUnknown,
+                          icon: Icons.close_rounded,
+                          label: '不认识',
+                          color: Colors.red.shade100,
+                          textColor: Colors.red.shade700,
+                          iconColor: Colors.red.shade600,
                         ),
                       ),
                       
-                      SizedBox(width: 24), // 从32减少到24
+                      SizedBox(width: 32),
                       
-                      // 呼吸球
-                      GestureDetector(
-                        onPanStart: _onPanStart,
-                        onPanUpdate: _onPanUpdate,
-                        onPanEnd: _onPanEnd,
-                        child: AnimatedBuilder(
-                          animation: _dropController,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: _dragOffset,
-                              child: Transform.scale(
-                                scale: _dropScaleAnimation.value,
-                                child: Transform.rotate(
-                                  angle: _dropRotationAnimation.value * 
-                                         (_dragOffset.dx / 100),
-                                  child: _buildBreathBall(),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      
-                      SizedBox(width: 24), // 从32减少到24
-                      
-                      // 右侧提示
-                      AnimatedOpacity(
-                        opacity: _isDragging && _getDragDirection() == 'right' ? 1.0 : 0.0,
-                        duration: Duration(milliseconds: 200),
-                        child: _buildHintBubble(
-                          '认识',
-                          Icons.check,
-                          Colors.grey.shade600,
-                          _getDragDirection() == 'right',
+                      // 认识按钮
+                      Expanded(
+                        child: _buildElegantButton(
+                          onPressed: _markAsKnown,
+                          icon: Icons.check_rounded,
+                          label: '认识',
+                          color: Colors.green.shade100,
+                          textColor: Colors.green.shade700,
+                          iconColor: Colors.green.shade600,
                         ),
                       ),
                     ],
                   ),
-                  
-                  SizedBox(height: 16), // 从24减少到16
-                  
-                  // 拖拽提示（下方）
-                  AnimatedOpacity(
-                    opacity: _isDragging && _getDragDirection() == 'down' ? 1.0 : 0.0,
-                    duration: Duration(milliseconds: 200),
-                    child: _buildHintBubble(
-                      _showMeaning ? '已显示' : '显示释义',
-                      Icons.keyboard_arrow_down,
-                      Colors.grey.shade600,
-                      _getDragDirection() == 'down',
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
@@ -1066,160 +1077,100 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建呼吸球
-  Widget _buildBreathBall() {
-    return AnimatedBuilder(
-      animation: _waveIdleController,
-      builder: (context, child) {
-        return Container(
-          width: 140, // 从160减少到140
-          height: 140, // 从160减少到140
-          child: CustomPaint(
-            painter: _BreathLinesPainter(
-              color: Theme.of(context).primaryColor,
-              phase: _waveIdleController.value * 2 * pi,
-              dragOffset: _dragOffset,
-              isDragging: _isDragging,
-            ),
-            child: Center(
-              child: Icon(
-                _isDragging ? Icons.drag_indicator : Icons.blur_circular,
-                color: Colors.white.withOpacity(0.85),
-                size: _isDragging ? 42 : 48, // 从48:54减少到42:48
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建简约提示气泡
-  Widget _buildHintBubble(String text, IconData icon, Color color, bool isActive) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      constraints: BoxConstraints(
-        minWidth: 70, // 从80减少到70
-        maxWidth: 110, // 从120减少到110
-        minHeight: 28, // 从32减少到28
-        maxHeight: 36, // 从40减少到36
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // 从14,8减少到12,6
+  /// 构建优雅按钮
+  Widget _buildElegantButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color textColor,
+    required Color iconColor,
+  }) {
+    return Container(
       decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.20) : Colors.transparent,
-        borderRadius: BorderRadius.circular(14), // 从16减少到14
+        color: color,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isActive ? color.withOpacity(0.5) : Colors.transparent,
-          width: 1.5,
+          color: textColor.withOpacity(0.2),
+          width: 1,
         ),
-        boxShadow: isActive ? [
+        boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 6,
+            color: textColor.withOpacity(0.1),
+            blurRadius: 8,
             offset: Offset(0, 2),
-          ),
-        ] : [],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isActive ? color : color.withOpacity(0.6),
-            size: 16, // 从18减少到16
-          ),
-          SizedBox(width: 4), // 从5减少到4
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: isActive ? color : color.withOpacity(0.7),
-                fontSize: isActive ? 12 : 10, // 从14:11减少到12:10
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
           ),
         ],
       ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: iconColor,
+                ),
+                SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+          );
+    }
+
+  /// 构建点击提示
+  Widget _buildTapHint() {
+    return AnimatedOpacity(
+      opacity: _wordAnimationCompleted ? 0.6 : 0.0,
+      duration: const Duration(milliseconds: 800),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _showMeaning ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              size: 14,
+              color: Theme.of(context).primaryColor.withOpacity(0.7),
+            ),
+            SizedBox(width: 4),
+            Text(
+              _showMeaning ? '点击收起释义' : '点击展开释义',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).primaryColor.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-  }
-
-  /// 获取拖拽方向
-  String _getDragDirection() {
-    final dx = _dragOffset.dx.abs();
-    final dy = _dragOffset.dy.abs();
-    
-    if (dx > dy) {
-      return _dragOffset.dx > 0 ? 'right' : 'left';
-    } else {
-      return _dragOffset.dy > 0 ? 'down' : 'up';
-    }
-  }
-
-  /// 拖拽开始
-  void _onPanStart(DragStartDetails details) {
-    _isDragging = true;
-    _initialPosition = details.localPosition;
-    _dropController.forward();
-    _hintController.forward();
-    setState(() {});
-  }
-
-  /// 拖拽更新
-  void _onPanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset = details.localPosition - _initialPosition;
-      
-      // 添加阻尼效果
-      final distance = _dragOffset.distance;
-      if (distance > _dragThreshold) {
-        final dampening = _dragThreshold / distance;
-        _dragOffset = Offset(
-          _dragOffset.dx * dampening,
-          _dragOffset.dy * dampening,
-        );
-      }
-    });
-  }
-
-  /// 拖拽结束
-  void _onPanEnd(DragEndDetails details) {
-    final distance = _dragOffset.distance;
-    final direction = _getDragDirection();
-    
-    // 判断是否达到触发阈值
-    if (distance > _dragThreshold * 0.6) {
-      _triggerAction(direction);
-    }
-    
-    // 重置状态
-    _isDragging = false;
-    _dragOffset = Offset.zero;
-    _dropController.reverse();
-    _hintController.reverse();
-    setState(() {});
-  }
-
-  /// 触发对应操作
-  void _triggerAction(String direction) {
-    switch (direction) {
-      case 'left':
-        _markAsUnknown();
-        break;
-      case 'right':
-        _markAsKnown();
-        break;
-      case 'down':
-        if (!_showMeaning) _toggleMeaning();
-        break;
-      case 'up':
-        if (_showMeaning) _toggleMeaning();
-        break;
-    }
   }
 
   /// 开始单词动画
@@ -1305,16 +1256,251 @@ class _HomePageState extends State<HomePage>
   /// 标记为认识
   void _markAsKnown() {
     if (!_wordAnimationCompleted) return;
-    _nextWord();
+    _startSentenceTest();
   }
 
-  /// 下一个单词（无限流模式）
+  /// 开始造句测试
+  void _startSentenceTest() {
+    if (_currentWord == null) return;
+    
+    setState(() {
+      _isTestingMode = true;
+      _showSentenceInput = true;
+      _showAdvancedResults = false;
+    });
+    
+    // 确保动画重置，然后开始单词移动和缩放动画
+    _wordMoveController.reset();
+    _sentenceAnimationController.reset();
+    
+    PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 100),
+      callback: () {
+        if (mounted) {
+          _wordMoveController.forward();
+        }
+      },
+    );
+    
+    // 延迟显示输入框
+    PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 400),
+      callback: () {
+        if (mounted) {
+          _sentenceAnimationController.forward();
+        }
+      },
+    );
+  }
+  
+    /// 处理句子提交
+    Future<void> _submitSentence() async {
+      final sentence = _sentenceInputController.text.trim();
+      
+      // 检查句子长度
+      if (sentence.isEmpty) {
+        return;
+      }
+      
+      if (sentence.length < 3) {
+        return;
+      }
+      
+      if (sentence.split(' ').length < 2) {
+        return;
+      }
+      
+      setState(() {
+        _isJudging = true;
+        _userSentence = sentence;
+      });
+      
+      // 跳过按钮淡出
+      _skipButtonFadeController.forward();
+      
+      try {
+        final result = await DeepSeekApiService.judgeSentence(
+          word: _currentWord!.word,
+          sentence: sentence,
+          translation: _currentWord!.translation,
+        );
+        
+        setState(() {
+          _judgmentResult = result;
+          _isSentenceSubmitted = true;
+          _showSentenceInput = false;
+        });
+        
+        // 发送按钮淡出
+        _sendButtonFadeController.forward();
+        
+        // 确保结果区域动画重置，然后启动
+        _resultAreaController.reset();
+        PerformanceOptimizer.createTimer(
+          poolKey: _timerPoolKey,
+          duration: const Duration(milliseconds: 100),
+          callback: () {
+            if (mounted) {
+              _resultAreaController.forward();
+            }
+          },
+        );
+        
+        // 初始化逐词浮现动画
+        _initializeBetterSentenceAnimation();
+        
+        // 如果没有正确句子需要显示，立即显示修改建议和下一个单词按钮
+        if (_judgmentResult!.betterSentences.isEmpty) {
+          PerformanceOptimizer.createTimer(
+            poolKey: _timerPoolKey,
+            duration: const Duration(milliseconds: 800),
+            callback: () {
+              if (mounted) {
+                setState(() {
+                  _showAdvancedResults = true;
+                });
+              }
+            },
+          );
+        }
+        
+      } catch (e) {
+        // 网络错误时静默处理
+      } finally {
+        setState(() {
+          _isJudging = false;
+        });
+      }
+    }
+    
+    /// 显示温柔的提醒（已废弃）
+    void _showGentleWarning(String message) {
+      // 不再显示提示
+    }
+    
+    /// 跳过造句测试
+    void _skipSentenceTest() {
+      _continueOrNext();
+    }
+    
+      /// 初始化逐字母浮现动画
+  void _initializeBetterSentenceAnimation() {
+    if (_judgmentResult?.betterSentences.isEmpty ?? true) return;
+    
+    // 清理旧的动画控制器
+    _disposeBetterSentenceControllers();
+    
+    // 获取第一个更好的句子
+    final betterSentence = _judgmentResult!.betterSentences.first;
+    _betterSentenceText = betterSentence;
+    
+    // 为每个字符创建动画控制器
+    _betterSentenceControllers = List.generate(
+      _betterSentenceText.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 300),
+        vsync: this,
+      ),
+    );
+    
+    // 创建动画
+    _betterSentenceAnimations = _betterSentenceControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+    
+    // 延迟显示动画
+    PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 500),
+      callback: () {
+        if (mounted) {
+          setState(() {
+            _showBetterSentenceAnimation = true;
+          });
+          _startBetterSentenceAnimation();
+        }
+      },
+    );
+  }
+  
+  /// 开始逐字母浮现动画
+  void _startBetterSentenceAnimation() {
+    // 为最后一个字符添加完成监听器
+    if (_betterSentenceControllers.isNotEmpty) {
+      final lastController = _betterSentenceControllers.last;
+      lastController.addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _showAdvancedResults = true;
+          });
+        }
+      });
+    }
+    
+    for (int i = 0; i < _betterSentenceControllers.length; i++) {
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: Duration(milliseconds: i * 50), // 每个字符延迟50ms
+        callback: () {
+          if (mounted && i < _betterSentenceControllers.length) {
+            _betterSentenceControllers[i].forward();
+          }
+        },
+      );
+    }
+  }
+  
+  /// 清理逐字母浮现动画控制器
+  void _disposeBetterSentenceControllers() {
+    for (var controller in _betterSentenceControllers) {
+      controller.dispose();
+    }
+    _betterSentenceControllers.clear();
+    _betterSentenceAnimations.clear();
+  }
+  
+  /// 重新开始造句或下一个单词
+  void _continueOrNext() {
+    setState(() {
+      _isTestingMode = false;
+      _showSentenceInput = false;
+      _isSentenceSubmitted = false;
+      _judgmentResult = null;
+      _userSentence = '';
+      _showBetterSentenceAnimation = false;
+      _showAdvancedResults = false;
+    });
+    
+    _sentenceInputController.clear();
+    _wordMoveController.reset();
+    _sentenceAnimationController.reset();
+    _resultAreaController.reset();
+    _skipButtonFadeController.reset();
+    _sendButtonFadeController.reset();
+    _disposeBetterSentenceControllers();
+    
+    _nextWord();
+  }
+  
+    /// 下一个单词（无限流模式）
   Future<void> _nextWord() async {
     // 重置动画状态
     _fadeController.reset();
     _slideController.reset();
     _meaningController.reset();
     _buttonsController.reset();
+    _wordMoveController.reset();
+    _sentenceAnimationController.reset();
+    _resultAreaController.reset();
+    _skipButtonFadeController.reset();
+    _sendButtonFadeController.reset();
     
     // 取消所有动画Timer
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
@@ -1324,9 +1510,23 @@ class _HomePageState extends State<HomePage>
       _showMeaning = false;
       _wordAnimationCompleted = false;
       _completedWordAnimations = 0;
+      // 重置造句测试状态
+      _isTestingMode = false;
+      _showSentenceInput = false;
+      _isSentenceSubmitted = false;
+      _judgmentResult = null;
+      _userSentence = '';
+      _showBetterSentenceAnimation = false;
+      _showAdvancedResults = false;
       // 立即清除当前单词，避免闪现
       _currentWord = null;
     });
+    
+    // 清空输入框
+    _sentenceInputController.clear();
+    
+    // 清理逐字母浮现动画控制器
+    _disposeBetterSentenceControllers();
     
     // 生成新单词
     await _generateNextWord();
@@ -1355,53 +1555,109 @@ class _HomePageState extends State<HomePage>
             offset: Offset(0, 25 * (1 - _slideController.value)),
           child: FadeTransition(
             opacity: _fadeController,
-            child: Card(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutQuart,
-                width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+            child: _isTestingMode 
+                ? // 测试模式：只显示单词，无背景框
+                Stack(
                   children: [
-                    // 单词本体
-                    Container(
-                        constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
-                      child: _buildAnimatedText(
-                        word.word,
-                        _wordSlideAnimations,
-                        _wordOpacityAnimations,
-                        Theme.of(context).textTheme.headlineLarge!.copyWith(
-                          fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                            fontSize: 34,
-                        ),
-                      ),
-                    ),
-                    
-                      // 音标和发音按钮（动态显示）
-                    FutureBuilder<Map<String, dynamic>>(
-                      future: _getPhoneticData(word),
-                      builder: (context, snapshot) {
-                        final hasPhonetic = snapshot.hasData && 
-                                           (snapshot.data!['phonetic'] as String).isNotEmpty;
-                        
-                        return Column(
-                          children: [
-                            SizedBox(height: hasPhonetic ? 2 : 6), // 有音标时间距为2，无音标时为6
-                            _buildPhoneticSection(word),
-                            if (hasPhonetic) const SizedBox(height: 6), // 音标和释义之间的间距
-                          ],
+                    // 单词本体（测试模式下应用移动动画）
+                    AnimatedBuilder(
+                      animation: _wordMoveController,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(0, _wordMoveAnimation.value),
+                          child: Transform.scale(
+                            scale: _wordScaleAnimation.value,
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
+                              child: _buildAnimatedText(
+                                word.word,
+                                _wordSlideAnimations,
+                                _wordOpacityAnimations,
+                                Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                    fontSize: 34,
+                                ),
+                              ),
+                            ),
+                          ),
                         );
                       },
                     ),
-                      
-                      // 释义部分
-                      _buildAnimatedMeaningSection(word),
-                    ],
-                  ),
-                ),
-              ),
+                    
+                    // 输入框和结果显示区域 - 整体向上移动
+                    Transform.translate(
+                      offset: const Offset(0, -30), // 整体向上移动30px
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 预留单词原始位置的空间，考虑到单词会向上移动30px
+                          const SizedBox(height: 30),
+                          
+                          // 单词与输入框的间距（与音标和单词的间距一致）
+                          const SizedBox(height: 20),
+                          
+                          // 输入框和结果显示区域（位置一致）
+                          _buildInputAndResultArea(),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+                : // 正常模式：显示完整的单词卡片
+                Card(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutQuart,
+                      width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 单词本体
+                          Container(
+                            constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
+                            child: _buildAnimatedText(
+                              word.word,
+                              _wordSlideAnimations,
+                              _wordOpacityAnimations,
+                              Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                  fontSize: 34,
+                              ),
+                            ),
+                          ),
+                          
+                          // 音标和发音按钮（动态显示）
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: _getPhoneticData(word),
+                            builder: (context, snapshot) {
+                              final hasPhonetic = snapshot.hasData && 
+                                                 (snapshot.data!['phonetic'] as String).isNotEmpty;
+                              
+                              return Column(
+                                children: [
+                                  SizedBox(height: hasPhonetic ? 2 : 6), // 有音标时间距为2，无音标时为6
+                                  _buildPhoneticSection(word),
+                                  if (hasPhonetic) const SizedBox(height: 6), // 音标和释义之间的间距
+                                ],
+                              );
+                            },
+                          ),
+                            
+                            // 释义部分
+                            _buildAnimatedMeaningSection(word),
+                            
+                            // 点击提示
+                            if (_wordAnimationCompleted) ...[
+                              const SizedBox(height: 8),
+                              _buildTapHint(),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
             ),
           );
         },
@@ -1586,37 +1842,7 @@ class _HomePageState extends State<HomePage>
     List<Animation<double>> opacityAnimations,
     TextStyle style,
   ) {
-    // 检查是否是长文本（例句或长释义）
-    final isLongText = text.length > 50;
-    
-    if (isLongText) {
-      // 对于长文本，使用简单的淡入动画而不是字符级动画
-      return Center(
-        child: Container(
-          width: double.infinity,
-          child: AnimatedBuilder(
-            animation: slideAnimations.isNotEmpty ? slideAnimations[0] : AlwaysStoppedAnimation(0.0),
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, slideAnimations.isNotEmpty ? slideAnimations[0].value : 0.0),
-                child: Opacity(
-                  opacity: opacityAnimations.isNotEmpty ? opacityAnimations[0].value : 1.0,
-                  child: Text(
-                    text,
-                    style: style,
-                    textAlign: TextAlign.center,
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    }
-    
-    // 对于短文本，使用字符级动画
+    // 所有文本都使用字符级动画
     return Center(
       child: Wrap(
         alignment: WrapAlignment.center,
@@ -1669,10 +1895,14 @@ class _HomePageState extends State<HomePage>
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeOutCubic,
               child: Text(
-                _wordAnimationCompleted 
-                    ? '拖拽呼吸球进行操作\n'
-                    : '单词加载中...',
-                key: ValueKey('${_wordAnimationCompleted}_breath'),
+                _isTestingMode 
+                    ? (_showSentenceInput 
+                        ? ''
+                        : '正在准备造句测试...')
+                    : (_wordAnimationCompleted 
+                        ? ''
+                        : '单词加载中...'),
+                key: ValueKey('${_wordAnimationCompleted}_${_isTestingMode}_breath'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).brightness == Brightness.dark 
                       ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.6)
@@ -1689,6 +1919,672 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  /// 构建输入框和结果显示区域（位置一致）
+  Widget _buildInputAndResultArea() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      switchInCurve: Curves.easeOutQuart,
+      switchOutCurve: Curves.easeInQuart,
+      child: _isSentenceSubmitted && _judgmentResult != null
+          ? _buildSentenceResult()
+          : _showSentenceInput
+              ? _buildSentenceInput()
+              : const SizedBox(),
+    );
+  }
+  
+  /// 构建句子输入框
+  Widget _buildSentenceInput() {
+    return AnimatedBuilder(
+      animation: _sentenceInputAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - _sentenceInputAnimation.value)),
+          child: Opacity(
+            opacity: _sentenceInputAnimation.value,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 输入提示区域
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.coolGray50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.coolGray200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '请用 ${_currentWord?.word} 写一个句子：',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.coolGray600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // 输入框
+                      TextField(
+                        controller: _sentenceInputController,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          hintText: '在这里输入你的句子...',
+                          hintStyle: TextStyle(
+                            color: AppTheme.coolGray400,
+                            fontSize: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: AppTheme.coolGray200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: AppTheme.primaryGray, width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.all(12),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
+                        onSubmitted: (_) => _submitSentence(),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 按钮区域
+                Column(
+                  children: [
+                    // 发送按钮
+                    AnimatedBuilder(
+                      animation: _sendButtonFadeAnimation,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _isSentenceSubmitted ? _sendButtonFadeAnimation.value : 1.0,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isJudging ? null : _submitSentence,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentGreen,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: AppTheme.coolGray300,
+                              ),
+                              child: _isJudging
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text('正在判断...'),
+                                      ],
+                                    )
+                                  : Text(
+                                      '发送',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 跳过按钮（更小更轻量）
+                    AnimatedBuilder(
+                      animation: _skipButtonFadeAnimation,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _isJudging ? _skipButtonFadeAnimation.value : 1.0,
+                          child: TextButton(
+                            onPressed: _isJudging ? null : _skipSentenceTest,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              '跳过',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.coolGray500,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 构建句子结果
+  Widget _buildSentenceResult() {
+    if (_judgmentResult == null || _userSentence.isEmpty) return const SizedBox();
+    
+    return AnimatedBuilder(
+      animation: _resultAreaAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - _resultAreaAnimation.value)),
+          child: Opacity(
+            opacity: _resultAreaAnimation.value,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 用户的句子（带高亮）- 第一个浮现
+                _buildAnimatedResultItem(0, _buildHighlightedSentence()),
+                
+                // 正确的句子示例 - 第二个浮现
+                if (_judgmentResult!.betterSentences.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _buildAnimatedResultItem(1, _buildCorrectSentence()),
+                ],
+                
+                // 修改说明 - 第三个浮现（需要等正确句子全部显示完毕）
+                if (_showAdvancedResults) ...[
+                  const SizedBox(height: 16),
+                  _buildAnimatedResultItem(2, _buildErrorExplanation()),
+                ],
+                
+                // 继续按钮 - 第四个浮现（需要等正确句子全部显示完毕）
+                if (_showAdvancedResults) ...[
+                  const SizedBox(height: 20),
+                  _buildAnimatedResultItem(3, _buildNextWordButton()),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  /// 构建带动画的结果项目
+  Widget _buildAnimatedResultItem(int index, Widget child) {
+    return AnimatedBuilder(
+      animation: _resultAreaAnimation,
+      builder: (context, _) {
+        // 简化动画逻辑，使用基础延迟
+        final progress = _resultAreaAnimation.value;
+        final delay = index * 0.2; // 每个项目延迟0.2
+        
+        // 计算该项目的动画进度
+        final adjustedProgress = ((progress - delay) / (1.0 - delay)).clamp(0.0, 1.0);
+        
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - adjustedProgress)),
+          child: Opacity(
+            opacity: adjustedProgress,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+  
+  /// 构建下一个单词按钮
+  Widget _buildNextWordButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _continueOrNext,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.accentGreen,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          '下一个单词',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建高亮的句子
+  Widget _buildHighlightedSentence() {
+    final words = _userSentence.split(' ');
+    final result = _judgmentResult!;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.coolGray50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.coolGray200),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: words.map((word) {
+            // 智能错误检测逻辑
+            Color textColor = AppTheme.coolGray700;
+            bool isErrorWord = false;
+            
+            // 只有当句子有错误时，才检查并标记错误单词
+            if (!result.isCorrect) {
+              isErrorWord = _isWordError(word, result);
+              
+              if (isErrorWord) {
+                textColor = Colors.red.shade700;
+              }
+            }
+            
+            return TextSpan(
+              text: '$word ',
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.5,
+                color: textColor,
+                fontWeight: isErrorWord ? FontWeight.w600 : FontWeight.normal,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+  
+  /// 智能判断单词是否为错误
+  bool _isWordError(String word, SentenceJudgmentResult result) {
+    // 如果没有正确的句子作为参考，使用错误描述来判断
+    if (result.betterSentences.isEmpty) {
+      return _checkWordInErrorDescription(word, result);
+    }
+    
+    // 使用正确句子进行比较
+    return _isWordDifferentFromCorrect(word, result.betterSentences.first);
+  }
+  
+  /// 检查单词是否在错误描述中被提及
+  bool _checkWordInErrorDescription(String word, SentenceJudgmentResult result) {
+    final cleanWord = word.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    
+    for (final error in result.errors) {
+      final errorText = error.description.toLowerCase();
+      final errorPosition = error.position.toLowerCase();
+      
+      // 直接匹配错误位置
+      if (errorPosition.contains(cleanWord) || cleanWord.contains(errorPosition)) {
+        return true;
+      }
+      
+      // 检查错误描述中是否提到了这个单词
+      if (errorText.contains(cleanWord)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  /// 比较单词与正确句子的差异
+  bool _isWordDifferentFromCorrect(String userWord, String correctSentence) {
+    final userWords = _userSentence.split(' ');
+    final correctWords = correctSentence.split(' ');
+    
+    // 找到当前单词在用户句子中的位置
+    final wordIndex = userWords.indexOf(userWord);
+    if (wordIndex == -1) return false;
+    
+    // 处理句子长度不同的情况
+    if (wordIndex >= correctWords.length) {
+      return true; // 用户句子更长，这个单词可能是多余的
+    }
+    
+    final userWordClean = userWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    final correctWordClean = correctWords[wordIndex].toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    
+    // 检查拼写差异
+    if (userWordClean != correctWordClean) {
+      return true;
+    }
+    
+    // 检查大小写差异
+    if (userWord != correctWords[wordIndex]) {
+      return true;
+    }
+    
+    // 检查语法结构错误（通过检查前后文）
+    return _isWordInWrongGrammarContext(userWord, wordIndex, userWords, correctWords);
+  }
+  
+  /// 检查单词是否在错误的语法环境中
+  bool _isWordInWrongGrammarContext(String userWord, int wordIndex, List<String> userWords, List<String> correctWords) {
+    // 检查常见的语法错误模式
+    
+    // 检查 "i am very like" 这种错误模式
+    if (wordIndex >= 1 && wordIndex < userWords.length - 1) {
+      final prevWord = userWords[wordIndex - 1].toLowerCase();
+      final nextWord = userWords[wordIndex + 1].toLowerCase();
+      final currentWord = userWord.toLowerCase();
+      
+      // "am very like" 是错误的语法结构
+      if (prevWord == 'am' && currentWord == 'very' && nextWord == 'like') {
+        return true;
+      }
+      
+      // "i am very" 开头的结构通常是错误的
+      if (wordIndex >= 2) {
+        final prevPrevWord = userWords[wordIndex - 2].toLowerCase();
+        if (prevPrevWord == 'i' && prevWord == 'am' && currentWord == 'very') {
+          return true;
+        }
+      }
+    }
+    
+    // 检查 "am" 在错误位置
+    if (userWord.toLowerCase() == 'am' && wordIndex > 0) {
+      final prevWord = userWords[wordIndex - 1].toLowerCase();
+      if (prevWord == 'i' && wordIndex < userWords.length - 1) {
+        final nextWord = userWords[wordIndex + 1].toLowerCase();
+        if (nextWord == 'very') {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+
+
+  /// 构建正确句子
+  Widget _buildCorrectSentence() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.coolGray50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.coolGray200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline_rounded,
+                color: AppTheme.accentGreen,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '参考句子',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.coolGray700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 逐字母浮现的正确句子
+          if (_showBetterSentenceAnimation && _betterSentenceText.isNotEmpty) ...[
+            _buildAnimatedBetterSentence(),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  /// 构建错误说明
+  Widget _buildErrorExplanation() {
+    final hasErrors = _judgmentResult!.errors.isNotEmpty;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.coolGray200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                hasErrors ? Icons.info_outline_rounded : Icons.check_circle_outline_rounded,
+                color: hasErrors ? AppTheme.coolGray600 : AppTheme.accentGreen,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                hasErrors ? '修改说明' : '句子评价',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.coolGray700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (hasErrors) ...[
+            ..._judgmentResult!.errors.map((error) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '• ${error.description}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.coolGray600,
+                  height: 1.4,
+                ),
+              ),
+            )),
+          ] else ...[
+            Text(
+              '• 您的句子语法正确，用词恰当',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.coolGray600,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '• 参考句子提供了更地道的表达方式',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.coolGray600,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  /// 构建逐字母浮现的正确句子
+  Widget _buildAnimatedBetterSentence() {
+    return SizedBox(
+      width: double.infinity, // 固定宽度为屏幕宽度
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.coolGray200),
+        ),
+        child: Wrap(
+          alignment: WrapAlignment.start,
+          children: List.generate(_betterSentenceText.length, (index) {
+            final char = _betterSentenceText[index];
+            final isModified = _isCharModified(char, index);
+            
+            if (index >= _betterSentenceAnimations.length) {
+              return Text(
+                char,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
+                  fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                  height: 1.5,
+                ),
+              );
+            }
+            
+            return AnimatedBuilder(
+              animation: _betterSentenceAnimations[index],
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, 8 * (1 - _betterSentenceAnimations[index].value)),
+                  child: Opacity(
+                    opacity: _betterSentenceAnimations[index].value,
+                    child: Text(
+                      char,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
+                        fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ),
+    );
+  }
+  
+  /// 判断正确句子中的字符是否为修改过的
+  bool _isCharModified(String char, int charIndex) {
+    final userWords = _userSentence.split(' ');
+    final correctWords = _judgmentResult!.betterSentences.first.split(' ');
+    
+    // 找到当前字符在正确句子中对应的单词
+    String currentWord = '';
+    int wordStartIndex = 0;
+    int wordIndex = 0;
+    
+    for (int i = 0; i < correctWords.length; i++) {
+      final word = correctWords[i];
+      final wordEndIndex = wordStartIndex + word.length;
+      
+      if (charIndex >= wordStartIndex && charIndex < wordEndIndex) {
+        currentWord = word;
+        wordIndex = i;
+        break;
+      }
+      
+      wordStartIndex = wordEndIndex + 1; // +1 for space
+    }
+    
+    if (currentWord.isEmpty) return false;
+    
+    // 新增的单词（正确句子更长）
+    if (wordIndex >= userWords.length) return true;
+    
+    final userWord = userWords[wordIndex];
+    final userWordClean = userWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    final correctWordClean = currentWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    
+    // 拼写不同
+    if (userWordClean != correctWordClean) return true;
+    
+    // 大小写不同
+    if (userWord != currentWord) return true;
+    
+    // 检查是否在语法修正的范围内
+    return _isWordInCorrectedGrammarRange(currentWord, wordIndex, userWords, correctWords);
+  }
+  
+  /// 判断正确句子中的单词是否为修改过的
+  bool _isWordModified(String correctWord, int index) {
+    final userWords = _userSentence.split(' ');
+    final correctWords = _judgmentResult!.betterSentences.first.split(' ');
+    
+    // 新增的单词（正确句子更长）
+    if (index >= userWords.length) return true;
+    
+    final userWord = userWords[index];
+    final userWordClean = userWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    final correctWordClean = correctWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+    
+    // 拼写不同
+    if (userWordClean != correctWordClean) return true;
+    
+    // 大小写不同
+    if (userWord != correctWord) return true;
+    
+    // 检查是否在语法修正的范围内
+    return _isWordInCorrectedGrammarRange(correctWord, index, userWords, correctWords);
+  }
+  
+  /// 检查单词是否在语法修正的范围内
+  bool _isWordInCorrectedGrammarRange(String correctWord, int index, List<String> userWords, List<String> correctWords) {
+    // 检查是否在"i am very like him" -> "I like him very much"的修正范围内
+    
+    // 在用户句子中找到"i am very like"的位置
+    for (int i = 0; i < userWords.length - 3; i++) {
+      if (userWords[i].toLowerCase() == 'i' && 
+          userWords[i + 1].toLowerCase() == 'am' && 
+          userWords[i + 2].toLowerCase() == 'very' && 
+          userWords[i + 3].toLowerCase() == 'like') {
+        
+        // 如果当前单词在这个范围内或者是修正后的结果，则标记为修改过的
+        if (index >= i && index <= i + 5) { // 扩展范围包括"him very much"
+          final currentWordLower = correctWord.toLowerCase();
+          if (currentWordLower == 'i' || currentWordLower == 'like' || 
+              currentWordLower == 'him' || currentWordLower == 'very' || 
+              currentWordLower == 'much') {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+
   @override
   void dispose() {
     // 使用性能优化器清理资源
@@ -1696,6 +2592,8 @@ class _HomePageState extends State<HomePage>
     PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
     
     _disposeCharacterControllers();
+    _disposeBetterSentenceControllers();
+    _sentenceInputController.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -1895,81 +2793,4 @@ class ExtendedWordData {
   }
 }
 
-/// 呼吸线条绘制器
-class _BreathLinesPainter extends CustomPainter {
-  final Color color;
-  final double phase;
-  final Offset dragOffset;
-  final bool isDragging;
-
-  _BreathLinesPainter({
-    required this.color,
-    required this.phase,
-    this.dragOffset = Offset.zero,
-    this.isDragging = false,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = size.width / 2.2;
-    final lines = 5; // 呼吸线条数量
-    
-    // 拖拽时的形变计算
-    double stretchX = 1.0, stretchY = 1.0;
-    if (isDragging && dragOffset.distance > 0) {
-      stretchX = 1.0 + dragOffset.dx.abs() / 200;
-      stretchY = 1.0 + dragOffset.dy.abs() / 200;
-    }
-    
-    for (int i = 0; i < lines; i++) {
-      final opacity = 0.5 - i * 0.08;
-      final paint = Paint()
-        ..color = color.withOpacity(opacity)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0;
-
-      // 每条线的呼吸相位和幅度略有不同
-      final breath = sin(phase * (1.1 + i * 0.13) + i) * (8 - i * 1.5);
-      final radius = baseRadius - i * 14 + breath;
-      
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.scale(stretchX, stretchY);
-      canvas.drawCircle(Offset.zero, radius, paint);
-      canvas.restore();
-    }
-    
-    // 中心填充圆
-    final fillPaint = Paint()
-      ..color = color.withOpacity(0.92)
-      ..style = PaintingStyle.fill;
-    final fillRadius = baseRadius * 0.38 + sin(phase) * 2;
-    
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(stretchX, stretchY);
-    canvas.drawCircle(Offset.zero, fillRadius, fillPaint);
-    canvas.restore();
-
-    // 内部淡色圆
-    final innerPaint = Paint()
-      ..color = Colors.white.withOpacity(0.13)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(stretchX, stretchY);
-    canvas.drawCircle(Offset.zero, fillRadius * 0.7, innerPaint);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _BreathLinesPainter oldDelegate) {
-    return oldDelegate.phase != phase ||
-        oldDelegate.color != color ||
-        oldDelegate.dragOffset != dragOffset ||
-        oldDelegate.isDragging != isDragging;
-  }
-} 
+ 

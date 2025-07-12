@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
+import '../utils/deepseek_api_service.dart';
 import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
@@ -17,11 +18,34 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _autoPlayPronunciation = true;
   bool _enableDarkMode = false;
   PronunciationType _pronunciationType = PronunciationType.uk;
+  
+  // DeepSeek API设置
+  final TextEditingController _deepSeekApiKeyController = TextEditingController();
+  bool _isApiKeyValid = false;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _deepSeekApiKeyController.addListener(_onApiKeyChanged);
+  }
+  
+  @override
+  void dispose() {
+    _deepSeekApiKeyController.dispose();
+    super.dispose();
+  }
+  
+  /// API Key 变化监听
+  void _onApiKeyChanged() {
+    final apiKey = _deepSeekApiKeyController.text.trim();
+    final isValid = apiKey.isNotEmpty && apiKey.length >= 10;
+    
+    if (isValid != _isApiKeyValid) {
+      setState(() {
+        _isApiKeyValid = isValid;
+      });
+    }
   }
 
   @override
@@ -93,8 +117,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ]),
 
                   const SizedBox(height: 16),
+                  
+                  // AI设置部分
+                  _buildSectionHeader('AI设置'),
+                  _buildSettingsCard([
+                    _buildApiKeyTile(),
+                  ]),
 
-
+                  const SizedBox(height: 16),
 
                   // 界面设置部分
                   _buildSectionHeader('界面设置'),
@@ -239,17 +269,140 @@ class _SettingsPageState extends State<SettingsPage> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
+  
+  /// 构建API Key设置项
+  Widget _buildApiKeyTile() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.vpn_key_outlined,
+                size: 20,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'DeepSeek API Key',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              if (_isApiKeyValid)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '已配置',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _deepSeekApiKeyController,
+            decoration: InputDecoration(
+              hintText: '请输入DeepSeek API Key',
+              hintStyle: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                fontSize: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              suffixIcon: _isApiKeyValid
+                  ? Icon(
+                      Icons.check_circle_outlined,
+                      color: Colors.green.shade600,
+                      size: 20,
+                    )
+                  : null,
+            ),
+            style: const TextStyle(fontSize: 14),
+            obscureText: true,
+            onChanged: (_) => _saveSettings(),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '用于AI造句判断功能，请在DeepSeek官网获取API Key',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: _testApiConnection,
+                icon: const Icon(Icons.network_check, size: 16),
+                label: const Text('测试连接'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: () => _showApiKeyHelp(),
+                icon: const Icon(Icons.help_outline, size: 16),
+                label: const Text('获取帮助'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
 
 
   /// 加载设置
   void _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final apiKey = await DeepSeekApiService.getApiKey();
+    
     setState(() {
       _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
       _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
       final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
       _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
+      
+      // 加载DeepSeek API key
+      _deepSeekApiKeyController.text = apiKey ?? '';
+      _isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
     });
   }
 
@@ -259,6 +412,12 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('auto_play_pronunciation', _autoPlayPronunciation);
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
+    
+    // 保存DeepSeek API key
+    final apiKey = _deepSeekApiKeyController.text.trim();
+    if (apiKey.isNotEmpty) {
+      await DeepSeekApiService.setApiKey(apiKey);
+    }
   }
 
   /// 显示重置对话框
@@ -324,10 +483,113 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 16),
         const Text('特性：'),
         const Text('• 流式文字动画效果'),
-        const Text('• 智能学习算法'),
+        const Text('• AI智能造句判断'),
         const Text('• 简约优雅的界面设计'),
         const Text('• 个性化学习设置'),
       ],
+    );
+  }
+  
+  /// 测试API连接
+  void _testApiConnection() async {
+    if (!_isApiKeyValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先输入有效的API Key')),
+      );
+      return;
+    }
+    
+    // 显示加载对话框
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('正在测试连接...'),
+          ],
+        ),
+      ),
+    );
+    
+    try {
+      final isConnected = await DeepSeekApiService.testApiConnection();
+      Navigator.pop(context); // 关闭加载对话框
+      
+      if (isConnected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ API连接成功！'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ API连接失败，请检查API Key是否正确'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // 关闭加载对话框
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 测试失败: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  /// 显示API Key帮助
+  void _showApiKeyHelp() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('如何获取DeepSeek API Key'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('1. 访问DeepSeek官网：'),
+              SelectableText(
+                'https://platform.deepseek.com',
+                style: TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text('2. 注册并登录账户'),
+              SizedBox(height: 8),
+              Text('3. 进入API Keys页面'),
+              SizedBox(height: 8),
+              Text('4. 创建新的API Key'),
+              SizedBox(height: 8),
+              Text('5. 复制API Key并粘贴到此处'),
+              SizedBox(height: 16),
+              Text(
+                '注意：请妥善保管您的API Key，不要分享给他人',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
     );
   }
 }
