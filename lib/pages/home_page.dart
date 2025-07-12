@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/word_book.dart';
 import '../utils/cache_service.dart';
+import '../utils/responsive_helper.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
@@ -578,71 +579,73 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'WordFlow',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 22, // 从28减少到22
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 10.0), // 从12减少到10
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              hoverColor: Colors.transparent,
-              focusColor: Colors.transparent,
-            ),
-            child: IconButton(
-              enableFeedback: false,
-              icon: const Icon(Icons.library_books_outlined),
-              iconSize: 26, // 从40减少到26
-              onPressed: () {
-                _playBookPageSound();
-                Navigator.pushNamed(context, '/library');
-              },
-              tooltip: '词库选择',
-              color: Theme.of(context).primaryColor,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 40, // 从48减少到40
-                minHeight: 40, // 从48减少到40
+    return ResponsiveBuilder(
+      builder: (context, deviceType) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'WordFlow',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
               ),
             ),
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10.0), // 从12减少到10
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                focusColor: Colors.transparent,
-              ),
-              child: IconButton(
-                enableFeedback: false,
-                icon: const Icon(Icons.settings_outlined),
-                iconSize: 26, // 从40减少到26
-                onPressed: () {
-                  _playSettingSound();
-                  Navigator.pushNamed(context, '/settings');
-                },
-                color: Theme.of(context).primaryColor,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 40, // 从48减少到40
-                  minHeight: 40, // 从48减少到40
+            leading: Padding(
+              padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                ),
+                child: IconButton(
+                  enableFeedback: false,
+                  icon: const Icon(Icons.library_books_outlined),
+                  iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
+                  onPressed: () {
+                    _playBookPageSound();
+                    Navigator.pushNamed(context, '/library');
+                  },
+                  tooltip: '词库选择',
+                  color: Theme.of(context).primaryColor,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(
+                    minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
+                    minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
+                  ),
                 ),
               ),
             ),
+            actions: [
+              Padding(
+                padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                  ),
+                  child: IconButton(
+                    enableFeedback: false,
+                    icon: const Icon(Icons.settings_outlined),
+                    iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
+                    onPressed: () {
+                      _playSettingSound();
+                      Navigator.pushNamed(context, '/settings');
+                    },
+                    color: Theme.of(context).primaryColor,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(
+                      minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
+                      minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
       body: Stack(
         children: [
           // 主体内容
@@ -652,17 +655,19 @@ class _HomePageState extends State<HomePage>
           // 悬浮小球
           Positioned(
             left: 0, right: 0,
-            bottom: 60, // 从70减少到60，考虑到悬浮球本身变小了，可以更靠近底部
+            bottom: ResponsiveHelper.getResponsiveSpacing(context, 60),
             child: _buildFluidDragBall(),
           ),
           // 底部提示
           Positioned(
             left: 0, right: 0,
-            bottom: 8, // 从12减少到8，更贴近底部
+            bottom: ResponsiveHelper.getResponsiveSpacing(context, 8),
             child: _buildAnimatedHintText(),
           ),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -741,24 +746,32 @@ class _HomePageState extends State<HomePage>
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16), // 从20减少到16
+      padding: ResponsiveHelper.getResponsivePadding(context),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: MediaQuery.of(context).size.height - 
                      kToolbarHeight - 
                      MediaQuery.of(context).padding.top - 
-                     MediaQuery.of(context).padding.bottom - 32, // 从40减少到32
+                     MediaQuery.of(context).padding.bottom - 
+                     ResponsiveHelper.getResponsiveSpacing(context, 32),
         ),
         child: IntrinsicHeight(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SizedBox(height: 24), // 从48减少到24，给头部更多空间
-              _buildWordBookInfoSection(), // 新的信息区域
-              SizedBox(height: 16), // 从20减少到16
-              Flexible(child: _buildWordCard(_currentWord!)),
-              SizedBox(height: 80), // 从90减少到80，为悬浮球留出合适空间
-            ],
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
+                  _buildWordBookInfoSection(),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                  Flexible(child: _buildWordCard(_currentWord!)),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -773,10 +786,13 @@ class _HomePageState extends State<HomePage>
       children: [
         // 词库名称
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12),
+            vertical: ResponsiveHelper.getResponsiveSpacing(context, 5),
+          ),
           decoration: BoxDecoration(
             color: Theme.of(context).primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 14)),
             border: Border.all(
               color: Theme.of(context).primaryColor.withOpacity(0.3),
               width: 1,
@@ -788,15 +804,16 @@ class _HomePageState extends State<HomePage>
               Icon(
                 Icons.menu_book_rounded,
                 color: Theme.of(context).primaryColor,
-                size: 14,
+                size: ResponsiveHelper.getResponsiveIconSize(context, 14),
               ),
-              SizedBox(width: 6),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
               Flexible(
                 child: Text(
                   _currentWordBookName!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).primaryColor,
                     fontWeight: FontWeight.w600,
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -806,14 +823,17 @@ class _HomePageState extends State<HomePage>
           ),
         ),
         
-        SizedBox(height: 8),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
         
         // 学习进度
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 10),
+            vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
+          ),
           decoration: BoxDecoration(
             color: Theme.of(context).primaryColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 12)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -821,14 +841,14 @@ class _HomePageState extends State<HomePage>
               Icon(
                 Icons.analytics_outlined,
                 color: Theme.of(context).primaryColor.withOpacity(0.7),
-                size: 12,
+                size: ResponsiveHelper.getResponsiveIconSize(context, 12),
               ),
-              SizedBox(width: 4),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
               Text(
                 '已学 $_studiedWordsCount 词',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).primaryColor.withOpacity(0.7),
-                  fontSize: 12,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
                 ),
               ),
             ],

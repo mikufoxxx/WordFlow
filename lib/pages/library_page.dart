@@ -4,6 +4,7 @@ import '../models/word_book.dart';
 import '../utils/github_api_service.dart';
 import '../utils/cache_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/responsive_helper.dart';
 
 /// 词库状态枚举
 enum WordBookStatus {
@@ -647,10 +648,39 @@ class _LibraryPageState extends State<LibraryPage>
 
   @override
   Widget build(BuildContext context) {
+    return ResponsiveBuilder(
+      builder: (context, deviceType) {
+        if (ResponsiveHelper.shouldUseSideNavigation(context)) {
+          return _buildTabletLayout();
+        } else {
+          return _buildMobileLayout();
+        }
+      },
+    );
+  }
+
+  /// 构建手机端布局
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: _buildAppBar(),
       body: _buildBody(),
+    );
+  }
+
+  /// 构建平板端布局
+  Widget _buildTabletLayout() {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: _buildAppBar(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+          ),
+          child: _buildBody(),
+        ),
+      ),
     );
   }
   
@@ -664,8 +694,8 @@ class _LibraryPageState extends State<LibraryPage>
     return AppBar(
       title: Text(
         '词库选择 (${_allWordBookItems.length})',
-        style: const TextStyle(
-          fontSize: 16, // 与主页保持一致
+        style: TextStyle(
+          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
           fontWeight: FontWeight.w600,
           color: AppTheme.darkGray,
         ),
@@ -674,36 +704,36 @@ class _LibraryPageState extends State<LibraryPage>
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 10.0), // 与主页保持一致
+        padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
         child: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
-          iconSize: 26, // 与主页保持一致
+          iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
           onPressed: () => Navigator.pop(context),
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(
-            minWidth: 40, // 与主页保持一致
-            minHeight: 40, // 与主页保持一致
+          constraints: BoxConstraints(
+            minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
+            minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
           ),
         ),
       ),
       actions: [
         // 查看已下载词库按钮
         Padding(
-          padding: const EdgeInsets.only(right: 10.0), // 与主页保持一致
+          padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
           child: Stack(
             children: [
               IconButton(
                 icon: Icon(
                   Icons.download_done_rounded,
                   color: AppTheme.primaryGray,
-                  size: 26, // 与主页保持一致
+                  size: ResponsiveHelper.getResponsiveIconSize(context, 26),
                 ),
                 onPressed: _showDownloadedBooks,
                 tooltip: '查看已下载词库',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 40, // 与主页保持一致
-                  minHeight: 40, // 与主页保持一致
+                constraints: BoxConstraints(
+                  minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
+                  minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
                 ),
               ),
               if (downloadedCount > 0)

@@ -3,6 +3,7 @@ import 'package:lordicon/lordicon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_theme.dart';
 import '../utils/animated_text_helper.dart';
+import '../utils/responsive_helper.dart';
 import 'dart:async'; // Added for Timer
 
 /// 起始页面 - 重新设计的引导流程
@@ -163,49 +164,60 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 页面指示器
-            _buildPageIndicator(),
-            
-            // 主要内容
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemCount: _pages.length,
-                itemBuilder: (context, index) => _buildPage(index),
+    return ResponsiveBuilder(
+      builder: (context, deviceType) {
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+                ),
+                child: Column(
+                  children: [
+                    // 页面指示器
+                    _buildPageIndicator(),
+                    
+                    // 主要内容
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: _onPageChanged,
+                        itemCount: _pages.length,
+                        itemBuilder: (context, index) => _buildPage(index),
+                      ),
+                    ),
+                    
+                    // 底部按钮
+                    _buildBottomButtons(),
+                  ],
+                ),
               ),
             ),
-            
-            // 底部按钮
-            _buildBottomButtons(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
   
   /// 构建页面指示器
   Widget _buildPageIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16), // 从20减少到16
+      padding: EdgeInsets.symmetric(vertical: ResponsiveHelper.getResponsiveSpacing(context, 16)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(_pages.length, (index) {
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: _currentPage == index ? 20 : 8, // 从24减少到20
-            height: 6, // 从8减少到6
+            margin: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+            width: _currentPage == index ? ResponsiveHelper.getResponsiveSpacing(context, 20) : ResponsiveHelper.getResponsiveSpacing(context, 8),
+            height: ResponsiveHelper.getResponsiveSpacing(context, 6),
             decoration: BoxDecoration(
               color: _currentPage == index 
                   ? _pages[index].color 
                   : AppTheme.coolGray300,
-              borderRadius: BorderRadius.circular(3), // 从4减少到3
+              borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 3)),
             ),
           );
         }),
@@ -218,7 +230,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final page = _pages[index];
     
     return Padding(
-      padding: const EdgeInsets.all(20), // 从24减少到20
+      padding: ResponsiveHelper.getResponsivePadding(context),
       child: Column(
         children: [
           // 图标区域 - 不使用动画
@@ -476,7 +488,7 @@ class _OnboardingPageState extends State<OnboardingPage>
         AnimatedTextHelper.buildAnimatedText(
           text: page.title,
           style: TextStyle(
-            fontSize: 26, // 从32减少到26
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 26),
             fontWeight: FontWeight.w800,
             color: page.color,
             height: 1.2,
@@ -484,26 +496,26 @@ class _OnboardingPageState extends State<OnboardingPage>
           animationController: _textAnimationControllers[index],
           animationDelay: Duration.zero,
           characterDelay: const Duration(milliseconds: 80),
-          animationDistance: 25.0, // 从30减少到25
+          animationDistance: ResponsiveHelper.getResponsiveSpacing(context, 25.0),
         ),
         
-        const SizedBox(height: 10), // 从12减少到10
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 10)),
         
         // 副标题 - 逐字浮现动画
         AnimatedTextHelper.buildAnimatedText(
           text: page.subtitle,
           style: TextStyle(
-            fontSize: 16, // 从18减少到16
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
             fontWeight: FontWeight.w600,
             color: AppTheme.coolGray700,
           ),
           animationController: _textAnimationControllers[index],
           animationDelay: const Duration(milliseconds: 800),
           characterDelay: const Duration(milliseconds: 60),
-          animationDistance: 20.0, // 从25减少到20
+          animationDistance: ResponsiveHelper.getResponsiveSpacing(context, 20.0),
         ),
         
-        const SizedBox(height: 14), // 从16减少到14
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 14)),
         
         // 描述 - 逐字浮现动画，只有前两页显示，保持高度一致
         if (index != 2)

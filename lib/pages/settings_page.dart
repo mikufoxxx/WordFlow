@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/responsive_helper.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
 class SettingsPage extends StatefulWidget {
@@ -25,173 +26,175 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('设置'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(12), // 从16减少到12
-        children: [
-          // 学习设置部分
-          _buildSectionHeader('学习设置'),
-          _buildSettingsCard([
-            _buildSwitchTile(
-              title: '自动播放发音',
-              subtitle: '显示单词时自动播放发音',
-              value: _autoPlayPronunciation,
-              onChanged: (value) {
-                setState(() {
-                  _autoPlayPronunciation = value;
-                });
-                _saveSettings();
-              },
+    return ResponsiveBuilder(
+      builder: (context, deviceType) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              '设置',
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+              ),
             ),
-            _buildSwitchTile(
-              title: '文字动画效果',
-              subtitle: '开启单词的流式浮现动画',
-              value: _showWordAnimation,
-              onChanged: (value) {
-                setState(() {
-                  _showWordAnimation = value;
-                });
-                _saveSettings();
-              },
-            ),
-            _buildSliderTile(
-              title: '每日单词目标',
-              subtitle: '设置每天要学习的单词数量',
-              value: _dailyWordGoal.toDouble(),
-              min: 5,
-              max: 100,
-              divisions: 19,
-              onChanged: (value) {
-                setState(() {
-                  _dailyWordGoal = value.round();
-                });
-                _saveSettings();
-              },
-            ),
-          ]),
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: ResponsiveHelper.getMaxContentWidth(context),
+              ),
+              child: ListView(
+                padding: ResponsiveHelper.getResponsivePadding(context),
+                children: [
+                  // 学习设置部分
+                  _buildSectionHeader('学习设置'),
+                  _buildSettingsCard([
+                    _buildSwitchTile(
+                      title: '自动播放发音',
+                      subtitle: '显示单词时自动播放发音',
+                      value: _autoPlayPronunciation,
+                      onChanged: (value) {
+                        setState(() {
+                          _autoPlayPronunciation = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                    _buildSwitchTile(
+                      title: '文字动画效果',
+                      subtitle: '开启单词的流式浮现动画',
+                      value: _showWordAnimation,
+                      onChanged: (value) {
+                        setState(() {
+                          _showWordAnimation = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                    _buildSliderTile(
+                      title: '每日单词目标',
+                      subtitle: '设置每天要学习的单词数量',
+                      value: _dailyWordGoal.toDouble(),
+                      min: 5,
+                      max: 100,
+                      divisions: 19,
+                      onChanged: (value) {
+                        setState(() {
+                          _dailyWordGoal = value.round();
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ]),
 
-          const SizedBox(height: 16), // 从20减少到16
+                  const SizedBox(height: 16),
 
-          // 难度设置部分
-          _buildSectionHeader('难度设置'),
-          _buildSettingsCard([
-            _buildRadioListTile(
-              title: '简单',
-              subtitle: '常用基础词汇',
-              value: 'easy',
-              groupValue: _selectedDifficulty,
-              onChanged: (value) {
-                setState(() {
-                  _selectedDifficulty = value!;
-                });
-                _saveSettings();
-              },
-            ),
-            _buildRadioListTile(
-              title: '中等',
-              subtitle: '四六级词汇',
-              value: 'medium',
-              groupValue: _selectedDifficulty,
-              onChanged: (value) {
-                setState(() {
-                  _selectedDifficulty = value!;
-                });
-                _saveSettings();
-              },
-            ),
-            _buildRadioListTile(
-              title: '困难',
-              subtitle: '托福雅思词汇',
-              value: 'hard',
-              groupValue: _selectedDifficulty,
-              onChanged: (value) {
-                setState(() {
-                  _selectedDifficulty = value!;
-                });
-                _saveSettings();
-              },
-            ),
-          ]),
+                  // 难度设置部分
+                  _buildSectionHeader('学习难度'),
+                  _buildSettingsCard([
+                    _buildRadioListTile(
+                      title: '简单',
+                      subtitle: '基础词汇，适合初学者',
+                      value: 'easy',
+                      groupValue: _selectedDifficulty,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDifficulty = value!;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                    _buildRadioListTile(
+                      title: '中等',
+                      subtitle: '常用词汇，适合进阶学习',
+                      value: 'medium',
+                      groupValue: _selectedDifficulty,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDifficulty = value!;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                    _buildRadioListTile(
+                      title: '困难',
+                      subtitle: '高级词汇，挑战自我',
+                      value: 'hard',
+                      groupValue: _selectedDifficulty,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDifficulty = value!;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ]),
 
-          const SizedBox(height: 16), // 从20减少到16
+                  const SizedBox(height: 16),
 
-          // 外观设置部分
-          _buildSectionHeader('外观设置'),
-          _buildSettingsCard([
-            _buildSwitchTile(
-              title: '深色模式',
-              subtitle: '启用深色主题（开发中）',
-              value: _enableDarkMode,
-              onChanged: (value) {
-                setState(() {
-                  _enableDarkMode = value;
-                });
-                _saveSettings();
-                // TODO: 实现深色模式切换
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('深色模式功能开发中...')),
-                );
-              },
-            ),
-          ]),
+                  // 界面设置部分
+                  _buildSectionHeader('界面设置'),
+                  _buildSettingsCard([
+                    _buildSwitchTile(
+                      title: '深色模式',
+                      subtitle: '切换到深色主题',
+                      value: _enableDarkMode,
+                      onChanged: (value) {
+                        setState(() {
+                          _enableDarkMode = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ]),
 
-          const SizedBox(height: 16), // 从20减少到16
+                  const SizedBox(height: 16),
 
-          // 数据管理部分
-          _buildSectionHeader('数据管理'),
-          _buildSettingsCard([
-            _buildCompactListTile(
-              leading: const Icon(Icons.refresh_outlined),
-              title: '重置学习进度',
-              subtitle: '清除所有学习记录',
-              onTap: _showResetDialog,
-            ),
-            _buildCompactListTile(
-              leading: const Icon(Icons.download_outlined),
-              title: '导出学习数据',
-              subtitle: '备份学习记录到文件',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('导出功能开发中...')),
-                );
-              },
-            ),
-          ]),
+                  // 数据管理部分
+                  _buildSectionHeader('数据管理'),
+                  _buildSettingsCard([
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.refresh_outlined),
+                      title: '重置学习进度',
+                      subtitle: '清除所有学习记录',
+                      onTap: _showResetDialog,
+                    ),
+                  ]),
 
-          const SizedBox(height: 16), // 从20减少到16
+                  const SizedBox(height: 16),
 
-          // 关于部分
-          _buildSectionHeader('关于'),
-          _buildSettingsCard([
-            _buildCompactListTile(
-              leading: const Icon(Icons.info_outline),
-              title: '关于WordFlow',
-              subtitle: '版本 1.0.0',
-              onTap: _showAboutDialog,
+                  // 关于部分
+                  _buildSectionHeader('关于'),
+                  _buildSettingsCard([
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: '关于WordFlow',
+                      subtitle: '版本 1.0.0',
+                      onTap: _showAboutDialog,
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.feedback_outlined),
+                      title: '意见反馈',
+                      subtitle: '帮助我们改进应用',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('反馈功能开发中...')),
+                        );
+                      },
+                    ),
+                  ]),
+                ],
+              ),
             ),
-            _buildCompactListTile(
-              leading: const Icon(Icons.feedback_outlined),
-              title: '意见反馈',
-              subtitle: '帮助我们改进应用',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('反馈功能开发中...')),
-                );
-              },
-            ),
-          ]),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
   /// 构建节标题
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 6, bottom: 6, top: 6), // 减少间距
+      padding: const EdgeInsets.only(left: 6, bottom: 6, top: 6),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -205,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 构建设置卡片
   Widget _buildSettingsCard(List<Widget> children) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8), // 减少底部间距
+      margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: children,
       ),
@@ -224,8 +227,8 @@ class _SettingsPageState extends State<SettingsPage> {
       title: Text(title),
       subtitle: Text(subtitle),
       onTap: onTap,
-      dense: true, // 启用紧凑模式
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 
@@ -242,8 +245,8 @@ class _SettingsPageState extends State<SettingsPage> {
       value: value,
       onChanged: onChanged,
       activeColor: Theme.of(context).primaryColor,
-      dense: true, // 启用紧凑模式
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 
@@ -262,8 +265,8 @@ class _SettingsPageState extends State<SettingsPage> {
       groupValue: groupValue,
       onChanged: onChanged,
       activeColor: Theme.of(context).primaryColor,
-      dense: true, // 启用紧凑模式
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 
@@ -283,7 +286,7 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(subtitle),
-          const SizedBox(height: 4), // 从8减少到4
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
@@ -296,9 +299,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   activeColor: Theme.of(context).primaryColor,
                 ),
               ),
-              const SizedBox(width: 8), // 减少间距
+              const SizedBox(width: 8),
               Container(
-                width: 32, // 减少宽度
+                width: 32,
                 alignment: Alignment.center,
                 child: Text(
                   value.round().toString(),
@@ -311,8 +314,8 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
-      dense: true, // 启用紧凑模式
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 
