@@ -1569,15 +1569,62 @@ class _HomePageState extends State<HomePage>
                             scale: _wordScaleAnimation.value,
                             child: Container(
                               constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
-                              child: _buildAnimatedText(
-                                word.word,
-                                _wordSlideAnimations,
-                                _wordOpacityAnimations,
-                                Theme.of(context).textTheme.headlineLarge!.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                    fontSize: 34,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // 单词文本
+                                  _buildAnimatedText(
+                                    word.word,
+                                    _wordSlideAnimations,
+                                    _wordOpacityAnimations,
+                                    Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                      fontSize: 34,
+                                    ),
+                                  ),
+                                  
+                                  // 发音按钮
+                                  FutureBuilder<Map<String, dynamic>>(
+                                    future: _getPhoneticData(word),
+                                    builder: (context, snapshot) {
+                                      if (!snapshot.hasData) {
+                                        return SizedBox.shrink();
+                                      }
+                                      
+                                      final hasAudio = snapshot.data!['hasAudio'] as bool;
+                                      
+                                      if (!hasAudio) {
+                                        return SizedBox.shrink();
+                                      }
+                                      
+                                      return Padding(
+                                        padding: const EdgeInsets.only(left: 12),
+                                        child: AnimatedOpacity(
+                                          duration: const Duration(milliseconds: 600),
+                                          curve: Curves.easeOutCubic,
+                                          opacity: _fadeController.value,
+                                          child: GestureDetector(
+                                            onTap: _playWordPronunciation,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Icon(
+                                                Icons.volume_up_outlined,
+                                                size: 20,
+                                                color: Theme.of(context).primaryColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -1614,18 +1661,65 @@ class _HomePageState extends State<HomePage>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 单词本体
+                          // 单词本体和发音按钮
                           Container(
                             constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
-                            child: _buildAnimatedText(
-                              word.word,
-                              _wordSlideAnimations,
-                              _wordOpacityAnimations,
-                              Theme.of(context).textTheme.headlineLarge!.copyWith(
-                                fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                  fontSize: 34,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // 单词文本
+                                _buildAnimatedText(
+                                  word.word,
+                                  _wordSlideAnimations,
+                                  _wordOpacityAnimations,
+                                  Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                    fontSize: 34,
+                                  ),
+                                ),
+                                
+                                // 发音按钮
+                                FutureBuilder<Map<String, dynamic>>(
+                                  future: _getPhoneticData(word),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return SizedBox.shrink();
+                                    }
+                                    
+                                    final hasAudio = snapshot.data!['hasAudio'] as bool;
+                                    
+                                    if (!hasAudio) {
+                                      return SizedBox.shrink();
+                                    }
+                                    
+                                    return Padding(
+                                      padding: const EdgeInsets.only(left: 12),
+                                      child: AnimatedOpacity(
+                                        duration: const Duration(milliseconds: 600),
+                                        curve: Curves.easeOutCubic,
+                                        opacity: _fadeController.value,
+                                        child: GestureDetector(
+                                          onTap: _playWordPronunciation,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              Icons.volume_up_outlined,
+                                              size: 20,
+                                              color: Theme.of(context).primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                           
@@ -1688,37 +1782,21 @@ class _HomePageState extends State<HomePage>
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeOutCubic,
           opacity: _fadeController.value,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
                 phonetic,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).primaryColor,
                   fontStyle: FontStyle.italic,
                   fontSize: 16,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2, // 最多显示两行
+                overflow: TextOverflow.ellipsis,
               ),
-              if (hasAudio) ...[
-                const SizedBox(width: 8),
-                // 发音按钮
-                GestureDetector(
-                  onTap: _playWordPronunciation,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.volume_up_outlined,
-                      size: 18,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         );
       },
