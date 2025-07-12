@@ -34,43 +34,43 @@ class AppTheme {
       
       cardTheme: CardTheme(
         color: cardColor,
-        elevation: 1,
-        shadowColor: Colors.black.withOpacity(0.06), // 修复：不能在const中使用withOpacity
+        elevation: 0.5, // 减少阴影
+        shadowColor: Colors.black.withOpacity(0.04), // 减少阴影透明度
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(12)), // 减少圆角
         ),
       ),
       
       textTheme: TextTheme(
         headlineLarge: TextStyle(
-          fontSize: 32,
+          fontSize: 24, // 从32减少到24
           fontWeight: FontWeight.w700,
           color: coolGray800,
-          letterSpacing: 0.5,
+          letterSpacing: 0.3, // 减少字间距
         ),
         headlineMedium: TextStyle(
-          fontSize: 24,
+          fontSize: 20, // 从24减少到20
           fontWeight: FontWeight.w600,
           color: coolGray700,
-          letterSpacing: 0.3,
+          letterSpacing: 0.2, // 减少字间距
         ),
         titleLarge: TextStyle(
-          fontSize: 20,
+          fontSize: 18, // 从20减少到18
           fontWeight: FontWeight.w500,
           color: coolGray600,
         ),
         bodyLarge: TextStyle(
-          fontSize: 16,
+          fontSize: 14, // 从16减少到14
           color: coolGray700,
-          height: 1.5,
+          height: 1.4, // 减少行高
         ),
         bodyMedium: TextStyle(
-          fontSize: 14,
+          fontSize: 13, // 从14减少到13
           color: coolGray500,
-          height: 1.4,
+          height: 1.3, // 减少行高
         ),
         labelLarge: TextStyle(
-          fontSize: 12,
+          fontSize: 11, // 从12减少到11
           color: coolGray400,
           fontWeight: FontWeight.w500,
         ),
@@ -80,10 +80,10 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: coolGray600,
           foregroundColor: Colors.white,
-          elevation: 1,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          elevation: 0.5, // 减少阴影
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), // 减少padding
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10), // 减少圆角
           ),
         ),
       ),
@@ -91,12 +91,13 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: coolGray50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // 减少内边距
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10), // 减少圆角
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10), // 减少圆角
           borderSide: BorderSide(color: coolGray300, width: 1),
         ),
       ),
@@ -107,10 +108,33 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          fontSize: 18,
+          fontSize: 16, // 从18减少到16
           fontWeight: FontWeight.w600,
           color: coolGray700,
         ),
+      ),
+      
+      // 添加ListTile主题，减少列表项高度
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // 减少内边距
+        minVerticalPadding: 4, // 减少最小垂直间距
+        dense: true, // 启用紧凑模式
+      ),
+      
+      // 添加Icon主题，减少图标大小
+      iconTheme: IconThemeData(
+        size: 20, // 减少默认图标大小
+        color: coolGray500,
+      ),
+      
+      // 添加Chip主题
+      chipTheme: ChipThemeData(
+        backgroundColor: coolGray100,
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: coolGray700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }

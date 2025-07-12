@@ -30,7 +30,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: const Text('设置'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12), // 从16减少到12
         children: [
           // 学习设置部分
           _buildSectionHeader('学习设置'),
@@ -73,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16), // 从20减少到16
 
           // 难度设置部分
           _buildSectionHeader('难度设置'),
@@ -116,7 +116,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16), // 从20减少到16
 
           // 外观设置部分
           _buildSectionHeader('外观设置'),
@@ -138,21 +138,21 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16), // 从20减少到16
 
           // 数据管理部分
           _buildSectionHeader('数据管理'),
           _buildSettingsCard([
-            ListTile(
+            _buildCompactListTile(
               leading: const Icon(Icons.refresh_outlined),
-              title: const Text('重置学习进度'),
-              subtitle: const Text('清除所有学习记录'),
+              title: '重置学习进度',
+              subtitle: '清除所有学习记录',
               onTap: _showResetDialog,
             ),
-            ListTile(
+            _buildCompactListTile(
               leading: const Icon(Icons.download_outlined),
-              title: const Text('导出学习数据'),
-              subtitle: const Text('备份学习记录到文件'),
+              title: '导出学习数据',
+              subtitle: '备份学习记录到文件',
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('导出功能开发中...')),
@@ -161,21 +161,21 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16), // 从20减少到16
 
           // 关于部分
           _buildSectionHeader('关于'),
           _buildSettingsCard([
-            ListTile(
+            _buildCompactListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('关于WordFlow'),
-              subtitle: const Text('版本 1.0.0'),
+              title: '关于WordFlow',
+              subtitle: '版本 1.0.0',
               onTap: _showAboutDialog,
             ),
-            ListTile(
+            _buildCompactListTile(
               leading: const Icon(Icons.feedback_outlined),
-              title: const Text('意见反馈'),
-              subtitle: const Text('帮助我们改进应用'),
+              title: '意见反馈',
+              subtitle: '帮助我们改进应用',
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('反馈功能开发中...')),
@@ -191,7 +191,7 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 构建节标题
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8, top: 8),
+      padding: const EdgeInsets.only(left: 6, bottom: 6, top: 6), // 减少间距
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -205,9 +205,27 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 构建设置卡片
   Widget _buildSettingsCard(List<Widget> children) {
     return Card(
+      margin: const EdgeInsets.only(bottom: 8), // 减少底部间距
       child: Column(
         children: children,
       ),
+    );
+  }
+
+  /// 构建紧凑的列表项
+  Widget _buildCompactListTile({
+    required Widget leading,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: leading,
+      title: Text(title),
+      subtitle: Text(subtitle),
+      onTap: onTap,
+      dense: true, // 启用紧凑模式
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
     );
   }
 
@@ -224,6 +242,28 @@ class _SettingsPageState extends State<SettingsPage> {
       value: value,
       onChanged: onChanged,
       activeColor: Theme.of(context).primaryColor,
+      dense: true, // 启用紧凑模式
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
+    );
+  }
+
+  /// 构建单选按钮设置项
+  Widget _buildRadioListTile({
+    required String title,
+    required String subtitle,
+    required String value,
+    required String groupValue,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return RadioListTile<String>(
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: value,
+      groupValue: groupValue,
+      onChanged: onChanged,
+      activeColor: Theme.of(context).primaryColor,
+      dense: true, // 启用紧凑模式
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
     );
   }
 
@@ -243,7 +283,7 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(subtitle),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4), // 从8减少到4
           Row(
             children: [
               Expanded(
@@ -256,34 +296,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   activeColor: Theme.of(context).primaryColor,
                 ),
               ),
-              Text(
-                '${value.round()}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8), // 减少间距
+              Container(
+                width: 32, // 减少宽度
+                alignment: Alignment.center,
+                child: Text(
+                  value.round().toString(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  /// 构建单选设置项
-  Widget _buildRadioListTile({
-    required String title,
-    required String subtitle,
-    required String value,
-    required String groupValue,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return RadioListTile<String>(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: Theme.of(context).primaryColor,
+      dense: true, // 启用紧凑模式
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // 减少内边距
     );
   }
 

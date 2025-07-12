@@ -192,20 +192,20 @@ class _OnboardingPageState extends State<OnboardingPage>
   /// 构建页面指示器
   Widget _buildPageIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 16), // 从20减少到16
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(_pages.length, (index) {
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: _currentPage == index ? 24 : 8,
-            height: 8,
+            width: _currentPage == index ? 20 : 8, // 从24减少到20
+            height: 6, // 从8减少到6
             decoration: BoxDecoration(
               color: _currentPage == index 
                   ? _pages[index].color 
                   : AppTheme.coolGray300,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(3), // 从4减少到3
             ),
           );
         }),
@@ -218,7 +218,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final page = _pages[index];
     
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20), // 从24减少到20
       child: Column(
         children: [
           // 图标区域 - 不使用动画
@@ -269,23 +269,23 @@ class _OnboardingPageState extends State<OnboardingPage>
     });
 
     return Container(
-      width: 150,
-      height: 150,
+      width: 120, // 从150减少到120
+      height: 120, // 从150减少到120
       decoration: BoxDecoration(
         color: page.color.withOpacity(0.1),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: page.color.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: page.color.withOpacity(0.15), // 从0.2减少到0.15
+            blurRadius: 15, // 从20减少到15
+            offset: const Offset(0, 8), // 从10减少到8
           ),
         ],
       ),
       child: IconViewer(
         controller: controller,
-        width: 100,
-        height: 100,
+        width: 80, // 从100减少到80
+        height: 80, // 从100减少到80
       ),
     );
   }
@@ -293,7 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   /// 构建学习流程轮播图 - 不使用动画
   Widget _buildLearningCarousel() {
     return Container(
-      height: 280,
+      height: 240, // 从280减少到240
       child: PageView.builder(
         controller: _carouselController,
         onPageChanged: (index) {
@@ -305,10 +305,10 @@ class _OnboardingPageState extends State<OnboardingPage>
         itemBuilder: (context, index) {
           final step = _learningSteps[index];
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
             decoration: BoxDecoration(
               color: step.color.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20), // 从24减少到20
               border: Border.all(
                 color: step.color.withOpacity(0.2),
                 width: 1.5,
@@ -319,60 +319,60 @@ class _OnboardingPageState extends State<OnboardingPage>
               children: [
                 // 步骤图标
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 68, // 从80减少到68
+                  height: 68, // 从80减少到68
                   decoration: BoxDecoration(
                     color: step.color.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     step.icon,
-                    size: 40,
+                    size: 32, // 从40减少到32
                     color: step.color,
                   ),
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16), // 从20减少到16
                 
                 // 步骤编号
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), // 从12,6减少到10,5
                   decoration: BoxDecoration(
                     color: step.color,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16), // 从20减少到16
                   ),
                   child: Text(
                     '第 ${index + 1} 步',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 11, // 从12减少到11
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14), // 从16减少到14
                 
                 // 步骤标题
                 Text(
                   step.title,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18, // 从20减少到18
                     fontWeight: FontWeight.w700,
                     color: step.color,
                   ),
                 ),
                 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6), // 从8减少到6
                 
                 // 步骤描述
                 Text(
                   step.description,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13, // 从14减少到13
                     color: AppTheme.coolGray600,
-                    height: 1.4,
+                    height: 1.3, // 从1.4减少到1.3
                   ),
                 ),
               ],
@@ -398,31 +398,31 @@ class _OnboardingPageState extends State<OnboardingPage>
       children: [
         // API连接图标
         Container(
-          width: 120,
-          height: 120,
+          width: 100, // 从120减少到100
+          height: 100, // 从120减少到100
           decoration: BoxDecoration(
             color: page.color.withOpacity(0.1),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: page.color.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: page.color.withOpacity(0.15), // 从0.2减少到0.15
+                blurRadius: 15, // 从20减少到15
+                offset: const Offset(0, 8), // 从10减少到8
               ),
             ],
           ),
           child: IconViewer(
             controller: controllerlink,
-            width: 60,
-            height: 60,
+            width: 50, // 从60减少到50
+            height: 50, // 从60减少到50
           ),
         ),
         
-        const SizedBox(height: 40),
+        const SizedBox(height: 32), // 从40减少到32
         
         // Token输入框
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
           child: TextField(
             controller: _tokenController,
             decoration: InputDecoration(
@@ -430,36 +430,36 @@ class _OnboardingPageState extends State<OnboardingPage>
               hintText: '请输入您的API Token',
               prefixIcon: Icon(Icons.key_outlined, color: page.color),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12), // 从16减少到12
                 borderSide: BorderSide(color: AppTheme.coolGray300),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12), // 从16减少到12
                 borderSide: BorderSide(color: page.color, width: 2),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12), // 从16减少到12
                 borderSide: BorderSide(color: AppTheme.coolGray300),
               ),
               filled: true,
               fillColor: AppTheme.backgroundColor,
             ),
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 14), // 从16减少到14
           ),
         ),
         
-        const SizedBox(height: 16),
+        const SizedBox(height: 14), // 从16减少到14
         
         // 帮助文本
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
           child: Text(
             '在墨墨背单词 APP 中：\n我的 → 更多设置 → 实验功能 → 开放API',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12, // 从13减少到12
               color: AppTheme.coolGray500,
-              height: 1.4,
+              height: 1.3, // 从1.4减少到1.3
             ),
           ),
         ),
@@ -476,7 +476,7 @@ class _OnboardingPageState extends State<OnboardingPage>
         AnimatedTextHelper.buildAnimatedText(
           text: page.title,
           style: TextStyle(
-            fontSize: 32,
+            fontSize: 26, // 从32减少到26
             fontWeight: FontWeight.w800,
             color: page.color,
             height: 1.2,
@@ -484,45 +484,45 @@ class _OnboardingPageState extends State<OnboardingPage>
           animationController: _textAnimationControllers[index],
           animationDelay: Duration.zero,
           characterDelay: const Duration(milliseconds: 80),
-          animationDistance: 30.0,
+          animationDistance: 25.0, // 从30减少到25
         ),
         
-        const SizedBox(height: 12),
+        const SizedBox(height: 10), // 从12减少到10
         
         // 副标题 - 逐字浮现动画
         AnimatedTextHelper.buildAnimatedText(
           text: page.subtitle,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16, // 从18减少到16
             fontWeight: FontWeight.w600,
             color: AppTheme.coolGray700,
           ),
           animationController: _textAnimationControllers[index],
           animationDelay: const Duration(milliseconds: 800),
           characterDelay: const Duration(milliseconds: 60),
-          animationDistance: 25.0,
+          animationDistance: 20.0, // 从25减少到20
         ),
         
-        const SizedBox(height: 16),
+        const SizedBox(height: 14), // 从16减少到14
         
         // 描述 - 逐字浮现动画，只有前两页显示，保持高度一致
         if (index != 2)
           AnimatedTextHelper.buildAnimatedText(
             text: page.description,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14, // 从16减少到14
               color: AppTheme.coolGray600,
-              height: 1.5,
+              height: 1.4, // 从1.5减少到1.4
             ),
             animationController: _textAnimationControllers[index],
             animationDelay: const Duration(milliseconds: 1400),
             characterDelay: const Duration(milliseconds: 40),
-            animationDistance: 20.0,
+            animationDistance: 18.0, // 从20减少到18
           )
         else
           // 第三页用占位符保持高度一致
           SizedBox(
-            height: 48, // 约等于两行描述文字的高度
+            height: 40, // 从48减少到40
           ),
       ],
     );
@@ -531,25 +531,25 @@ class _OnboardingPageState extends State<OnboardingPage>
   /// 构建底部按钮
   Widget _buildBottomButtons() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20), // 从24减少到20
       child: Row(
         children: [
           // 左侧按钮 - 只在最后一页显示
           if (_currentPage == _pages.length - 1)
             SizedBox(
-              width: 120, // 固定宽度
+              width: 110, // 从120减少到110
               child: TextButton(
                 onPressed: _skipToken,
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 14), // 从16减少到14
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10), // 从12减少到10
                   ),
                 ),
                 child: Text(
                   '以后再说',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14, // 从16减少到14
                     color: AppTheme.coolGray600,
                     fontWeight: FontWeight.w600,
                   ),
@@ -565,15 +565,15 @@ class _OnboardingPageState extends State<OnboardingPage>
           
           // 右侧按钮 - 固定宽度，保持一致性
           SizedBox(
-            width: 120, // 固定宽度
+            width: 110, // 从120减少到110
             child: ElevatedButton(
               onPressed: _getButtonAction(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _getButtonColor(),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14), // 从16减少到14
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10), // 从12减少到10
                 ),
                 elevation: _getButtonElevation(),
                 shadowColor: _getButtonColor().withOpacity(0.4),
@@ -581,7 +581,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 _getButtonText(),
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14, // 从16减少到14
                   fontWeight: FontWeight.w600,
                 ),
               ),

@@ -584,11 +584,11 @@ class _HomePageState extends State<HomePage>
           'WordFlow',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 28,
+            fontSize: 22, // 从28减少到22
           ),
         ),
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
+          padding: const EdgeInsets.only(left: 10.0), // 从12减少到10
           child: Theme(
             data: Theme.of(context).copyWith(
               splashColor: Colors.transparent,
@@ -599,7 +599,7 @@ class _HomePageState extends State<HomePage>
             child: IconButton(
               enableFeedback: false,
               icon: const Icon(Icons.library_books_outlined),
-              iconSize: 40,
+              iconSize: 26, // 从40减少到26
               onPressed: () {
                 _playBookPageSound();
                 Navigator.pushNamed(context, '/library');
@@ -608,15 +608,15 @@ class _HomePageState extends State<HomePage>
               color: Theme.of(context).primaryColor,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
+                minWidth: 40, // 从48减少到40
+                minHeight: 40, // 从48减少到40
               ),
             ),
           ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: const EdgeInsets.only(right: 10.0), // 从12减少到10
             child: Theme(
               data: Theme.of(context).copyWith(
                 splashColor: Colors.transparent,
@@ -627,7 +627,7 @@ class _HomePageState extends State<HomePage>
               child: IconButton(
                 enableFeedback: false,
                 icon: const Icon(Icons.settings_outlined),
-                iconSize: 40,
+                iconSize: 26, // 从40减少到26
                 onPressed: () {
                   _playSettingSound();
                   Navigator.pushNamed(context, '/settings');
@@ -635,8 +635,8 @@ class _HomePageState extends State<HomePage>
                 color: Theme.of(context).primaryColor,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
-                  minWidth: 48,
-                  minHeight: 48,
+                  minWidth: 40, // 从48减少到40
+                  minHeight: 40, // 从48减少到40
                 ),
               ),
             ),
@@ -652,13 +652,13 @@ class _HomePageState extends State<HomePage>
           // 悬浮小球
           Positioned(
             left: 0, right: 0,
-            bottom: 90, // 小球位置
+            bottom: 60, // 从70减少到60，考虑到悬浮球本身变小了，可以更靠近底部
             child: _buildFluidDragBall(),
           ),
           // 底部提示
           Positioned(
             left: 0, right: 0,
-            bottom: 16,
+            bottom: 8, // 从12减少到8，更贴近底部
             child: _buildAnimatedHintText(),
           ),
         ],
@@ -678,7 +678,7 @@ class _HomePageState extends State<HomePage>
                 Theme.of(context).primaryColor,
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 12), // 从16减少到12
             Text(
               '正在加载词库...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -693,16 +693,16 @@ class _HomePageState extends State<HomePage>
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0), // 从20减少到16
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.error_outline,
-                size: 64,
+                size: 52, // 从64减少到52
                 color: Colors.grey.shade400,
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 12), // 从16减少到12
               Text(
                 _errorMessage!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -710,7 +710,7 @@ class _HomePageState extends State<HomePage>
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 20), // 从24减少到20
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pushNamed(context, '/library');
@@ -720,7 +720,7 @@ class _HomePageState extends State<HomePage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10), // 从24,12减少到20,10
                 ),
               ),
             ],
@@ -741,23 +741,23 @@ class _HomePageState extends State<HomePage>
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16), // 从20减少到16
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: MediaQuery.of(context).size.height - 
                      kToolbarHeight - 
                      MediaQuery.of(context).padding.top - 
-                     MediaQuery.of(context).padding.bottom - 40,
+                     MediaQuery.of(context).padding.bottom - 32, // 从40减少到32
         ),
         child: IntrinsicHeight(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox(height: 64), // 由32改为64，单词部分下移
-              _buildWordBookHeader(),
-              SizedBox(height: 24),
+              SizedBox(height: 24), // 从48减少到24，给头部更多空间
+              _buildWordBookInfoSection(), // 新的信息区域
+              SizedBox(height: 16), // 从20减少到16
               Flexible(child: _buildWordCard(_currentWord!)),
-              SizedBox(height: 120), // 为悬浮小球留出空间
+              SizedBox(height: 80), // 从90减少到80，为悬浮球留出合适空间
             ],
           ),
         ),
@@ -765,15 +765,88 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建词库名称头部
+  /// 构建词库信息区域（分开显示书籍信息和学习进度）
+  Widget _buildWordBookInfoSection() {
+    if (_currentWordBookName == null) return SizedBox.shrink();
+    
+    return Column(
+      children: [
+        // 词库名称
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Theme.of(context).primaryColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.menu_book_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 14,
+              ),
+              SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  _currentWordBookName!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(height: 8),
+        
+        // 学习进度
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                color: Theme.of(context).primaryColor.withOpacity(0.7),
+                size: 12,
+              ),
+              SizedBox(width: 4),
+              Text(
+                '已学 $_studiedWordsCount 词',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).primaryColor.withOpacity(0.7),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建词库名称头部（废弃，被上面的方法替代）
   Widget _buildWordBookHeader() {
     if (_currentWordBookName == null) return SizedBox.shrink();
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6), // 从16,8减少到14,6
       decoration: BoxDecoration(
         color: Theme.of(context).primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16), // 从20减少到16
         border: Border.all(
           color: Theme.of(context).primaryColor.withOpacity(0.3),
           width: 1,
@@ -785,9 +858,9 @@ class _HomePageState extends State<HomePage>
           Icon(
             Icons.menu_book_rounded,
             color: Theme.of(context).primaryColor,
-            size: 16,
+            size: 14, // 从16减少到14
           ),
-          SizedBox(width: 6),
+          SizedBox(width: 5), // 从6减少到5
           Text(
             _currentWordBookName!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -795,7 +868,7 @@ class _HomePageState extends State<HomePage>
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(width: 8),
+          SizedBox(width: 6), // 从8减少到6
           Text(
             '已学 $_studiedWordsCount 词',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -833,7 +906,7 @@ class _HomePageState extends State<HomePage>
                     ),
                   ),
                   
-                  SizedBox(height: 24),
+                  SizedBox(height: 16), // 从24减少到16
                   
                   // 呼吸球主体
                   Row(
@@ -852,7 +925,7 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
-                      SizedBox(width: 32),
+                      SizedBox(width: 24), // 从32减少到24
                       
                       // 呼吸球
                       GestureDetector(
@@ -877,7 +950,7 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
-                      SizedBox(width: 32),
+                      SizedBox(width: 24), // 从32减少到24
                       
                       // 右侧提示
                       AnimatedOpacity(
@@ -893,7 +966,7 @@ class _HomePageState extends State<HomePage>
                     ],
                   ),
                   
-                  SizedBox(height: 24),
+                  SizedBox(height: 16), // 从24减少到16
                   
                   // 拖拽提示（下方）
                   AnimatedOpacity(
@@ -921,8 +994,8 @@ class _HomePageState extends State<HomePage>
       animation: _waveIdleController,
       builder: (context, child) {
         return Container(
-          width: 160,
-          height: 160,
+          width: 140, // 从160减少到140
+          height: 140, // 从160减少到140
           child: CustomPaint(
             painter: _BreathLinesPainter(
               color: Theme.of(context).primaryColor,
@@ -934,7 +1007,7 @@ class _HomePageState extends State<HomePage>
               child: Icon(
                 _isDragging ? Icons.drag_indicator : Icons.blur_circular,
                 color: Colors.white.withOpacity(0.85),
-                size: _isDragging ? 48 : 54,
+                size: _isDragging ? 42 : 48, // 从48:54减少到42:48
               ),
             ),
           ),
@@ -949,15 +1022,15 @@ class _HomePageState extends State<HomePage>
       duration: Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       constraints: BoxConstraints(
-        minWidth: 80,
-        maxWidth: 120,
-        minHeight: 32,
-        maxHeight: 40,
+        minWidth: 70, // 从80减少到70
+        maxWidth: 110, // 从120减少到110
+        minHeight: 28, // 从32减少到28
+        maxHeight: 36, // 从40减少到36
       ),
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // 从14,8减少到12,6
       decoration: BoxDecoration(
         color: isActive ? color.withOpacity(0.20) : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14), // 从16减少到14
         border: Border.all(
           color: isActive ? color.withOpacity(0.5) : Colors.transparent,
           width: 1.5,
@@ -977,15 +1050,15 @@ class _HomePageState extends State<HomePage>
           Icon(
             icon,
             color: isActive ? color : color.withOpacity(0.6),
-            size: 18,
+            size: 16, // 从18减少到16
           ),
-          SizedBox(width: 5),
+          SizedBox(width: 4), // 从5减少到4
           Flexible(
             child: Text(
               text,
               style: TextStyle(
                 color: isActive ? color : color.withOpacity(0.7),
-                fontSize: isActive ? 14 : 11, // 激活时字体更大，非激活时保持原大小
+                fontSize: isActive ? 12 : 10, // 从14:11减少到12:10
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
@@ -1176,7 +1249,7 @@ class _HomePageState extends State<HomePage>
       animation: _slideController,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(0, 30 * (1 - _slideController.value)),
+          offset: Offset(0, 25 * (1 - _slideController.value)), // 从30减少到25
           child: FadeTransition(
             opacity: _fadeController,
             child: Card(
@@ -1184,21 +1257,21 @@ class _HomePageState extends State<HomePage>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutQuart,
                 width: double.infinity,
-                padding: const EdgeInsets.all(25),
+                padding: const EdgeInsets.all(20), // 从25减少到20
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // 单词本体
                     Container(
-                      constraints: BoxConstraints(minHeight: 75, maxHeight: 95), // 适当调高容器高度
+                      constraints: BoxConstraints(minHeight: 60, maxHeight: 80), // 从75,95减少到60,80
                       child: _buildAnimatedText(
                         word.word,
                         _wordSlideAnimations,
                         _wordOpacityAnimations,
                         Theme.of(context).textTheme.headlineLarge!.copyWith(
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 2.0,
-                          fontSize: 42, // 显式设置更大的字体大小
+                          letterSpacing: 1.5, // 从2.0减少到1.5
+                          fontSize: 34, // 从42减少到34
                         ),
                       ),
                     ),
@@ -1215,7 +1288,7 @@ class _HomePageState extends State<HomePage>
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).primaryColor,
                           fontStyle: FontStyle.italic,
-                          fontSize: 18, // 音标也稍微调大一点
+                          fontSize: 16, // 从18减少到16
                         ),
                       ),
                     ),
