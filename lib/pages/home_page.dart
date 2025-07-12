@@ -1594,8 +1594,8 @@ class _HomePageState extends State<HomePage>
                           // 预留单词原始位置的空间，考虑到单词会向上移动30px
                           const SizedBox(height: 30),
                           
-                          // 单词与输入框的间距（与音标和单词的间距一致）
-                          const SizedBox(height: 20),
+                          // 单词与输入框的间距（增加到50px，让布局更舒适）
+                          const SizedBox(height: 50),
                           
                           // 输入框和结果显示区域（位置一致）
                           _buildInputAndResultArea(),
