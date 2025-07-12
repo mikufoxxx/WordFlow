@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
 import '../utils/deepseek_api_service.dart';
+import '../utils/settings_helper.dart';
 import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
@@ -18,6 +19,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _autoPlayPronunciation = true;
   bool _enableDarkMode = false;
   PronunciationType _pronunciationType = PronunciationType.uk;
+  LearningMode? _learningMode; // 改为可空类型，避免默认值闪烁
   
   // DeepSeek API设置
   final TextEditingController _deepSeekApiKeyController = TextEditingController();
@@ -87,27 +89,81 @@ class _SettingsPageState extends State<SettingsPage> {
 
                   const SizedBox(height: 16),
 
+                  // 学习模式设置部分
+                  _buildSectionHeader('学习模式'),
+                  if (_learningMode != null) 
+                    _buildSettingsCard([
+                      _buildRadioListTile<LearningMode>(
+                        title: '快速记忆',
+                        subtitle: '不显示造句，点击认识就进入下一个单词',
+                        value: LearningMode.quickMemory,
+                        groupValue: _learningMode!,
+                        onChanged: (LearningMode? value) {
+                          if (value != null) {
+                            setState(() {
+                              _learningMode = value;
+                            });
+                            _saveSettings();
+                          }
+                        },
+                      ),
+                      _buildRadioListTile<LearningMode>(
+                        title: '深入学习',
+                        subtitle: '包含造句练习和AI评估功能',
+                        value: LearningMode.deepLearning,
+                        groupValue: _learningMode!,
+                        onChanged: (LearningMode? value) {
+                          if (value != null) {
+                            setState(() {
+                              _learningMode = value;
+                            });
+                            _saveSettings();
+                          }
+                        },
+                      ),
+                    ])
+                  else
+                    _buildSettingsCard([
+                      ListTile(
+                        leading: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                        title: Text('正在加载学习模式设置...'),
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ]),
+                    
+                  const SizedBox(height: 16),
+
                   // 发音设置部分
                   _buildSectionHeader('发音设置'),
                   _buildSettingsCard([
-                    _buildRadioListTile(
+                    _buildRadioListTile<PronunciationType>(
                       title: '英音',
                       subtitle: '使用英式发音和音标',
                       value: PronunciationType.uk,
                       groupValue: _pronunciationType,
-                      onChanged: (value) {
+                      onChanged: (PronunciationType? value) {
                         setState(() {
                           _pronunciationType = value!;
                         });
                         _saveSettings();
                       },
                     ),
-                    _buildRadioListTile(
+                    _buildRadioListTile<PronunciationType>(
                       title: '美音',
                       subtitle: '使用美式发音和音标',
                       value: PronunciationType.us,
                       groupValue: _pronunciationType,
-                      onChanged: (value) {
+                      onChanged: (PronunciationType? value) {
                         setState(() {
                           _pronunciationType = value!;
                         });
@@ -393,17 +449,21 @@ class _SettingsPageState extends State<SettingsPage> {
   void _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final apiKey = await DeepSeekApiService.getApiKey();
+    final learningMode = await SettingsHelper.getLearningMode();
     
-    setState(() {
-      _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
-      _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
-      final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
-      _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
-      
-      // 加载DeepSeek API key
-      _deepSeekApiKeyController.text = apiKey ?? '';
-      _isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
-    });
+    if (mounted) {
+      setState(() {
+        _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
+        _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+        final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
+        _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
+        _learningMode = learningMode;
+        
+        // 加载DeepSeek API key
+        _deepSeekApiKeyController.text = apiKey ?? '';
+        _isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
+      });
+    }
   }
 
   /// 保存设置
@@ -412,6 +472,11 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('auto_play_pronunciation', _autoPlayPronunciation);
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
+    
+    // 只在学习模式不为null时保存
+    if (_learningMode != null) {
+      await SettingsHelper.setLearningMode(_learningMode!);
+    }
     
     // 保存DeepSeek API key
     final apiKey = _deepSeekApiKeyController.text.trim();

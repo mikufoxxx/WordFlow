@@ -1252,9 +1252,19 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 标记为认识
-  void _markAsKnown() {
+  void _markAsKnown() async {
     if (!_wordAnimationCompleted) return;
-    _startSentenceTest();
+    
+    // 根据学习模式决定是否进入造句测试
+    final learningMode = await SettingsHelper.getLearningMode();
+    
+    if (learningMode == LearningMode.quickMemory) {
+      // 快速记忆模式：直接进入下一个单词
+      _nextWord();
+    } else {
+      // 深入学习模式：开始造句测试
+      _startSentenceTest();
+    }
   }
 
   /// 开始造句测试
@@ -1797,7 +1807,10 @@ class _HomePageState extends State<HomePage>
                     children: [
                       // 中文释义（包含所有词性，用 | 分割）
                       Container(
-                        constraints: BoxConstraints(minHeight: 28, maxHeight: 70),
+                        constraints: BoxConstraints(
+                          minHeight: 28, 
+                          maxHeight: 80, // 增加最大高度，防止过长释义被截断
+                        ),
                         child: _buildAnimatedTextForMeaning(
                           word.translation,
                           _translationSlideAnimations,
@@ -1834,29 +1847,33 @@ class _HomePageState extends State<HomePage>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // 例句
-                            Container(
-                                constraints: BoxConstraints(minHeight: 30, maxHeight: 45), // 进一步减少高度
-                              child: _buildAnimatedTextForMeaning(
-                                '"${word.example}"',
-                                _exampleSlideAnimations,
-                                _exampleOpacityAnimations,
-                                Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  fontStyle: FontStyle.italic,
+                            Flexible(
+                              child: Container(
+                                constraints: BoxConstraints(minHeight: 30, maxHeight: 50), // 增加最大高度
+                                child: _buildAnimatedTextForMeaning(
+                                  '"${word.example}"',
+                                  _exampleSlideAnimations,
+                                  _exampleOpacityAnimations,
+                                  Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                  ),
                                 ),
                               ),
                             ),
-                              const SizedBox(height: 3), // 从6减少到3，更紧凑
+                            const SizedBox(height: 3), // 从6减少到3，更紧凑
                             // 例句翻译
-                            Container(
-                                constraints: BoxConstraints(minHeight: 20, maxHeight: 32), // 进一步减少高度
-                              child: _buildAnimatedTextForMeaning(
-                                '"${word.exampleTranslation}"',
-                                _exampleTranslationSlideAnimations,
-                                _exampleTranslationOpacityAnimations,
-                                Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: Theme.of(context).brightness == Brightness.dark 
-                                      ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.7)
-                                      : Colors.grey.shade600,
+                            Flexible(
+                              child: Container(
+                                constraints: BoxConstraints(minHeight: 20, maxHeight: 38), // 增加最大高度
+                                child: _buildAnimatedTextForMeaning(
+                                  '"${word.exampleTranslation}"',
+                                  _exampleTranslationSlideAnimations,
+                                  _exampleTranslationOpacityAnimations,
+                                  Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.7)
+                                        : Colors.grey.shade600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1937,6 +1954,7 @@ class _HomePageState extends State<HomePage>
           style: style,
           textAlign: TextAlign.center,
           maxLines: null,
+          overflow: TextOverflow.visible,
         ),
       );
     }
@@ -1945,12 +1963,15 @@ class _HomePageState extends State<HomePage>
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.85,
+          maxWidth: MediaQuery.of(context).size.width * 0.80, // 稍微减少宽度，留出更多边距
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: _buildWordBasedAnimatedLines(text, slideAnimations, opacityAnimations, style),
+        child: SingleChildScrollView(
+          // 添加滚动支持，防止内容超出
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: _buildWordBasedAnimatedLines(text, slideAnimations, opacityAnimations, style),
+          ),
         ),
       ),
     );
@@ -1970,8 +1991,10 @@ class _HomePageState extends State<HomePage>
     // 按单词组织行，估算每行长度
     for (final word in words) {
       final testLine = currentLine.isEmpty ? word : '$currentLine $word';
-      // 根据字符数估算行宽度
-      if (testLine.length <= 30) { // 调整单行最大字符数
+      // 根据字符数估算行宽度，考虑不同字体大小
+      final maxCharsPerLine = style.fontSize! >= 16 ? 25 : 35; // 根据字体大小调整每行字符数
+      
+      if (testLine.length <= maxCharsPerLine) {
         currentLine = testLine;
       } else {
         if (currentLine.isNotEmpty) {
