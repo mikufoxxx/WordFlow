@@ -451,90 +451,106 @@ class _LibraryPageState extends State<LibraryPage>
       backgroundColor: Colors.transparent,
       isDismissible: true,
       enableDrag: true,
-      builder: (context) => Container(
-        color: Colors.black54,
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          builder: (context, scrollController) => Container(
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                // 拖拽指示器
-                Container(
-                  margin: EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.coolGray300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      barrierColor: Colors.black54, // 使用正确的遮罩颜色
+      builder: (context) => GestureDetector(
+        // 点击空白区域关闭
+        onTap: () => Navigator.pop(context),
+        child: Container(
+          color: Colors.transparent, // 透明容器，用于接收点击事件
+          child: GestureDetector(
+            // 阻止点击内容区域时关闭
+            onTap: () {},
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              maxChildSize: 0.9,
+              minChildSize: 0.5,
+              builder: (context, scrollController) => Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
                 ),
-                
-                // 标题
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        '已下载词库',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.darkGray,
-                        ),
+                child: Column(
+                  children: [
+                    // 拖拽指示器
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 10), // 从12减少到10
+                      width: 36, // 从40减少到36
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.coolGray300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      Spacer(),
-                      Text(
-                        '${downloadedBooks.length} 个',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.coolGray500,
-                        ),
+                    ),
+                    
+                    // 标题
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 从8减少到6
+                      child: Row(
+                        children: [
+                          Text(
+                            '已下载词库',
+                            style: TextStyle(
+                              fontSize: 18, // 从20减少到18
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.darkGray,
+                            ),
+                          ),
+                          Spacer(),
+                          Text(
+                            '${downloadedBooks.length} 个',
+                            style: TextStyle(
+                              fontSize: 14, // 从16减少到14
+                              color: AppTheme.coolGray500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                
-                Divider(color: AppTheme.coolGray200),
-                
-                // 词库列表
-                Expanded(
-                  child: downloadedBooks.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.download_outlined,
-                                size: 64,
-                                color: AppTheme.coolGray300,
+                    ),
+                    
+                    Divider(color: AppTheme.coolGray200, height: 1), // 减少高度
+                    
+                    // 词库列表
+                    Expanded(
+                      child: downloadedBooks.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.download_outlined,
+                                    size: 52, // 从64减少到52
+                                    color: AppTheme.coolGray300,
+                                  ),
+                                  SizedBox(height: 12), // 从16减少到12
+                                  Text(
+                                    '暂无已下载的词库',
+                                    style: TextStyle(
+                                      color: AppTheme.coolGray500,
+                                      fontSize: 14, // 从16减少到14
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 16),
-                              Text(
-                                '暂无已下载的词库',
-                                style: TextStyle(
-                                  color: AppTheme.coolGray500,
-                                  fontSize: 16,
-                                ),
+                            )
+                          : ListView.builder(
+                              controller: scrollController,
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
+                              itemCount: downloadedBooks.length,
+                              itemBuilder: (context, index) => _buildDownloadedBookCard(
+                                downloadedBooks[index],
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: scrollController,
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: downloadedBooks.length,
-                          itemBuilder: (context, index) => _buildDownloadedBookCard(
-                            downloadedBooks[index],
-                          ),
-                        ),
+                            ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -545,63 +561,66 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建已下载词库卡片
   Widget _buildDownloadedBookCard(WordBookItem item) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 10), // 从12减少到10
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14), // 从16减少到14
         border: item.status == WordBookStatus.selected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.04), // 从0.05减少到0.04
+            blurRadius: 6, // 从8减少到6
             offset: Offset(0, 2),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: EdgeInsets.all(14), // 从16减少到14
+        dense: true, // 启用紧凑模式
         leading: Container(
-          width: 48,
-          height: 48,
+          width: 44, // 从48减少到44
+          height: 44, // 从48减少到44
           decoration: BoxDecoration(
             color: Color(item.wordBook.coverColor),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10), // 从12减少到10
           ),
           child: Icon(
             Icons.menu_book_rounded,
             color: Color(item.wordBook.iconColor),
-            size: 24,
+            size: 22, // 从24减少到22
           ),
         ),
         title: Text(
           item.wordBook.name,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15, // 从16减少到15
             fontWeight: FontWeight.w600,
             color: AppTheme.darkGray,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${item.wordBook.wordCount} 个单词',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 13, // 从14减少到13
             color: AppTheme.coolGray500,
           ),
         ),
         trailing: item.status == WordBookStatus.selected
             ? Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
                 decoration: BoxDecoration(
                   color: AppTheme.accentGreen.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16), // 从20减少到16
                 ),
                 child: Text(
                   '使用中',
                   style: TextStyle(
                     color: AppTheme.accentGreen,
-                    fontSize: 12,
+                    fontSize: 11, // 从12减少到11
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -611,7 +630,16 @@ class _LibraryPageState extends State<LibraryPage>
                   Navigator.pop(context);
                   _selectWordBook(item);
                 },
-                child: Text('选择'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // 添加padding控制
+                  minimumSize: Size(0, 32), // 设置最小高度
+                ),
+                child: Text(
+                  '选择',
+                  style: TextStyle(
+                    fontSize: 13, // 设置字体大小
+                  ),
+                ),
               ),
       ),
     );
@@ -637,7 +665,7 @@ class _LibraryPageState extends State<LibraryPage>
       title: Text(
         '词库选择 (${_allWordBookItems.length})',
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 16, // 与主页保持一致
           fontWeight: FontWeight.w600,
           color: AppTheme.darkGray,
         ),
@@ -645,51 +673,67 @@ class _LibraryPageState extends State<LibraryPage>
       backgroundColor: AppTheme.backgroundColor,
       elevation: 0,
       scrolledUnderElevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
-        onPressed: () => Navigator.pop(context),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 10.0), // 与主页保持一致
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+          iconSize: 26, // 与主页保持一致
+          onPressed: () => Navigator.pop(context),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(
+            minWidth: 40, // 与主页保持一致
+            minHeight: 40, // 与主页保持一致
+          ),
+        ),
       ),
       actions: [
         // 查看已下载词库按钮
-        Stack(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.download_done_rounded,
-                color: AppTheme.primaryGray,
-                size: 24,
-              ),
-              onPressed: _showDownloadedBooks,
-              tooltip: '查看已下载词库',
-            ),
-            if (downloadedCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '$downloadedCount',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+        Padding(
+          padding: const EdgeInsets.only(right: 10.0), // 与主页保持一致
+          child: Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.download_done_rounded,
+                  color: AppTheme.primaryGray,
+                  size: 26, // 与主页保持一致
+                ),
+                onPressed: _showDownloadedBooks,
+                tooltip: '查看已下载词库',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 40, // 与主页保持一致
+                  minHeight: 40, // 与主页保持一致
                 ),
               ),
-          ],
+              if (downloadedCount > 0)
+                Positioned(
+                  right: 6, // 从8减少到6，适应新的图标大小
+                  top: 6, // 从8减少到6，适应新的图标大小
+                  child: Container(
+                    padding: EdgeInsets.all(3), // 从4减少到3
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 14, // 从16减少到14
+                      minHeight: 14, // 从16减少到14
+                    ),
+                    child: Text(
+                      '$downloadedCount',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9, // 从10减少到9
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        SizedBox(width: 8),
       ],
     );
   }
@@ -1145,40 +1189,43 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.notDownloaded:
         return Container(
           width: double.infinity,
-          height: 42, // 从48减少到42
+          height: 42,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.accentGreen.withOpacity(0.1),
-                AppTheme.accentGreen.withOpacity(0.05),
+                AppTheme.accentGreen,
+                AppTheme.accentGreen.withOpacity(0.8),
               ],
             ),
-            borderRadius: BorderRadius.circular(12), // 从16减少到12
-            border: Border.all(
-              color: AppTheme.accentGreen.withOpacity(0.3),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentGreen.withOpacity(0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () => _selectWordBook(item),
-              borderRadius: BorderRadius.circular(12), // 从16减少到12
+              borderRadius: BorderRadius.circular(12),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.download_outlined,
-                      color: AppTheme.accentGreen,
-                      size: 18, // 从20减少到18
+                      color: Colors.white,
+                      size: 18,
                     ),
-                    const SizedBox(width: 8), // 从10减少到8
-                    Text(
+                    const SizedBox(width: 8),
+                    const Text(
                       '下载词库',
                       style: TextStyle(
-                        color: AppTheme.accentGreen,
-                        fontSize: 14, // 从16减少到14
+                        color: Colors.white,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1192,33 +1239,41 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.downloading:
         return Container(
           width: double.infinity,
-          height: 42, // 从48减少到42
+          height: 42,
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12), // 从16减少到12
-            border: Border.all(
-              color: Colors.amber.withOpacity(0.3),
-              width: 1,
+            gradient: LinearGradient(
+              colors: [
+                Colors.amber.shade400,
+                Colors.amber.shade500,
+              ],
             ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 18, // 从20减少到18
-                  height: 18, // 从20减少到18
+                  width: 18,
+                  height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade600),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   '下载中...',
                   style: TextStyle(
-                    color: Colors.amber.shade700,
-                    fontSize: 14, // 从16减少到14
+                    color: Colors.white,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1241,8 +1296,8 @@ class _LibraryPageState extends State<LibraryPage>
             borderRadius: BorderRadius.circular(12), // 从16减少到12
             boxShadow: [
               BoxShadow(
-                color: AppTheme.coolGray600.withOpacity(0.25), // 从0.3减少到0.25
-                blurRadius: 6, // 从8减少到6
+                color: AppTheme.coolGray600.withOpacity(0.25),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -1259,14 +1314,14 @@ class _LibraryPageState extends State<LibraryPage>
                     const Icon(
                       Icons.touch_app_rounded,
                       color: Colors.white,
-                      size: 18, // 从20减少到18
+                      size: 18,
                     ),
-                    const SizedBox(width: 8), // 从10减少到8
+                    const SizedBox(width: 8),
                     const Text(
-                      '选择词书',  // 修改文字
+                      '选择词书',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14, // 从16减少到14
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1280,7 +1335,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.selected:
         return Container(
           width: double.infinity,
-          height: 42, // 从48减少到42
+          height: 42,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1288,12 +1343,12 @@ class _LibraryPageState extends State<LibraryPage>
                 AppTheme.accentGreen.withOpacity(0.8),
               ],
             ),
-            borderRadius: BorderRadius.circular(12), // 从16减少到12
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.accentGreen.withOpacity(0.3), // 从0.4减少到0.3
-                blurRadius: 8, // 从12减少到8
-                offset: const Offset(0, 3), // 从4减少到3
+                color: AppTheme.accentGreen.withOpacity(0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -1304,14 +1359,14 @@ class _LibraryPageState extends State<LibraryPage>
                 const Icon(
                   Icons.check_circle_outline,
                   color: Colors.white,
-                  size: 18, // 从20减少到18
+                  size: 18,
                 ),
-                const SizedBox(width: 8), // 从10减少到8
+                const SizedBox(width: 8),
                 const Text(
                   '使用中',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14, // 从16减少到14
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1323,35 +1378,43 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.error:
         return Container(
           width: double.infinity,
-          height: 42, // 从48减少到42
+          height: 42,
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12), // 从16减少到12
-            border: Border.all(
-              color: Colors.red.withOpacity(0.3),
-              width: 1,
+            gradient: LinearGradient(
+              colors: [
+                Colors.red.shade400,
+                Colors.red.shade500,
+              ],
             ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () => _selectWordBook(item),
-              borderRadius: BorderRadius.circular(12), // 从16减少到12
+              borderRadius: BorderRadius.circular(12),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.refresh,
-                      color: Colors.red,
-                      size: 18, // 从20减少到18
+                      color: Colors.white,
+                      size: 18,
                     ),
-                    const SizedBox(width: 8), // 从10减少到8
+                    const SizedBox(width: 8),
                     const Text(
                       '重试下载',
                       style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 14, // 从16减少到14
+                        color: Colors.white,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
