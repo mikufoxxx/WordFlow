@@ -1930,7 +1930,6 @@ class _HomePageState extends State<HomePage>
     List<Animation<double>> opacityAnimations,
     TextStyle style,
   ) {
-    // 对于释义和例句，直接使用Text组件，避免字符级动画导致的重叠问题
     if (slideAnimations.isEmpty || opacityAnimations.isEmpty) {
       return Center(
         child: Text(
@@ -1942,28 +1941,59 @@ class _HomePageState extends State<HomePage>
       );
     }
     
-    // 使用整体动画而不是字符级动画
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        slideAnimations.first,
-        opacityAnimations.first,
-      ]),
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, slideAnimations.first.value),
-          child: Opacity(
-            opacity: opacityAnimations.first.value,
-            child: Center(
-              child: Text(
-                text,
+    // 使用Wrap布局，自动换行，保持字符全局索引
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.85,
+        ),
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runAlignment: WrapAlignment.center,
+          spacing: 0, // 字符间距
+          runSpacing: 4, // 行间距
+          children: List.generate(text.length, (globalIndex) {
+            final char = text[globalIndex];
+            
+            // 处理空格
+            if (char == ' ') {
+              return SizedBox(
+                width: style.fontSize! * 0.3,
+                height: style.fontSize! * 1.2,
+              );
+            }
+            
+            // 处理超出动画范围的字符
+            if (globalIndex >= slideAnimations.length || globalIndex >= opacityAnimations.length) {
+              return Text(
+                char,
                 style: style,
-                textAlign: TextAlign.center,
-                maxLines: null,
-              ),
-            ),
-          ),
-        );
-      },
+              );
+            }
+            
+            // 字符动画
+            return AnimatedBuilder(
+              animation: Listenable.merge([
+                slideAnimations[globalIndex], 
+                opacityAnimations[globalIndex]
+              ]),
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, slideAnimations[globalIndex].value),
+                  child: Opacity(
+                    opacity: opacityAnimations[globalIndex].value,
+                    child: Text(
+                      char,
+                      style: style,
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ),
     );
   }
 
