@@ -1798,7 +1798,7 @@ class _HomePageState extends State<HomePage>
                       // 中文释义（包含所有词性，用 | 分割）
                       Container(
                         constraints: BoxConstraints(minHeight: 28, maxHeight: 70),
-                        child: _buildAnimatedText(
+                        child: _buildAnimatedTextForMeaning(
                           word.translation,
                           _translationSlideAnimations,
                           _translationOpacityAnimations,
@@ -1836,7 +1836,7 @@ class _HomePageState extends State<HomePage>
                             // 例句
                             Container(
                                 constraints: BoxConstraints(minHeight: 30, maxHeight: 45), // 进一步减少高度
-                              child: _buildAnimatedText(
+                              child: _buildAnimatedTextForMeaning(
                                 '"${word.example}"',
                                 _exampleSlideAnimations,
                                 _exampleOpacityAnimations,
@@ -1849,7 +1849,7 @@ class _HomePageState extends State<HomePage>
                             // 例句翻译
                             Container(
                                 constraints: BoxConstraints(minHeight: 20, maxHeight: 32), // 进一步减少高度
-                              child: _buildAnimatedText(
+                              child: _buildAnimatedTextForMeaning(
                                 '"${word.exampleTranslation}"',
                                 _exampleTranslationSlideAnimations,
                                 _exampleTranslationOpacityAnimations,
@@ -1874,7 +1874,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建字符独立动画的文本
+  /// 构建字符独立动画的文本（用于单词）
   Widget _buildAnimatedText(
     String text,
     List<Animation<double>> slideAnimations,
@@ -1920,6 +1920,50 @@ class _HomePageState extends State<HomePage>
           }),
         ),
       ),
+    );
+  }
+
+  /// 构建字符独立动画的文本（用于释义和例句）
+  Widget _buildAnimatedTextForMeaning(
+    String text,
+    List<Animation<double>> slideAnimations,
+    List<Animation<double>> opacityAnimations,
+    TextStyle style,
+  ) {
+    // 对于释义和例句，直接使用Text组件，避免字符级动画导致的重叠问题
+    if (slideAnimations.isEmpty || opacityAnimations.isEmpty) {
+      return Center(
+        child: Text(
+          text,
+          style: style,
+          textAlign: TextAlign.center,
+          maxLines: null,
+        ),
+      );
+    }
+    
+    // 使用整体动画而不是字符级动画
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        slideAnimations.first,
+        opacityAnimations.first,
+      ]),
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, slideAnimations.first.value),
+          child: Opacity(
+            opacity: opacityAnimations.first.value,
+            child: Center(
+              child: Text(
+                text,
+                style: style,
+                textAlign: TextAlign.center,
+                maxLines: null,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
