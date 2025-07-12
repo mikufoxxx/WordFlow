@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../models/word_book.dart';
 import '../utils/cache_service.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/performance_optimizer.dart';
 
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
@@ -22,7 +23,9 @@ class _HomePageState extends State<HomePage>
   // 音频播放器
   late AudioPlayer _audioPlayer;
   
-  // 移除音效播放状态管理，改为使用独立的播放器实例
+  // 性能优化：使用池化的key
+  static const String _animationPoolKey = 'home_page_animations';
+  static const String _timerPoolKey = 'home_page_timers';
   
   // 当前学习的单词数量（无限流模式）
   int _studiedWordsCount = 0;
@@ -33,17 +36,13 @@ class _HomePageState extends State<HomePage>
   // 单词动画是否完成
   bool _wordAnimationCompleted = false;
   
-  // 主要动画控制器
+  // 主要动画控制器 - 使用性能优化器管理
   late AnimationController _fadeController;
   late AnimationController _slideController;
-  late AnimationController _meaningController; // 释义框动画控制器
-  late AnimationController _buttonsController; // 按钮动画控制器
-  
-  // 水滴球相关
-  late AnimationController _dropController; // 水滴球动画控制器
-  late AnimationController _hintController; // 提示区域动画控制器
-  
-  // 新增：呼吸动画控制器
+  late AnimationController _meaningController;
+  late AnimationController _buttonsController;
+  late AnimationController _dropController;
+  late AnimationController _hintController;
   late AnimationController _waveIdleController;
   
   Offset _dragOffset = Offset.zero; // 当前拖拽偏移
@@ -87,8 +86,7 @@ class _HomePageState extends State<HomePage>
   List<Animation<double>> _exampleTranslationSlideAnimations = [];
   List<Animation<double>> _exampleTranslationOpacityAnimations = [];
   
-  // 用于管理延迟执行的Timer，避免动画冲突
-  List<Timer> _animationTimers = [];
+
   
   // 单词动画完成计数器
   int _completedWordAnimations = 0;
@@ -111,12 +109,6 @@ class _HomePageState extends State<HomePage>
     _initializeAudioPlayer();
     _initializeMainAnimations();
     _loadWordsFromSelectedWordBook();
-    
-    // 新增：初始化呼吸动画控制器
-    _waveIdleController = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 8), // 慢速呼吸
-    )..repeat();
   }
 
   /// 加载选中词库的单词数据
@@ -219,42 +211,51 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 初始化主要动画控制器
+  /// 初始化主要动画控制器 - 使用性能优化器
   void _initializeMainAnimations() {
-    // 主要动画控制器
-    _fadeController = AnimationController(
+    // 使用性能优化器获取动画控制器
+    _fadeController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     
-    _slideController = AnimationController(
+    _slideController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
     
-    // 释义框动画控制器
-    _meaningController = AnimationController(
+    _meaningController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     
-    // 按钮动画控制器
-    _buttonsController = AnimationController(
+    _buttonsController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     
-    // 水滴球动画控制器
-    _dropController = AnimationController(
+    _dropController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     
-    // 提示区域动画控制器
-    _hintController = AnimationController(
+    _hintController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+    
+    // 呼吸动画控制器
+    _waveIdleController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat();
     
     // 水滴球缩放动画
     _dropScaleAnimation = Tween<double>(
@@ -499,30 +500,37 @@ class _HomePageState extends State<HomePage>
       });
       
       // 启动按钮动画
-      Timer timer = Timer(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          _buttonsController.forward();
-        }
-      });
-      _animationTimers.add(timer);
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 200),
+        callback: () {
+          if (mounted) {
+            _buttonsController.forward();
+          }
+        },
+      );
     }
   }
 
   /// 启动字符动画
   void _startCharacterAnimation(List<AnimationController> controllers, int delayMs) {
     for (int i = 0; i < controllers.length; i++) {
-      Timer timer = Timer(Duration(milliseconds: i * delayMs), () {
-        if (mounted && i < controllers.length) {
-          controllers[i].forward();
-        }
-      });
-      _animationTimers.add(timer);
+      final index = i; // 捕获循环变量
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: Duration(milliseconds: index * delayMs),
+        callback: () {
+          if (mounted && index < controllers.length) {
+            controllers[index].forward();
+          }
+        },
+      );
     }
   }
 
   /// 立即重置所有释义框相关的字符动画状态
   void _resetMeaningCharacterAnimations() {
-    _cancelAllAnimationTimers();
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
     
     for (var controller in _translationControllers) {
       controller.stop();
@@ -542,17 +550,9 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 取消所有待执行的动画Timer
-  void _cancelAllAnimationTimers() {
-    for (Timer timer in _animationTimers) {
-      timer.cancel();
-    }
-    _animationTimers.clear();
-  }
-
   /// 清理字符控制器
   void _disposeCharacterControllers() {
-    _cancelAllAnimationTimers();
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
     
     for (var controller in _wordControllers) {
       controller.dispose();
@@ -581,71 +581,71 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'WordFlow',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'WordFlow',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
                 fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
-              ),
-            ),
-            leading: Padding(
+          ),
+        ),
+        leading: Padding(
               padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                ),
-                child: IconButton(
-                  enableFeedback: false,
-                  icon: const Icon(Icons.library_books_outlined),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+            ),
+            child: IconButton(
+              enableFeedback: false,
+              icon: const Icon(Icons.library_books_outlined),
                   iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-                  onPressed: () {
-                    _playBookPageSound();
-                    Navigator.pushNamed(context, '/library');
-                  },
-                  tooltip: '词库选择',
-                  color: Theme.of(context).primaryColor,
-                  padding: EdgeInsets.zero,
+              onPressed: () {
+                _playBookPageSound();
+                Navigator.pushNamed(context, '/library');
+              },
+              tooltip: '词库选择',
+              color: Theme.of(context).primaryColor,
+              padding: EdgeInsets.zero,
                   constraints: BoxConstraints(
                     minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
                     minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
-                  ),
-                ),
               ),
             ),
-            actions: [
-              Padding(
+          ),
+        ),
+        actions: [
+          Padding(
                 padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    splashColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                    focusColor: Colors.transparent,
-                  ),
-                  child: IconButton(
-                    enableFeedback: false,
-                    icon: const Icon(Icons.settings_outlined),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
+              ),
+              child: IconButton(
+                enableFeedback: false,
+                icon: const Icon(Icons.settings_outlined),
                     iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-                    onPressed: () {
-                      _playSettingSound();
-                      Navigator.pushNamed(context, '/settings');
-                    },
-                    color: Theme.of(context).primaryColor,
-                    padding: EdgeInsets.zero,
+                onPressed: () {
+                  _playSettingSound();
+                  Navigator.pushNamed(context, '/settings');
+                },
+                color: Theme.of(context).primaryColor,
+                padding: EdgeInsets.zero,
                     constraints: BoxConstraints(
                       minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
                       minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
-                    ),
-                  ),
                 ),
               ),
-            ],
+            ),
           ),
+        ],
+      ),
       body: Stack(
         children: [
           // 主体内容
@@ -761,15 +761,15 @@ class _HomePageState extends State<HomePage>
               constraints: BoxConstraints(
                 maxWidth: ResponsiveHelper.getMaxContentWidth(context),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
                   SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
                   _buildWordBookInfoSection(),
                   SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                  Flexible(child: _buildWordCard(_currentWord!)),
+              Flexible(child: _buildWordCard(_currentWord!)),
                   SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
-                ],
+            ],
               ),
             ),
           ),
@@ -1170,10 +1170,13 @@ class _HomePageState extends State<HomePage>
     _slideController.forward();
     
     // 启动单词字符动画
-    Timer timer = Timer(const Duration(milliseconds: 300), () {
-      _startCharacterAnimation(_wordControllers, 60);
-    });
-    _animationTimers.add(timer);
+    PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 300),
+      callback: () {
+        _startCharacterAnimation(_wordControllers, 60);
+      },
+    );
   }
 
   /// 开始释义动画
@@ -1181,25 +1184,37 @@ class _HomePageState extends State<HomePage>
     if (_showMeaning) {
       _meaningController.forward();
       
-      Timer timer1 = Timer(const Duration(milliseconds: 100), () {
-        _startCharacterAnimation(_translationControllers, 40);
-      });
-      _animationTimers.add(timer1);
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 100),
+        callback: () {
+          _startCharacterAnimation(_translationControllers, 40);
+        },
+      );
       
-      Timer timer2 = Timer(const Duration(milliseconds: 200), () {
-        _startCharacterAnimation(_meaningControllers, 30);
-      });
-      _animationTimers.add(timer2);
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 200),
+        callback: () {
+          _startCharacterAnimation(_meaningControllers, 30);
+        },
+      );
       
-      Timer timer3 = Timer(const Duration(milliseconds: 300), () {
-        _startCharacterAnimation(_exampleControllers, 35);
-      });
-      _animationTimers.add(timer3);
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 300),
+        callback: () {
+          _startCharacterAnimation(_exampleControllers, 35);
+        },
+      );
       
-      Timer timer4 = Timer(const Duration(milliseconds: 400), () {
-        _startCharacterAnimation(_exampleTranslationControllers, 40);
-      });
-      _animationTimers.add(timer4);
+      PerformanceOptimizer.createTimer(
+        poolKey: _timerPoolKey,
+        duration: const Duration(milliseconds: 400),
+        callback: () {
+          _startCharacterAnimation(_exampleTranslationControllers, 40);
+        },
+      );
     } else {
       _resetMeaningCharacterAnimations();
       _meaningController.reverse();
@@ -1244,7 +1259,7 @@ class _HomePageState extends State<HomePage>
     _buttonsController.reset();
     
     // 取消所有动画Timer
-    _cancelAllAnimationTimers();
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
     
     setState(() {
       _studiedWordsCount++;
@@ -1265,63 +1280,65 @@ class _HomePageState extends State<HomePage>
 
   /// 构建单词卡片
   Widget _buildWordCard(ExtendedWordData word) {
-    return AnimatedBuilder(
-      animation: _slideController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, 25 * (1 - _slideController.value)), // 从30减少到25
-          child: FadeTransition(
-            opacity: _fadeController,
-            child: Card(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutQuart,
-                width: double.infinity,
-                padding: const EdgeInsets.all(20), // 从25减少到20
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 单词本体
-                    Container(
-                      constraints: BoxConstraints(minHeight: 60, maxHeight: 80), // 从75,95减少到60,80
-                      child: _buildAnimatedText(
-                        word.word,
-                        _wordSlideAnimations,
-                        _wordOpacityAnimations,
-                        Theme.of(context).textTheme.headlineLarge!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5, // 从2.0减少到1.5
-                          fontSize: 34, // 从42减少到34
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _slideController,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, 25 * (1 - _slideController.value)),
+            child: FadeTransition(
+              opacity: _fadeController,
+              child: Card(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutQuart,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 单词本体
+                      Container(
+                        constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
+                        child: _buildAnimatedText(
+                          word.word,
+                          _wordSlideAnimations,
+                          _wordOpacityAnimations,
+                          Theme.of(context).textTheme.headlineLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                            fontSize: 34,
+                          ),
                         ),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 2),
-                    
-                    // 音标
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.easeOutCubic,
-                      opacity: _fadeController.value,
-                      child: Text(
-                        word.pronunciation,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).primaryColor,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 16, // 从18减少到16
+                      
+                      const SizedBox(height: 2),
+                      
+                      // 音标
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeOutCubic,
+                        opacity: _fadeController.value,
+                        child: Text(
+                          word.pronunciation,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                    
-                    // 释义部分
-                    _buildAnimatedMeaningSection(word),
-                  ],
+                      
+                      // 释义部分
+                      _buildAnimatedMeaningSection(word),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1501,16 +1518,12 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
-    _cancelAllAnimationTimers();
-    _fadeController.dispose();
-    _slideController.dispose();
-    _meaningController.dispose();
-    _buttonsController.dispose();
-    _dropController.dispose();
-    _hintController.dispose();
+    // 使用性能优化器清理资源
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
+    PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
+    
     _disposeCharacterControllers();
     _audioPlayer.dispose();
-    _waveIdleController.dispose(); // 新增：释放呼吸动画控制器
     super.dispose();
   }
 }

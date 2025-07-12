@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_theme.dart';
 import '../utils/animated_text_helper.dart';
 import '../utils/responsive_helper.dart';
-import 'dart:async'; // Added for Timer
+import '../utils/performance_optimizer.dart';
+import 'dart:async';
 
 /// 起始页面 - 重新设计的引导流程
 class OnboardingPage extends StatefulWidget {
@@ -16,6 +17,10 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> 
     with TickerProviderStateMixin {
+  
+  // 性能优化：使用池化的key
+  static const String _animationPoolKey = 'onboarding_page_animations';
+  static const String _timerPoolKey = 'onboarding_page_timers';
   
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -94,6 +99,10 @@ class _OnboardingPageState extends State<OnboardingPage>
     _carouselController.dispose();
     _carouselTimer.cancel();
     _tokenController.dispose();
+    
+    // 使用性能优化器清理资源
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
+    PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
     
     // 销毁所有动画控制器
     for (final controller in _textAnimationControllers) {

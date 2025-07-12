@@ -5,6 +5,7 @@ import '../utils/github_api_service.dart';
 import '../utils/cache_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/performance_optimizer.dart';
 
 /// 词库状态枚举
 enum WordBookStatus {
@@ -95,6 +96,10 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> 
     with TickerProviderStateMixin {
   
+  // 性能优化：使用池化的key
+  static const String _animationPoolKey = 'library_page_animations';
+  static const String _timerPoolKey = 'library_page_timers';
+  
   // 词库数据
   List<WordBookItem> _allWordBookItems = [];
   List<WordBookItem> _filteredWordBookItems = [];
@@ -134,8 +139,11 @@ class _LibraryPageState extends State<LibraryPage>
   void dispose() {
     _searchController.dispose();
     _searchDebounce?.cancel();
-    _fadeController.dispose();
     _scrollController.dispose();
+    
+    // 使用性能优化器清理资源
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
+    PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
     
     // 销毁所有词库卡片的动画控制器
     for (var item in _allWordBookItems) {
@@ -147,7 +155,8 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 初始化动画控制器
   void _initializeAnimations() {
-    _fadeController = AnimationController(
+    _fadeController = PerformanceOptimizer.getAnimationController(
+      poolKey: _animationPoolKey,
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );

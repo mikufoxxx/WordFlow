@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/word_book.dart';
+import 'performance_optimizer.dart';
 
 /// 缓存服务
 /// 负责管理词库数据的本地缓存
@@ -10,21 +11,34 @@ class CacheService {
   static const String _downloadStatusPrefix = 'download_status_';
   static const String _selectedWordBookKey = 'selected_word_book';
   
-  /// 缓存词库列表
+  /// 缓存词库列表 - 同时更新内存缓存
   static Future<void> cacheWordBooks(List<WordBook> wordBooks) async {
     final prefs = await SharedPreferences.getInstance();
     final wordBooksJson = wordBooks.map((book) => book.toJson()).toList();
     await prefs.setString(_wordBooksKey, jsonEncode(wordBooksJson));
+    
+    // 同时更新内存缓存
+    MemoryCache.set(_wordBooksKey, wordBooks);
   }
   
-  /// 获取缓存的词库列表
+  /// 获取缓存的词库列表 - 优化内存缓存
   static Future<List<WordBook>> getCachedWordBooks() async {
+    // 先检查内存缓存
+    final cachedList = MemoryCache.get<List<WordBook>>(_wordBooksKey);
+    if (cachedList != null) {
+      return cachedList;
+    }
+    
     final prefs = await SharedPreferences.getInstance();
     final wordBooksString = prefs.getString(_wordBooksKey);
     if (wordBooksString != null) {
       try {
         final wordBooksJson = jsonDecode(wordBooksString) as List;
-        return wordBooksJson.map((json) => WordBook.fromJson(json)).toList();
+        final wordBooks = wordBooksJson.map((json) => WordBook.fromJson(json)).toList();
+        
+        // 存入内存缓存
+        MemoryCache.set(_wordBooksKey, wordBooks);
+        return wordBooks;
       } catch (e) {
         print('❌ 解析缓存的词库数据失败: $e');
       }
