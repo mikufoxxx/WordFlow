@@ -2138,18 +2138,24 @@ class _HomePageState extends State<HomePage>
     return AnimatedBuilder(
       animation: _resultAreaAnimation,
       builder: (context, _) {
-        // 简化动画逻辑，使用基础延迟
+        // 增强动画逻辑，使用更明显的延迟和更丰富的动画效果
         final progress = _resultAreaAnimation.value;
-        final delay = index * 0.2; // 每个项目延迟0.2
+        final delay = index * 0.3; // 每个项目延迟0.3秒，增加延迟时间
         
         // 计算该项目的动画进度
         final adjustedProgress = ((progress - delay) / (1.0 - delay)).clamp(0.0, 1.0);
         
+        // 使用更丰富的动画效果
+        final easedProgress = Curves.easeOutQuart.transform(adjustedProgress);
+        
         return Transform.translate(
-          offset: Offset(0, 30 * (1 - adjustedProgress)),
-          child: Opacity(
-            opacity: adjustedProgress,
-            child: child,
+          offset: Offset(0, 50 * (1 - easedProgress)), // 增加移动距离
+          child: Transform.scale(
+            scale: 0.8 + (0.2 * easedProgress), // 添加缩放效果
+            child: Opacity(
+              opacity: easedProgress,
+              child: child,
+            ),
           ),
         );
       },
