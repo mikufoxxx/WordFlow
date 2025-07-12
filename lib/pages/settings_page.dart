@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
+import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
 class SettingsPage extends StatefulWidget {
@@ -14,10 +15,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   // 设置项状态
   bool _autoPlayPronunciation = true;
-  bool _showWordAnimation = true;
   bool _enableDarkMode = false;
-  int _dailyWordGoal = 20;
-  String _selectedDifficulty = 'medium';
   PronunciationType _pronunciationType = PronunciationType.uk;
 
   @override
@@ -61,31 +59,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         _saveSettings();
                       },
                     ),
-                    _buildSwitchTile(
-                      title: '文字动画效果',
-                      subtitle: '开启单词的流式浮现动画',
-                      value: _showWordAnimation,
-                      onChanged: (value) {
-                        setState(() {
-                          _showWordAnimation = value;
-                        });
-                        _saveSettings();
-                      },
-                    ),
-                    _buildSliderTile(
-                      title: '每日单词目标',
-                      subtitle: '设置每天要学习的单词数量',
-                      value: _dailyWordGoal.toDouble(),
-                      min: 5,
-                      max: 100,
-                      divisions: 19,
-                      onChanged: (value) {
-                        setState(() {
-                          _dailyWordGoal = value.round();
-                        });
-                        _saveSettings();
-                      },
-                    ),
                   ]),
 
                   const SizedBox(height: 16),
@@ -121,48 +94,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                   const SizedBox(height: 16),
 
-                  // 难度设置部分
-                  _buildSectionHeader('学习难度'),
-                  _buildSettingsCard([
-                    _buildRadioListTile(
-                      title: '简单',
-                      subtitle: '基础词汇，适合初学者',
-                      value: 'easy',
-                      groupValue: _selectedDifficulty,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDifficulty = value!;
-                        });
-                        _saveSettings();
-                      },
-                    ),
-                    _buildRadioListTile(
-                      title: '中等',
-                      subtitle: '常用词汇，适合进阶学习',
-                      value: 'medium',
-                      groupValue: _selectedDifficulty,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDifficulty = value!;
-                        });
-                        _saveSettings();
-                      },
-                    ),
-                    _buildRadioListTile(
-                      title: '困难',
-                      subtitle: '高级词汇，挑战自我',
-                      value: 'hard',
-                      groupValue: _selectedDifficulty,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDifficulty = value!;
-                        });
-                        _saveSettings();
-                      },
-                    ),
-                  ]),
 
-                  const SizedBox(height: 16),
 
                   // 界面设置部分
                   _buildSectionHeader('界面设置'),
@@ -176,6 +108,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           _enableDarkMode = value;
                         });
                         _saveSettings();
+                        // 调用主题切换函数
+                        final themeProvider = ThemeProvider.of(context);
+                        if (themeProvider != null) {
+                          themeProvider.toggleTheme();
+                        }
                       },
                     ),
                   ]),
@@ -303,64 +240,14 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 构建滑块设置项
-  Widget _buildSliderTile({
-    required String title,
-    required String subtitle,
-    required double value,
-    required double min,
-    required double max,
-    required int divisions,
-    required ValueChanged<double> onChanged,
-  }) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(subtitle),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: value,
-                  min: min,
-                  max: max,
-                  divisions: divisions,
-                  onChanged: onChanged,
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 32,
-                alignment: Alignment.center,
-                child: Text(
-                  value.round().toString(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-    );
-  }
+
 
   /// 加载设置
   void _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
-      _showWordAnimation = prefs.getBool('show_word_animation') ?? true;
       _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
-      _dailyWordGoal = prefs.getInt('daily_word_goal') ?? 20;
-      _selectedDifficulty = prefs.getString('selected_difficulty') ?? 'medium';
       final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
       _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
     });
@@ -370,10 +257,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_play_pronunciation', _autoPlayPronunciation);
-    await prefs.setBool('show_word_animation', _showWordAnimation);
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
-    await prefs.setInt('daily_word_goal', _dailyWordGoal);
-    await prefs.setString('selected_difficulty', _selectedDifficulty);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
   }
 

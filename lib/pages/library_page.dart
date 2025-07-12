@@ -368,6 +368,8 @@ class _LibraryPageState extends State<LibraryPage>
           duration: const Duration(seconds: 2),
         ),
       );
+      
+
     } else if (item.status == WordBookStatus.error) {
       // 显示错误信息并提供重试选项
       final retry = await showDialog<bool>(

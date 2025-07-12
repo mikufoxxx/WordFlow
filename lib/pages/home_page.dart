@@ -646,9 +646,11 @@ class _HomePageState extends State<HomePage>
               enableFeedback: false,
               icon: const Icon(Icons.library_books_outlined),
                   iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-              onPressed: () {
+              onPressed: () async {
                 _playBookPageSound();
-                Navigator.pushNamed(context, '/library');
+                await Navigator.pushNamed(context, '/library');
+                // 从词库页面返回时，重新加载词库数据
+                await _loadWordsFromSelectedWordBook();
               },
               tooltip: '词库选择',
               color: Theme.of(context).primaryColor,
@@ -730,7 +732,7 @@ class _HomePageState extends State<HomePage>
             Text(
               '正在加载词库...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
               ),
             ),
           ],
@@ -748,20 +750,22 @@ class _HomePageState extends State<HomePage>
               Icon(
                 Icons.error_outline,
                 size: 52, // 从64减少到52
-                color: Colors.grey.shade400,
+                color: Theme.of(context).iconTheme.color?.withOpacity(0.5),
               ),
               SizedBox(height: 12), // 从16减少到12
               Text(
                 _errorMessage!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 20), // 从24减少到20
               ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/library');
+                onPressed: () async {
+                  await Navigator.pushNamed(context, '/library');
+                  // 从词库页面返回时，重新加载词库数据
+                  await _loadWordsFromSelectedWordBook();
                 },
                 icon: Icon(Icons.library_books),
                 label: Text('选择词库'),
@@ -791,7 +795,7 @@ class _HomePageState extends State<HomePage>
             Text(
               '正在加载新单词...',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey.shade600,
+            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
           ),
             ),
           ],
@@ -1519,7 +1523,9 @@ class _HomePageState extends State<HomePage>
                         curve: Curves.easeOutQuart,
                           padding: const EdgeInsets.all(10), // 从12减少到10，更紧凑
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Theme.of(context).cardColor.withOpacity(0.5)
+                              : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border(
                             left: BorderSide(
@@ -1536,7 +1542,7 @@ class _HomePageState extends State<HomePage>
                             Container(
                                 constraints: BoxConstraints(minHeight: 30, maxHeight: 45), // 进一步减少高度
                               child: _buildAnimatedText(
-                                word.example,
+                                '"${word.example}"',
                                 _exampleSlideAnimations,
                                 _exampleOpacityAnimations,
                                 Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -1549,11 +1555,13 @@ class _HomePageState extends State<HomePage>
                             Container(
                                 constraints: BoxConstraints(minHeight: 20, maxHeight: 32), // 进一步减少高度
                               child: _buildAnimatedText(
-                                word.exampleTranslation,
+                                '"${word.exampleTranslation}"',
                                 _exampleTranslationSlideAnimations,
                                 _exampleTranslationOpacityAnimations,
                                 Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.7)
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),
@@ -1666,7 +1674,9 @@ class _HomePageState extends State<HomePage>
                     : '单词加载中...',
                 key: ValueKey('${_wordAnimationCompleted}_breath'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade400,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.6)
+                      : Colors.grey.shade400,
                   height: 1.4,
                   fontSize: 13,
                 ),

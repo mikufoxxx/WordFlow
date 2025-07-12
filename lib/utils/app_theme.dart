@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'responsive_helper.dart';
 
 /// 应用主题配置类
@@ -24,9 +25,42 @@ class AppTheme {
   static const Color coolGray700 = Color(0xFF334155);
   static const Color coolGray800 = Color(0xFF1E293B);
   static const Color coolGray900 = Color(0xFF0F172A);
+  
+  // 深色主题颜色
+  static const Color darkBackgroundColor = Color(0xFF0F172A);
+  static const Color darkCardColor = Color(0xFF1E293B);
+  static const Color darkPrimaryGray = Color(0xFF94A3B8);
+  static const Color darkAccentGreen = Color(0xFF10B981);
+
+  /// 配置浅色模式的系统UI
+  static void setLightSystemUIOverlay() {
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: backgroundColor,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ));
+  }
+
+  /// 配置深色模式的系统UI
+  static void setDarkSystemUIOverlay() {
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: darkBackgroundColor,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ));
+  }
 
   /// 浅色主题配置
   static ThemeData get lightTheme {
+    // 配置浅色模式的系统UI
+    setLightSystemUIOverlay();
+    
     return ThemeData(
       useMaterial3: true,
       primarySwatch: Colors.blueGrey,
@@ -134,6 +168,124 @@ class AppTheme {
         labelStyle: TextStyle(
           fontSize: 12,
           color: coolGray700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+  
+  /// 深色主题配置
+  static ThemeData get darkTheme {
+    // 配置深色模式的系统UI
+    setDarkSystemUIOverlay();
+    
+    return ThemeData(
+      useMaterial3: true,
+      primarySwatch: Colors.blueGrey,
+      primaryColor: darkPrimaryGray,
+      scaffoldBackgroundColor: darkBackgroundColor,
+      brightness: Brightness.dark,
+      
+      cardTheme: CardTheme(
+        color: darkCardColor,
+        elevation: 0.5,
+        shadowColor: Colors.black.withOpacity(0.2),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      
+      textTheme: TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: coolGray100,
+          letterSpacing: 0.3,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: coolGray200,
+          letterSpacing: 0.2,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+          color: coolGray300,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 14,
+          color: coolGray200,
+          height: 1.4,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 13,
+          color: coolGray400,
+          height: 1.3,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 11,
+          color: coolGray500,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: coolGray600,
+          foregroundColor: Colors.white,
+          elevation: 0.5,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+      
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: coolGray800,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: coolGray600, width: 1),
+        ),
+      ),
+      
+      appBarTheme: AppBarTheme(
+        backgroundColor: darkBackgroundColor,
+        foregroundColor: coolGray200,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: coolGray200,
+        ),
+      ),
+      
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        minVerticalPadding: 4,
+        dense: true,
+        textColor: coolGray200,
+        iconColor: coolGray400,
+      ),
+      
+      iconTheme: IconThemeData(
+        size: 20,
+        color: coolGray400,
+      ),
+      
+      chipTheme: ChipThemeData(
+        backgroundColor: coolGray700,
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: coolGray200,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),

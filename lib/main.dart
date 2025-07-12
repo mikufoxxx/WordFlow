@@ -12,15 +12,61 @@ void main() {
 
 /// WordFlow应用的主入口类
 /// 负责应用的整体配置、主题设置和初始路由判断
-class WordFlowApp extends StatelessWidget {
+class WordFlowApp extends StatefulWidget {
   const WordFlowApp({super.key});
+
+  @override
+  State<WordFlowApp> createState() => _WordFlowAppState();
+}
+
+class _WordFlowAppState extends State<WordFlowApp> {
+  bool _isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  /// 加载主题偏好设置
+  void _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+    });
+    
+    // 设置对应的系统UI覆盖层
+    if (_isDarkMode) {
+      AppTheme.setDarkSystemUIOverlay();
+    } else {
+      AppTheme.setLightSystemUIOverlay();
+    }
+  }
+
+  /// 切换主题
+  void _toggleTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+    await prefs.setBool('enable_dark_mode', _isDarkMode);
+    
+    // 更新系统UI覆盖层
+    if (_isDarkMode) {
+      AppTheme.setDarkSystemUIOverlay();
+    } else {
+      AppTheme.setLightSystemUIOverlay();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'WordFlow',
-      // 使用自定义的简约主题，配色基于提供的图片风格
+      // 使用自定义的简约主题，支持深色模式
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       // 初始页面通过FutureBuilder动态决定
       home: const AppInitializer(),
       // 定义应用的路由配置
@@ -28,9 +74,32 @@ class WordFlowApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingPage(),
         '/home': (context) => const HomePage(),
         '/library': (context) => const LibraryPage(),
-        '/settings': (context) => const SettingsPage(),
+        '/settings': (context) => ThemeProvider(
+          toggleTheme: _toggleTheme,
+          child: const SettingsPage(),
+        ),
       },
     );
+  }
+}
+
+/// 主题提供者，用于向设置页面传递主题切换函数
+class ThemeProvider extends InheritedWidget {
+  final VoidCallback toggleTheme;
+
+  const ThemeProvider({
+    super.key,
+    required this.toggleTheme,
+    required Widget child,
+  }) : super(child: child);
+
+  static ThemeProvider? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ThemeProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(ThemeProvider oldWidget) {
+    return toggleTheme != oldWidget.toggleTheme;
   }
 }
 
