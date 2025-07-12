@@ -893,7 +893,21 @@ class _HomePageState extends State<HomePage>
                     ),
                     SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
                 Flexible(child: _buildWordCard(_currentWord!)),
-                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 20)),
+                    // 底部浅灰字提示
+                    AnimatedOpacity(
+                      opacity: (!_isTestingMode && _wordAnimationCompleted) ? 0.6 : 0.0,
+                      duration: const Duration(milliseconds: 800),
+                      child: Text(
+                        _showMeaning ? '轻触卡片收起释义' : '轻触卡片展开释义',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 60)),
               ],
                 ),
               ),
@@ -1135,43 +1149,7 @@ class _HomePageState extends State<HomePage>
           );
     }
 
-  /// 构建点击提示
-  Widget _buildTapHint() {
-    return AnimatedOpacity(
-      opacity: _wordAnimationCompleted ? 0.6 : 0.0,
-      duration: const Duration(milliseconds: 800),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              _showMeaning ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              size: 14,
-              color: Theme.of(context).primaryColor.withOpacity(0.7),
-            ),
-            SizedBox(width: 4),
-            Text(
-              _showMeaning ? '点击收起释义' : '点击展开释义',
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).primaryColor.withOpacity(0.7),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   /// 开始单词动画
   void _startWordAnimation() {
@@ -1574,56 +1552,21 @@ class _HomePageState extends State<HomePage>
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   // 单词文本
-                                  _buildAnimatedText(
-                                    word.word,
-                                    _wordSlideAnimations,
-                                    _wordOpacityAnimations,
-                                    Theme.of(context).textTheme.headlineLarge!.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                      fontSize: 34,
+                                  Flexible(
+                                    child: _buildAnimatedText(
+                                      word.word,
+                                      _wordSlideAnimations,
+                                      _wordOpacityAnimations,
+                                      Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                        fontSize: 34,
+                                      ),
                                     ),
                                   ),
                                   
-                                  // 发音按钮
-                                  FutureBuilder<Map<String, dynamic>>(
-                                    future: _getPhoneticData(word),
-                                    builder: (context, snapshot) {
-                                      if (!snapshot.hasData) {
-                                        return SizedBox.shrink();
-                                      }
-                                      
-                                      final hasAudio = snapshot.data!['hasAudio'] as bool;
-                                      
-                                      if (!hasAudio) {
-                                        return SizedBox.shrink();
-                                      }
-                                      
-                                      return Padding(
-                                        padding: const EdgeInsets.only(left: 12),
-                                        child: AnimatedOpacity(
-                                          duration: const Duration(milliseconds: 600),
-                                          curve: Curves.easeOutCubic,
-                                          opacity: _fadeController.value,
-                                          child: GestureDetector(
-                                            onTap: _playWordPronunciation,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Icon(
-                                                Icons.volume_up_outlined,
-                                                size: 20,
-                                                color: Theme.of(context).primaryColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                  // 发音按钮（造句模式下隐藏）
+                                  SizedBox.shrink(),
                                 ],
                               ),
                             ),
@@ -1669,14 +1612,16 @@ class _HomePageState extends State<HomePage>
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // 单词文本
-                                _buildAnimatedText(
-                                  word.word,
-                                  _wordSlideAnimations,
-                                  _wordOpacityAnimations,
-                                  Theme.of(context).textTheme.headlineLarge!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                    fontSize: 34,
+                                Flexible(
+                                  child: _buildAnimatedText(
+                                    word.word,
+                                    _wordSlideAnimations,
+                                    _wordOpacityAnimations,
+                                    Theme.of(context).textTheme.headlineLarge!.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                      fontSize: 34,
+                                    ),
                                   ),
                                 ),
                                 
@@ -1743,11 +1688,7 @@ class _HomePageState extends State<HomePage>
                             // 释义部分
                             _buildAnimatedMeaningSection(word),
                             
-                            // 点击提示
-                            if (_wordAnimationCompleted) ...[
-                              const SizedBox(height: 8),
-                              _buildTapHint(),
-                            ],
+
                           ],
                         ),
                       ),
@@ -1921,40 +1862,43 @@ class _HomePageState extends State<HomePage>
     TextStyle style,
   ) {
     // 所有文本都使用字符级动画
-    return Center(
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        children: List.generate(text.length, (index) {
-          if (text[index] == ' ') {
-            return SizedBox(
-              width: style.fontSize! * 0.3,
-              height: style.fontSize! * 1.2,
-            );
-          }
-          
-          if (index >= slideAnimations.length || index >= opacityAnimations.length) {
-            return Text(
-              text[index],
-              style: style,
-            );
-          }
-          
-          return AnimatedBuilder(
-            animation: Listenable.merge([slideAnimations[index], opacityAnimations[index]]),
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, slideAnimations[index].value),
-                child: Opacity(
-                  opacity: opacityAnimations[index].value,
-                  child: Text(
-                    text[index],
-                    style: style,
-                  ),
-                ),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          children: List.generate(text.length, (index) {
+            if (text[index] == ' ') {
+              return SizedBox(
+                width: style.fontSize! * 0.3,
+                height: style.fontSize! * 1.2,
               );
-            },
-          );
-        }),
+            }
+            
+            if (index >= slideAnimations.length || index >= opacityAnimations.length) {
+              return Text(
+                text[index],
+                style: style,
+              );
+            }
+            
+            return AnimatedBuilder(
+              animation: Listenable.merge([slideAnimations[index], opacityAnimations[index]]),
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, slideAnimations[index].value),
+                  child: Opacity(
+                    opacity: opacityAnimations[index].value,
+                    child: Text(
+                      text[index],
+                      style: style,
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
       ),
     );
   }
