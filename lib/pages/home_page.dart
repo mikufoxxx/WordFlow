@@ -1847,33 +1847,29 @@ class _HomePageState extends State<HomePage>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // 例句
-                            Flexible(
-                              child: Container(
-                                constraints: BoxConstraints(minHeight: 30, maxHeight: 50), // 增加最大高度
-                                child: _buildAnimatedTextForMeaning(
-                                  '"${word.example}"',
-                                  _exampleSlideAnimations,
-                                  _exampleOpacityAnimations,
-                                  Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                            Container(
+                              constraints: BoxConstraints(minHeight: 30, maxHeight: 55), // 适度增加高度，支持换行
+                              child: _buildAnimatedTextForMeaning(
+                                '"${word.example}"',
+                                _exampleSlideAnimations,
+                                _exampleOpacityAnimations,
+                                Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 3), // 从6减少到3，更紧凑
+                            const SizedBox(height: 3), // 保持原来的间距
                             // 例句翻译
-                            Flexible(
-                              child: Container(
-                                constraints: BoxConstraints(minHeight: 20, maxHeight: 38), // 增加最大高度
-                                child: _buildAnimatedTextForMeaning(
-                                  '"${word.exampleTranslation}"',
-                                  _exampleTranslationSlideAnimations,
-                                  _exampleTranslationOpacityAnimations,
-                                  Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: Theme.of(context).brightness == Brightness.dark 
-                                        ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.7)
-                                        : Colors.grey.shade600,
-                                  ),
+                            Container(
+                              constraints: BoxConstraints(minHeight: 20, maxHeight: 40), // 适度增加高度，支持换行
+                              child: _buildAnimatedTextForMeaning(
+                                '"${word.exampleTranslation}"',
+                                _exampleTranslationSlideAnimations,
+                                _exampleTranslationOpacityAnimations,
+                                Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.7)
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),
@@ -1940,6 +1936,17 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  /// 测量文本宽度的辅助方法
+  double _measureTextWidth(String text, TextStyle style) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    return textPainter.size.width;
+  }
+
   /// 构建字符独立动画的文本（用于释义和例句）
   Widget _buildAnimatedTextForMeaning(
     String text,
@@ -1963,15 +1970,12 @@ class _HomePageState extends State<HomePage>
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.80, // 稍微减少宽度，留出更多边距
+          maxWidth: MediaQuery.of(context).size.width * 0.80, // 保持原来的宽度设置
         ),
-        child: SingleChildScrollView(
-          // 添加滚动支持，防止内容超出
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: _buildWordBasedAnimatedLines(text, slideAnimations, opacityAnimations, style),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center, // 改回居中对齐
+          children: _buildWordBasedAnimatedLines(text, slideAnimations, opacityAnimations, style),
         ),
       ),
     );
@@ -1984,30 +1988,64 @@ class _HomePageState extends State<HomePage>
     List<Animation<double>> opacityAnimations,
     TextStyle style,
   ) {
-    final words = text.split(' ');
     final lines = <String>[];
-    String currentLine = '';
     
-    // 按单词组织行，估算每行长度
-    for (final word in words) {
-      final testLine = currentLine.isEmpty ? word : '$currentLine $word';
-      // 根据字符数估算行宽度，考虑不同字体大小
-      final maxCharsPerLine = style.fontSize! >= 16 ? 25 : 35; // 根据字体大小调整每行字符数
+    // 计算可用宽度（考虑边距和内边距）
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth * 0.75; // 更保守的宽度，确保有足够边距
+    
+    // 检查是否主要是中文内容
+    final chineseCharCount = text.runes.where((rune) => rune >= 0x4e00 && rune <= 0x9fff).length;
+    final isMostlyChinese = chineseCharCount > text.length * 0.5;
+    
+    if (isMostlyChinese) {
+      // 中文文本：按字符逐个添加，遇到宽度超限时换行
+      String currentLine = '';
+      final characters = text.split('');
       
-      if (testLine.length <= maxCharsPerLine) {
-        currentLine = testLine;
-      } else {
-        if (currentLine.isNotEmpty) {
-          lines.add(currentLine);
-          currentLine = word;
+      for (final char in characters) {
+        final testLine = currentLine + char;
+        final textWidth = _measureTextWidth(testLine, style);
+        
+        if (textWidth <= maxWidth) {
+          currentLine = testLine;
         } else {
-          // 如果单个单词太长，直接添加为一行
-          lines.add(word);
+          if (currentLine.isNotEmpty) {
+            lines.add(currentLine);
+            currentLine = char;
+          } else {
+            // 如果单个字符都太宽，直接添加
+            lines.add(char);
+          }
         }
       }
-    }
-    if (currentLine.isNotEmpty) {
-      lines.add(currentLine);
+      if (currentLine.isNotEmpty) {
+        lines.add(currentLine);
+      }
+    } else {
+      // 英文文本：按单词分割
+      final words = text.split(' ');
+      String currentLine = '';
+      
+      for (final word in words) {
+        final testLine = currentLine.isEmpty ? word : '$currentLine $word';
+        final textWidth = _measureTextWidth(testLine, style);
+        
+        if (textWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine.isNotEmpty) {
+            lines.add(currentLine);
+            currentLine = word;
+          } else {
+            // 如果单个单词太长，也直接添加为一行
+            lines.add(word);
+          }
+        }
+      }
+      if (currentLine.isNotEmpty) {
+        lines.add(currentLine);
+      }
     }
     
     // 为每一行构建动画，维护全局字符索引
@@ -2033,10 +2071,17 @@ class _HomePageState extends State<HomePage>
       
       result.add(lineWidget);
       
-      // 更新全局字符索引（包括这一行的字符和后面的空格）
+      // 更新全局字符索引
       globalCharIndex += line.length;
-      if (lineIndex < lines.length - 1) {
-        globalCharIndex += 1; // 行间的空格
+      
+      // 对于英文文本，需要考虑单词间的空格
+      if (!isMostlyChinese && lineIndex < lines.length - 1) {
+        // 检查原文本中是否有空格需要考虑
+        final totalCharsInPreviousLines = lines.take(lineIndex + 1).map((l) => l.length).fold(0, (a, b) => a + b);
+        final spacesCount = lineIndex; // 前面行数等于空格数
+        if (totalCharsInPreviousLines + spacesCount < text.length) {
+          globalCharIndex += 1; // 行间的空格
+        }
       }
     }
     
@@ -2052,7 +2097,7 @@ class _HomePageState extends State<HomePage>
     int globalStartIndex,
   ) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center, // 改回居中对齐
       mainAxisSize: MainAxisSize.min,
       children: List.generate(line.length, (localIndex) {
         final char = line[localIndex];
