@@ -3,11 +3,42 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/word_review_page.dart';
 import 'utils/app_theme.dart';
+import 'utils/learning_data_service.dart';
+import 'utils/settings_helper.dart';
+import 'utils/deepseek_api_service.dart';
 import 'pages/library_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化学习数据服务
+  await LearningDataService.instance.initialize();
+  
+  // 检查API Key和学习模式的兼容性
+  await _validateLearningModeAndApiKey();
+  
   runApp(const WordFlowApp());
+}
+
+/// 验证学习模式和API Key的兼容性
+Future<void> _validateLearningModeAndApiKey() async {
+  try {
+    final learningMode = await SettingsHelper.getLearningMode();
+    if (learningMode == LearningMode.deepLearning) {
+      final apiKey = await DeepSeekApiService.getApiKey();
+      final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
+      
+      if (!isApiKeyValid) {
+        // API Key无效，自动切换到快速学习模式
+        await SettingsHelper.setLearningMode(LearningMode.quickMemory);
+        print('⚠️ API Key无效，已自动切换到快速学习模式');
+      }
+    }
+  } catch (e) {
+    print('❌ 验证学习模式失败: $e');
+  }
 }
 
 /// WordFlow应用的主入口类
@@ -78,6 +109,7 @@ class _WordFlowAppState extends State<WordFlowApp> {
           toggleTheme: _toggleTheme,
           child: const SettingsPage(),
         ),
+        '/word_review': (context) => const WordReviewPage(),
       },
     );
   }

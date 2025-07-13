@@ -3,6 +3,7 @@ import 'dart:async';
 import '../models/word_book.dart';
 import '../utils/github_api_service.dart';
 import '../utils/cache_service.dart';
+import '../utils/learning_data_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
@@ -340,6 +341,9 @@ class _LibraryPageState extends State<LibraryPage>
       
       // 保存选中的词库到缓存
       await CacheService.saveSelectedWordBook(item.wordBook.name);
+      
+      // 自动同步词书数据
+      await LearningDataService.instance.autoSyncWordBook(item.wordBook.name);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

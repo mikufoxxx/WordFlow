@@ -3,12 +3,14 @@ import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/word_book.dart';
+import '../models/word_learning_record.dart';
 import '../utils/cache_service.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/english_word_api_service.dart';
 import '../utils/settings_helper.dart';
 import '../utils/deepseek_api_service.dart';
+import '../utils/learning_data_service.dart';
 import '../utils/app_theme.dart';
 
 /// 主页 - 背单词页面
@@ -1246,8 +1248,12 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 标记为不认识
-  void _markAsUnknown() {
+  void _markAsUnknown() async {
     if (!_wordAnimationCompleted) return;
+    
+    // 保存学习记录
+    await _saveLearningRecord(ReviewResult.forgot);
+    
     _nextWord();
   }
 
@@ -1259,11 +1265,79 @@ class _HomePageState extends State<HomePage>
     final learningMode = await SettingsHelper.getLearningMode();
     
     if (learningMode == LearningMode.quickMemory) {
-      // 快速记忆模式：直接进入下一个单词
+      // 快速记忆模式：保存为良好记录并直接进入下一个单词
+      await _saveLearningRecord(ReviewResult.good);
       _nextWord();
     } else {
-      // 深入学习模式：开始造句测试
-      _startSentenceTest();
+      // 深入学习模式：检查API Key是否有效
+      final apiKey = await DeepSeekApiService.getApiKey();
+      final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
+      
+      if (!isApiKeyValid) {
+        // API Key无效，自动切换到快速学习模式并显示提示
+        await SettingsHelper.setLearningMode(LearningMode.quickMemory);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('API Key无效，已自动切换到快速学习模式'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        
+        // 保存为良好记录并进入下一个单词
+        await _saveLearningRecord(ReviewResult.good);
+        _nextWord();
+      } else {
+        // API Key有效，开始造句测试（在造句完成后再保存记录）
+        _startSentenceTest();
+      }
+    }
+  }
+
+  /// 保存学习记录
+  Future<void> _saveLearningRecord(ReviewResult result) async {
+    if (_currentWord == null || _currentWordBookName == null) return;
+    
+    try {
+      // 获取当前单词的学习记录
+      final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
+      final existingRecord = records.where((r) => r.word == _currentWord!.word).firstOrNull;
+      
+      final now = DateTime.now();
+      WordLearningRecord newRecord;
+      
+      if (existingRecord != null) {
+        // 更新现有记录
+        newRecord = existingRecord.updateLearning(
+          reviewResult: result,
+          reviewTime: now,
+          newWordBookName: _currentWordBookName,
+        );
+      } else {
+        // 创建新记录
+        newRecord = WordLearningRecord.firstTime(
+          word: _currentWord!.word,
+          translation: _currentWord!.translation,
+          wordBookName: _currentWordBookName,
+        );
+        
+        // 如果不是第一次学习，更新为相应的结果
+        if (result != ReviewResult.good) {
+          newRecord = newRecord.updateLearning(
+            reviewResult: result,
+            reviewTime: now,
+          );
+        }
+      }
+      
+      // 保存记录
+      await LearningDataService.instance.saveWordLearningRecord(newRecord);
+      
+      print('✅ 保存学习记录: ${_currentWord!.word} - ${result.displayName}');
+    } catch (e) {
+      print('❌ 保存学习记录失败: $e');
     }
   }
 
@@ -1475,7 +1549,27 @@ class _HomePageState extends State<HomePage>
   }
   
   /// 重新开始造句或下一个单词
-  void _continueOrNext() {
+  void _continueOrNext() async {
+    // 根据造句测试结果保存学习记录
+    if (_judgmentResult != null) {
+      ReviewResult result;
+      if (_judgmentResult!.isCorrect) {
+        // 造句正确，根据分数判断
+        if (_judgmentResult!.score >= 8) {
+          result = ReviewResult.easy;
+        } else {
+          result = ReviewResult.good;
+        }
+      } else {
+        // 造句错误
+        result = ReviewResult.hard;
+      }
+      await _saveLearningRecord(result);
+    } else {
+      // 跳过了造句测试，保存为良好记录
+      await _saveLearningRecord(ReviewResult.good);
+    }
+    
     setState(() {
       _isTestingMode = false;
       _showSentenceInput = false;
@@ -2735,55 +2829,53 @@ class _HomePageState extends State<HomePage>
   
   /// 构建逐字母浮现的正确句子
   Widget _buildAnimatedBetterSentence() {
-    return SizedBox(
-      width: double.infinity, // 固定宽度为屏幕宽度
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.coolGray200),
-        ),
-        child: Wrap(
-          alignment: WrapAlignment.start,
-          children: List.generate(_betterSentenceText.length, (index) {
-            final char = _betterSentenceText[index];
-            final isModified = _isCharModified(char, index);
-            
-            if (index >= _betterSentenceAnimations.length) {
-              return Text(
-                char,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
-                  fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
-                  height: 1.5,
-                ),
-              );
-            }
-            
-            return AnimatedBuilder(
-              animation: _betterSentenceAnimations[index],
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, 8 * (1 - _betterSentenceAnimations[index].value)),
-                  child: Opacity(
-                    opacity: _betterSentenceAnimations[index].value,
-                    child: Text(
-                      char,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
-                        fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
-                        height: 1.5,
-                      ),
+    return Container(
+      width: double.infinity, // 使用Container而不是SizedBox，让高度自适应
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.coolGray200),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        children: List.generate(_betterSentenceText.length, (index) {
+          final char = _betterSentenceText[index];
+          final isModified = _isCharModified(char, index);
+          
+          if (index >= _betterSentenceAnimations.length) {
+            return Text(
+              char,
+              style: TextStyle(
+                fontSize: 15,
+                color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
+                fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                height: 1.5,
+              ),
+            );
+          }
+          
+          return AnimatedBuilder(
+            animation: _betterSentenceAnimations[index],
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, 8 * (1 - _betterSentenceAnimations[index].value)),
+                child: Opacity(
+                  opacity: _betterSentenceAnimations[index].value,
+                  child: Text(
+                    char,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
+                      fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                      height: 1.5,
                     ),
                   ),
-                );
-              },
-            );
-          }),
-        ),
+                ),
+              );
+            },
+          );
+        }),
       ),
     );
   }

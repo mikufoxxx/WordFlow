@@ -43,6 +43,10 @@ dependencies:
   lordicon: ^1.0.3
   # 用于播放音频文件
   audioplayers: ^5.2.1
+  # 用于日期格式化
+  intl: ^0.18.1
+  # 用于获取系统路径
+  path_provider: ^2.1.1
 
 dev_dependencies:
   flutter_test:

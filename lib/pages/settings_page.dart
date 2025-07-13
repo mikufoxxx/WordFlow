@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
 import '../utils/deepseek_api_service.dart';
 import '../utils/settings_helper.dart';
+import '../utils/learning_data_service.dart';
+import '../utils/spaced_repetition_service.dart';
+import '../utils/cache_service.dart';
 import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
@@ -24,6 +28,12 @@ class _SettingsPageState extends State<SettingsPage> {
   // DeepSeek API设置
   final TextEditingController _deepSeekApiKeyController = TextEditingController();
   bool _isApiKeyValid = false;
+  
+  // 学习算法设置
+  SpacedRepetitionConfig? _algorithmConfig;
+  double _easyIntervalMultiplier = 1.3; // 简单时的间隔倍数
+  double _hardIntervalMultiplier = 1.2; // 困难时的间隔倍数
+  double _difficultyAdjustment = 1.0; // 整体难度调整系数
 
   @override
   void initState() {
@@ -47,6 +57,22 @@ class _SettingsPageState extends State<SettingsPage> {
       setState(() {
         _isApiKeyValid = isValid;
       });
+      
+      // 如果API Key变为无效且当前是深入学习模式，自动切换到快速学习模式
+      if (!isValid && _learningMode == LearningMode.deepLearning) {
+        setState(() {
+          _learningMode = LearningMode.quickMemory;
+        });
+        _saveSettings();
+        
+        // 显示提示信息
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('API Key无效，已自动切换到快速学习模式'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -109,16 +135,26 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildRadioListTile<LearningMode>(
                         title: '深入学习',
-                        subtitle: '包含造句练习和AI评估功能',
+                        subtitle: _isApiKeyValid 
+                          ? '包含造句练习和AI评估功能'
+                          : '需要配置DeepSeek API Key才能使用此功能',
                         value: LearningMode.deepLearning,
                         groupValue: _learningMode!,
-                        onChanged: (LearningMode? value) {
+                        onChanged: _isApiKeyValid ? (LearningMode? value) {
                           if (value != null) {
                             setState(() {
                               _learningMode = value;
                             });
                             _saveSettings();
                           }
+                        } : (LearningMode? value) {
+                          // API Key无效时，显示提示但不执行任何操作
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('请先配置有效的DeepSeek API Key'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         },
                       ),
                     ])
@@ -205,9 +241,106 @@ class _SettingsPageState extends State<SettingsPage> {
 
                   const SizedBox(height: 16),
 
+                  // 学习算法设置部分
+                  _buildSectionHeader('学习算法（无限流模式）'),
+                  _buildSettingsCard([
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '🌊 无限流学习',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '系统会根据你的学习节奏动态调整推送，无需设置每日目标',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildSliderTile(
+                      title: '简单间隔倍数',
+                      subtitle: '回答"简单"时的复习间隔倍数',
+                      value: _easyIntervalMultiplier,
+                      min: 1.1,
+                      max: 2.0,
+                      divisions: 9,
+                      onChanged: (value) {
+                        setState(() {
+                          _easyIntervalMultiplier = value;
+                        });
+                        _saveAlgorithmConfig();
+                      },
+                    ),
+                    _buildSliderTile(
+                      title: '困难间隔倍数',
+                      subtitle: '回答"困难"时的复习间隔倍数',
+                      value: _hardIntervalMultiplier,
+                      min: 1.0,
+                      max: 1.5,
+                      divisions: 5,
+                      onChanged: (value) {
+                        setState(() {
+                          _hardIntervalMultiplier = value;
+                        });
+                        _saveAlgorithmConfig();
+                      },
+                    ),
+                    _buildSliderTile(
+                      title: '难度调整系数',
+                      subtitle: '影响整体学习难度和复习频率',
+                      value: _difficultyAdjustment,
+                      min: 0.5,
+                      max: 1.5,
+                      divisions: 10,
+                      onChanged: (value) {
+                        setState(() {
+                          _difficultyAdjustment = value;
+                        });
+                        _saveAlgorithmConfig();
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 16),
+
                   // 数据管理部分
                   _buildSectionHeader('数据管理'),
                   _buildSettingsCard([
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.file_download_outlined),
+                      title: '导出学习数据',
+                      subtitle: '导出当前词书的学习记录',
+                      onTap: _exportLearningData,
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.file_upload_outlined),
+                      title: '导入学习数据',
+                      subtitle: '从CSV文件导入学习记录',
+                      onTap: _importLearningData,
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.auto_awesome_outlined),
+                      title: '智能同步',
+                      subtitle: '切换词书时自动继承学习记录',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('智能同步已自动开启，切换词书时会自动继承相同单词的学习进度'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.visibility_outlined),
+                      title: '学习记录回溯',
+                      subtitle: '查看单词学习历史和统计',
+                      onTap: _openWordReviewPage,
+                    ),
                     _buildCompactListTile(
                       leading: const Icon(Icons.refresh_outlined),
                       title: '重置学习进度',
@@ -323,6 +456,67 @@ class _SettingsPageState extends State<SettingsPage> {
       activeColor: Theme.of(context).primaryColor,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    );
+  }
+
+  /// 构建滑块设置项
+  Widget _buildSliderTile({
+    required String title,
+    required String subtitle,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+            activeColor: Theme.of(context).primaryColor,
+          ),
+        ],
+      ),
     );
   }
   
@@ -451,18 +645,47 @@ class _SettingsPageState extends State<SettingsPage> {
     final apiKey = await DeepSeekApiService.getApiKey();
     final learningMode = await SettingsHelper.getLearningMode();
     
+    // 加载算法配置
+    final algorithmConfig = await LearningDataService.instance.getAlgorithmConfig();
+    
     if (mounted) {
+      final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
+      
+      // 如果API Key无效且当前是深入学习模式，自动切换到快速学习模式
+      LearningMode finalLearningMode = learningMode;
+      if (!isApiKeyValid && learningMode == LearningMode.deepLearning) {
+        finalLearningMode = LearningMode.quickMemory;
+        // 保存切换后的模式
+        await SettingsHelper.setLearningMode(finalLearningMode);
+      }
+      
       setState(() {
         _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
         _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
         final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
         _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
-        _learningMode = learningMode;
+        _learningMode = finalLearningMode;
         
         // 加载DeepSeek API key
         _deepSeekApiKeyController.text = apiKey ?? '';
-        _isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
+        _isApiKeyValid = isApiKeyValid;
+        
+        // 加载算法配置
+        _algorithmConfig = algorithmConfig;
+        _easyIntervalMultiplier = algorithmConfig.easyIntervalMultiplier;
+        _hardIntervalMultiplier = algorithmConfig.hardIntervalMultiplier;
+        _difficultyAdjustment = algorithmConfig.difficultyAdjustment; // 难度调整系数
       });
+      
+      // 如果自动切换了学习模式，显示提示信息
+      if (!isApiKeyValid && learningMode == LearningMode.deepLearning) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('检测到无效的API Key，已自动切换到快速学习模式'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -473,9 +696,24 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
     
-    // 只在学习模式不为null时保存
+    // 只在学习模式不为null时保存，且确保API Key有效时才能保存深入学习模式
     if (_learningMode != null) {
-      await SettingsHelper.setLearningMode(_learningMode!);
+      // 如果API Key无效且尝试保存深入学习模式，强制切换到快速学习模式
+      if (!_isApiKeyValid && _learningMode == LearningMode.deepLearning) {
+        setState(() {
+          _learningMode = LearningMode.quickMemory;
+        });
+        await SettingsHelper.setLearningMode(LearningMode.quickMemory);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('API Key无效，无法使用深入学习模式'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        await SettingsHelper.setLearningMode(_learningMode!);
+      }
     }
     
     // 保存DeepSeek API key
@@ -514,14 +752,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 重置学习进度
   void _resetProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    // 清除学习相关的数据，但保留设置
-    await prefs.remove('learning_progress');
-    await prefs.remove('learned_words');
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('学习进度已重置')),
-    );
+    try {
+      // 使用新的学习数据服务清除所有学习数据
+      await LearningDataService.instance.clearLearningData();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('学习进度已重置')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('重置失败: ${e.toString()}')),
+      );
+    }
   }
 
   /// 显示关于对话框
@@ -656,5 +898,257 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  /// 保存算法配置
+  void _saveAlgorithmConfig() async {
+    if (_algorithmConfig == null) return;
+    
+    final newConfig = _algorithmConfig!.copyWith(
+      easyIntervalMultiplier: _easyIntervalMultiplier,
+      hardIntervalMultiplier: _hardIntervalMultiplier,
+      difficultyAdjustment: _difficultyAdjustment, // 难度调整系数
+    );
+    
+    await LearningDataService.instance.saveAlgorithmConfig(newConfig);
+    _algorithmConfig = newConfig;
+  }
+
+  /// 导出学习数据
+  void _exportLearningData() async {
+    try {
+      final selectedWordBook = await CacheService.getSelectedWordBook();
+      if (selectedWordBook == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先选择一个词书')),
+        );
+        return;
+      }
+
+      // 显示导出中的提示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('正在导出数据...'),
+            ],
+          ),
+        ),
+      );
+
+      final filePath = await LearningDataService.instance.exportLearningDataToCsv(selectedWordBook);
+      
+      Navigator.of(context).pop(); // 关闭加载对话框
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('数据已导出到: $filePath'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: '复制路径',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: filePath));
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // 关闭加载对话框
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('导出失败: ${e.toString()}')),
+      );
+    }
+  }
+
+  /// 导入学习数据
+  void _importLearningData() async {
+    final controller = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('导入学习数据'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('请粘贴CSV格式的学习数据：'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                hintText: '粘贴CSV数据到这里...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _performImport(controller.text);
+            },
+            child: const Text('导入'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 执行导入
+  Future<void> _performImport(String csvData) async {
+    if (csvData.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请输入有效的CSV数据')),
+      );
+      return;
+    }
+
+    try {
+      final selectedWordBook = await CacheService.getSelectedWordBook();
+      if (selectedWordBook == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先选择一个词书')),
+        );
+        return;
+      }
+
+      final result = await LearningDataService.instance.importLearningDataFromCsv(csvData, selectedWordBook);
+      
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('导入失败: ${e.toString()}')),
+      );
+    }
+  }
+
+  /// 显示同步对话框
+  void _showSyncDialog() async {
+    final wordBooks = await CacheService.getCachedWordBooks();
+    final currentWordBook = await CacheService.getSelectedWordBook();
+    
+    if (wordBooks.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('需要至少两个词书才能进行同步')),
+      );
+      return;
+    }
+
+    String? fromWordBook;
+    String? toWordBook;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('词书数据同步'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('将学习数据从一个词书同步到另一个词书'),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '从词书',
+                  border: OutlineInputBorder(),
+                ),
+                value: fromWordBook,
+                onChanged: (value) {
+                  setState(() {
+                    fromWordBook = value;
+                  });
+                },
+                items: wordBooks.map((book) => DropdownMenuItem(
+                  value: book.name,
+                  child: Text(book.name),
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '到词书',
+                  border: OutlineInputBorder(),
+                ),
+                value: toWordBook,
+                onChanged: (value) {
+                  setState(() {
+                    toWordBook = value;
+                  });
+                },
+                items: wordBooks.map((book) => DropdownMenuItem(
+                  value: book.name,
+                  child: Text(book.name),
+                )).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: fromWordBook != null && toWordBook != null && fromWordBook != toWordBook
+                  ? () async {
+                      Navigator.of(context).pop();
+                      await _performSync(fromWordBook!, toWordBook!);
+                    }
+                  : null,
+              child: const Text('同步'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 执行同步
+  Future<void> _performSync(String fromWordBook, String toWordBook) async {
+    try {
+      await LearningDataService.instance.syncWordBookData(fromWordBook, toWordBook);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已将 $fromWordBook 的数据同步到 $toWordBook')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('同步失败: ${e.toString()}')),
+      );
+    }
+  }
+
+  /// 打开单词回溯页面
+  void _openWordReviewPage() async {
+    final selectedWordBook = await CacheService.getSelectedWordBook();
+    if (selectedWordBook == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先选择一个词书')),
+      );
+      return;
+    }
+
+    Navigator.of(context).pushNamed('/word_review');
   }
 }
