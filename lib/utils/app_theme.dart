@@ -14,6 +14,14 @@ class AppTheme {
   static const Color cardColor = Color(0xFFFFFFFF);
   static const Color accentGreen = Color(0xFF10B981);
   
+  // 补充的强调色 (确保所有颜色都可用)
+  static const Color accentBlue = Color(0xFF3B82F6);
+  static const Color accentRed = Color(0xFFEF4444);
+  static const Color accentYellow = Color(0xFFF59E0B);
+  static const Color accentPurple = Color(0xFF8B5CF6);
+  static const Color accentTeal = Color(0xFF14B8A6);
+  static const Color accentOrange = Color(0xFFF97316);
+  
   // 性冷淡风格的辅助颜色
   static const Color coolGray50 = Color(0xFFF8FAFC);
   static const Color coolGray100 = Color(0xFFF1F5F9);

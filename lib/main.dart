@@ -4,14 +4,20 @@ import 'pages/onboarding_page.dart';
 import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/word_review_page.dart';
+import 'pages/enhanced_word_review_page.dart';
+import 'pages/algorithm_settings_page.dart';
 import 'utils/app_theme.dart';
 import 'utils/learning_data_service.dart';
 import 'utils/settings_helper.dart';
 import 'utils/deepseek_api_service.dart';
 import 'pages/library_page.dart';
+import 'utils/algorithm_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 立即设置默认的系统UI覆盖层（浅色模式）
+  AppTheme.setLightSystemUIOverlay();
   
   // 初始化学习数据服务
   await LearningDataService.instance.initialize();
@@ -56,18 +62,38 @@ class _WordFlowAppState extends State<WordFlowApp> {
   @override
   void initState() {
     super.initState();
-    _loadThemePreference();
+    _initServices();
+  }
+
+  /// 初始化所有服务
+  Future<void> _initServices() async {
+    try {
+      // 加载主题偏好
+      _loadThemePreference();
+      
+      // 初始化学习数据服务
+      await LearningDataService.instance.initialize();
+      
+      // 初始化算法管理器
+      await AlgorithmManager.instance.initialize();
+      
+      print('✅ 所有服务初始化完成');
+    } catch (e) {
+      print('❌ 服务初始化失败: $e');
+    }
   }
 
   /// 加载主题偏好设置
   void _loadThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
+    final isDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+    
     setState(() {
-      _isDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+      _isDarkMode = isDarkMode;
     });
     
-    // 设置对应的系统UI覆盖层
-    if (_isDarkMode) {
+    // 立即设置对应的系统UI覆盖层
+    if (isDarkMode) {
       AppTheme.setDarkSystemUIOverlay();
     } else {
       AppTheme.setLightSystemUIOverlay();
@@ -110,6 +136,8 @@ class _WordFlowAppState extends State<WordFlowApp> {
           child: const SettingsPage(),
         ),
         '/word_review': (context) => const WordReviewPage(),
+        '/enhanced_word_review': (context) => const EnhancedWordReviewPage(),
+        '/algorithm_settings': (context) => const AlgorithmSettingsPage(),
       },
     );
   }

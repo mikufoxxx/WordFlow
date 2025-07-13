@@ -196,7 +196,7 @@ class LearningDataService {
     }
     
     // 如果目标记录是新单词，但全局记录有学习历史，则继承
-    if (targetRecord.memoryLevel == MemoryLevel.new_word && 
+    if (targetRecord.memoryLevel == MemoryLevel.first_time && 
         globalRecord.learningCount > 1) {
       return true;
     }
@@ -478,7 +478,7 @@ class LearningDataService {
         return level;
       }
     }
-    return MemoryLevel.new_word;
+    return MemoryLevel.first_time;
   }
 
   /// 获取较早的时间

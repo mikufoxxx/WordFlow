@@ -94,6 +94,9 @@ class _HomePageState extends State<HomePage>
   // 当前显示的单词（扩展版本，包含音标、例句等）
   ExtendedWordData? _currentWord;
   
+  // 撤回功能相关
+  ExtendedWordData? _previousWord;
+  
   // 造句测试相关状态
   bool _showSentenceInput = false;
   bool _isTestingMode = false;
@@ -630,6 +633,163 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  /// 为指定单词准备字符级动画
+  void _prepareCharacterAnimations(ExtendedWordData word) {
+    // 重置状态
+    _wordAnimationCompleted = false;
+    _completedWordAnimations = 0;
+    
+    // 清理旧的控制器
+    _disposeCharacterControllers();
+    
+    // 单词字符动画
+    _wordControllers = List.generate(
+      word.word.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 500),
+        vsync: this,
+      ),
+    );
+    
+    // 为每个单词字符添加完成监听器
+    for (int i = 0; i < _wordControllers.length; i++) {
+      _wordControllers[i].addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _completedWordAnimations++;
+          if (_completedWordAnimations >= _wordControllers.length) {
+            _onWordAnimationCompleted();
+          }
+        }
+      });
+    }
+    
+    _wordSlideAnimations = _wordControllers.map((controller) =>
+      Tween<double>(begin: 15.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutQuart,
+        ),
+      ),
+    ).toList();
+    
+    _wordOpacityAnimations = _wordControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+    
+    // 翻译字符动画
+    _translationControllers = List.generate(
+      word.translation.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      ),
+    );
+    
+    _translationSlideAnimations = _translationControllers.map((controller) =>
+      Tween<double>(begin: 12.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutQuart,
+        ),
+      ),
+    ).toList();
+    
+    _translationOpacityAnimations = _translationControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+    
+    // 释义字符动画
+    _meaningControllers = List.generate(
+      word.translation.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      ),
+    );
+    
+    _meaningSlideAnimations = _meaningControllers.map((controller) =>
+      Tween<double>(begin: 10.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutQuart,
+        ),
+      ),
+    ).toList();
+    
+    _meaningOpacityAnimations = _meaningControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+    
+    // 例句字符动画
+    _exampleControllers = List.generate(
+      word.example.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      ),
+    );
+    
+    _exampleSlideAnimations = _exampleControllers.map((controller) =>
+      Tween<double>(begin: 12.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutQuart,
+        ),
+      ),
+    ).toList();
+    
+    _exampleOpacityAnimations = _exampleControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+    
+    // 例句翻译字符动画
+    _exampleTranslationControllers = List.generate(
+      word.exampleTranslation.length,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      ),
+    );
+    
+    _exampleTranslationSlideAnimations = _exampleTranslationControllers.map((controller) =>
+      Tween<double>(begin: 10.0, end: 0.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutQuart,
+        ),
+      ),
+    ).toList();
+    
+    _exampleTranslationOpacityAnimations = _exampleTranslationControllers.map((controller) =>
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: controller, 
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    ).toList();
+  }
+
   /// 启动字符动画
   void _startCharacterAnimation(List<AnimationController> controllers, int delayMs) {
     for (int i = 0; i < controllers.length; i++) {
@@ -1075,33 +1235,53 @@ class _HomePageState extends State<HomePage>
               ignoring: !_wordAnimationCompleted,
                               child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 不认识按钮
-                      Expanded(
-                        child: _buildElegantButton(
-                          onPressed: _markAsUnknown,
-                          icon: Icons.close_rounded,
-                          label: '不认识',
-                          color: Colors.red.shade100,
-                          textColor: Colors.red.shade700,
-                          iconColor: Colors.red.shade600,
+                      // 撤回按钮
+                      if (_previousWord != null)
+                        Container(
+                          margin: EdgeInsets.only(bottom: 12),
+                          child: _buildCompactButton(
+                            onPressed: _undoLastAction,
+                            icon: Icons.undo_rounded,
+                            label: '撤回上一个',
+                            color: Colors.orange.shade100,
+                            textColor: Colors.orange.shade700,
+                            iconColor: Colors.orange.shade600,
+                          ),
                         ),
-                      ),
                       
-                      SizedBox(width: 32),
-                      
-                      // 认识按钮
-                      Expanded(
-                        child: _buildElegantButton(
-                          onPressed: _markAsKnown,
-                          icon: Icons.check_rounded,
-                          label: '认识',
-                          color: Colors.green.shade100,
-                          textColor: Colors.green.shade700,
-                          iconColor: Colors.green.shade600,
-                        ),
+                      // 主要按钮行
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // 不认识按钮
+                          Expanded(
+                            child: _buildElegantButton(
+                              onPressed: _markAsUnknown,
+                              icon: Icons.close_rounded,
+                              label: '不认识',
+                              color: Colors.red.shade100,
+                              textColor: Colors.red.shade700,
+                              iconColor: Colors.red.shade600,
+                            ),
+                          ),
+                          
+                          SizedBox(width: 32),
+                          
+                          // 认识按钮
+                          Expanded(
+                            child: _buildElegantButton(
+                              onPressed: _markAsKnown,
+                              icon: Icons.check_rounded,
+                              label: '认识',
+                              color: Colors.green.shade100,
+                              textColor: Colors.green.shade700,
+                              iconColor: Colors.green.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1168,10 +1348,66 @@ class _HomePageState extends State<HomePage>
           ),
         ),
       ),
-          );
-    }
+    );
+  }
 
-
+  /// 构建紧凑按钮（用于撤回）
+  Widget _buildCompactButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color textColor,
+    required Color iconColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: textColor.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: textColor.withOpacity(0.08),
+            blurRadius: 6,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: iconColor,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   /// 开始单词动画
   void _startWordAnimation() {
@@ -1293,6 +1529,67 @@ class _HomePageState extends State<HomePage>
         // API Key有效，开始造句测试（在造句完成后再保存记录）
         _startSentenceTest();
       }
+    }
+  }
+
+  /// 撤回上一个单词
+  void _undoLastAction() {
+    if (_previousWord == null) return;
+    
+    if (!_wordAnimationCompleted) return;
+    
+    // 重置动画状态
+    _fadeController.reset();
+    _slideController.reset();
+    _meaningController.reset();
+    _buttonsController.reset();
+    _wordMoveController.reset();
+    _sentenceAnimationController.reset();
+    _resultAreaController.reset();
+    _skipButtonFadeController.reset();
+    _sendButtonFadeController.reset();
+    
+    // 取消所有动画Timer
+    PerformanceOptimizer.cancelTimers(_timerPoolKey);
+    
+    setState(() {
+      // 恢复上一个单词
+      _currentWord = _previousWord;
+      _previousWord = null; // 清除历史记录，避免无限撤回
+      
+      // 重置状态
+      _showMeaning = false;
+      _wordAnimationCompleted = false;
+      _completedWordAnimations = 0;
+      _isTestingMode = false;
+      _showSentenceInput = false;
+      _isSentenceSubmitted = false;
+      _judgmentResult = null;
+      _userSentence = '';
+      _showBetterSentenceAnimation = false;
+      _showAdvancedResults = false;
+    });
+    
+    // 清空输入框
+    _sentenceInputController.clear();
+    
+    // 清理逐字母浮现动画控制器
+    _disposeBetterSentenceControllers();
+    
+    // 重新准备字符级动画
+    _prepareCharacterAnimations(_currentWord!);
+    
+    // 开始单词动画
+    _startWordAnimation();
+    
+    // 显示撤回提示
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已撤回到上一个单词'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -1620,6 +1917,8 @@ class _HomePageState extends State<HomePage>
       _userSentence = '';
       _showBetterSentenceAnimation = false;
       _showAdvancedResults = false;
+      // 保存当前单词到历史记录（用于撤回）
+      _previousWord = _currentWord;
       // 立即清除当前单词，避免闪现
       _currentWord = null;
     });

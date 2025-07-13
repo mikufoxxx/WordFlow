@@ -28,12 +28,10 @@ class _SettingsPageState extends State<SettingsPage> {
   // DeepSeek API设置
   final TextEditingController _deepSeekApiKeyController = TextEditingController();
   bool _isApiKeyValid = false;
+  bool _showApiKey = false;
   
   // 学习算法设置
   SpacedRepetitionConfig? _algorithmConfig;
-  double _easyIntervalMultiplier = 1.3; // 简单时的间隔倍数
-  double _hardIntervalMultiplier = 1.2; // 困难时的间隔倍数
-  double _difficultyAdjustment = 1.0; // 整体难度调整系数
 
   @override
   void initState() {
@@ -242,66 +240,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 16),
 
                   // 学习算法设置部分
-                  _buildSectionHeader('学习算法（无限流模式）'),
+                  _buildSectionHeader('学习算法'),
                   _buildSettingsCard([
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '🌊 无限流学习',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '系统会根据你的学习节奏动态调整推送，无需设置每日目标',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildSliderTile(
-                      title: '简单间隔倍数',
-                      subtitle: '回答"简单"时的复习间隔倍数',
-                      value: _easyIntervalMultiplier,
-                      min: 1.1,
-                      max: 2.0,
-                      divisions: 9,
-                      onChanged: (value) {
-                        setState(() {
-                          _easyIntervalMultiplier = value;
-                        });
-                        _saveAlgorithmConfig();
-                      },
-                    ),
-                    _buildSliderTile(
-                      title: '困难间隔倍数',
-                      subtitle: '回答"困难"时的复习间隔倍数',
-                      value: _hardIntervalMultiplier,
-                      min: 1.0,
-                      max: 1.5,
-                      divisions: 5,
-                      onChanged: (value) {
-                        setState(() {
-                          _hardIntervalMultiplier = value;
-                        });
-                        _saveAlgorithmConfig();
-                      },
-                    ),
-                    _buildSliderTile(
-                      title: '难度调整系数',
-                      subtitle: '影响整体学习难度和复习频率',
-                      value: _difficultyAdjustment,
-                      min: 0.5,
-                      max: 1.5,
-                      divisions: 10,
-                      onChanged: (value) {
-                        setState(() {
-                          _difficultyAdjustment = value;
-                        });
-                        _saveAlgorithmConfig();
-                      },
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.psychology_outlined),
+                      title: '高级算法设置',
+                      subtitle: '配置SuperMemo、Anki、自适应算法参数',
+                      onTap: _openAlgorithmSettings,
                     ),
                   ]),
 
@@ -336,9 +281,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                     _buildCompactListTile(
-                      leading: const Icon(Icons.visibility_outlined),
-                      title: '学习记录回溯',
-                      subtitle: '查看单词学习历史和统计',
+                      leading: const Icon(Icons.analytics_outlined),
+                      title: '增强学习分析',
+                      subtitle: '详细的学习历史、统计图表、算法效果分析',
                       onTap: _openWordReviewPage,
                     ),
                     _buildCompactListTile(
@@ -520,6 +465,20 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
   
+  /// 构建信息展示项
+  Widget _buildInfoTile(String title, String description) {
+    return ListTile(
+      leading: const Icon(Icons.info_outline, color: Colors.grey),
+      title: Text(title),
+      subtitle: Text(
+        description,
+        style: const TextStyle(fontSize: 14, color: Colors.grey),
+      ),
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    );
+  }
+  
   /// 构建API Key设置项
   Widget _buildApiKeyTile() {
     return Padding(
@@ -586,16 +545,41 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              suffixIcon: _isApiKeyValid
-                  ? Icon(
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isApiKeyValid)
+                    Icon(
                       Icons.check_circle_outlined,
                       color: Colors.green.shade600,
                       size: 20,
-                    )
-                  : null,
+                    ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.paste,
+                      size: 20,
+                    ),
+                    onPressed: _pasteApiKey,
+                    tooltip: '粘贴API Key',
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _showApiKey ? Icons.visibility_off : Icons.visibility,
+                      size: 20,
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showApiKey = !_showApiKey;
+                      });
+                    },
+                    tooltip: _showApiKey ? '隐藏API Key' : '显示API Key',
+                  ),
+                ],
+              ),
             ),
             style: const TextStyle(fontSize: 14),
-            obscureText: true,
+            obscureText: !_showApiKey,
             onChanged: (_) => _saveSettings(),
           ),
           const SizedBox(height: 6),
@@ -672,9 +656,6 @@ class _SettingsPageState extends State<SettingsPage> {
         
         // 加载算法配置
         _algorithmConfig = algorithmConfig;
-        _easyIntervalMultiplier = algorithmConfig.easyIntervalMultiplier;
-        _hardIntervalMultiplier = algorithmConfig.hardIntervalMultiplier;
-        _difficultyAdjustment = algorithmConfig.difficultyAdjustment; // 难度调整系数
       });
       
       // 如果自动切换了学习模式，显示提示信息
@@ -852,6 +833,40 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
   
+  /// 粘贴API Key
+  void _pasteApiKey() async {
+    try {
+      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data != null && data.text != null && data.text!.isNotEmpty) {
+        setState(() {
+          _deepSeekApiKeyController.text = data.text!;
+        });
+        _saveSettings();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ API Key已粘贴'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ 剪贴板为空'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 粘贴失败: $e'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   /// 显示API Key帮助
   void _showApiKeyHelp() {
     showDialog(
@@ -900,19 +915,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 保存算法配置
-  void _saveAlgorithmConfig() async {
-    if (_algorithmConfig == null) return;
-    
-    final newConfig = _algorithmConfig!.copyWith(
-      easyIntervalMultiplier: _easyIntervalMultiplier,
-      hardIntervalMultiplier: _hardIntervalMultiplier,
-      difficultyAdjustment: _difficultyAdjustment, // 难度调整系数
-    );
-    
-    await LearningDataService.instance.saveAlgorithmConfig(newConfig);
-    _algorithmConfig = newConfig;
-  }
+
 
   /// 导出学习数据
   void _exportLearningData() async {
@@ -1149,6 +1152,11 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
 
-    Navigator.of(context).pushNamed('/word_review');
+    Navigator.of(context).pushNamed('/enhanced_word_review');
+  }
+
+  /// 打开算法设置页面
+  void _openAlgorithmSettings() {
+    Navigator.of(context).pushNamed('/algorithm_settings');
   }
 }

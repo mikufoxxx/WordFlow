@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lordicon/lordicon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_theme.dart';
@@ -29,6 +30,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   // Token输入相关
   final TextEditingController _tokenController = TextEditingController();
   bool _isTokenValid = false;
+  bool _showToken = false;
   
   // 轮播图相关
   late PageController _carouselController;
@@ -447,9 +449,9 @@ class _OnboardingPageState extends State<OnboardingPage>
           padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
           child: TextField(
             controller: _tokenController,
-                      decoration: InputDecoration(
-            labelText: 'DeepSeek API Key',
-            hintText: '请输入您的DeepSeek API Key',
+            decoration: InputDecoration(
+              labelText: 'DeepSeek API Key',
+              hintText: '请输入您的DeepSeek API Key',
               prefixIcon: Icon(Icons.key_outlined, color: page.color),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12), // 从16减少到12
@@ -465,8 +467,34 @@ class _OnboardingPageState extends State<OnboardingPage>
               ),
               filled: true,
               fillColor: AppTheme.backgroundColor,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.paste,
+                      color: page.color.withOpacity(0.6),
+                    ),
+                    onPressed: _pasteToken,
+                    tooltip: '粘贴API Key',
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _showToken ? Icons.visibility_off : Icons.visibility,
+                      color: page.color.withOpacity(0.6),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showToken = !_showToken;
+                      });
+                    },
+                    tooltip: _showToken ? '隐藏API Key' : '显示API Key',
+                  ),
+                ],
+              ),
             ),
             style: const TextStyle(fontSize: 14), // 从16减少到14
+            obscureText: !_showToken,
           ),
         ),
         
@@ -674,6 +702,42 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
   
+  /// 粘贴Token
+  void _pasteToken() async {
+    try {
+      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data != null && data.text != null && data.text!.isNotEmpty) {
+        setState(() {
+          _tokenController.text = data.text!;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ API Key已粘贴'),
+            backgroundColor: _pages[_currentPage].color,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('❌ 剪贴板为空'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 粘贴失败: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   /// 跳过API Key输入
   void _skipApiKey() async {
     await _completeOnboarding(skipToken: true);

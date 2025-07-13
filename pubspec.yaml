@@ -47,6 +47,10 @@ dependencies:
   intl: ^0.18.1
   # 用于获取系统路径
   path_provider: ^2.1.1
+  # 用于生成UUID
+  uuid: ^4.2.1
+  # 用于数据可视化图表
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:

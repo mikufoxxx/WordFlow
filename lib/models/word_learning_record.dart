@@ -87,7 +87,7 @@ class WordLearningRecord {
       firstLearningTime: now,
       lastLearningTime: now,
       nextReviewTime: now.add(const Duration(days: 1)),
-      memoryLevel: MemoryLevel.new_word,
+      memoryLevel: MemoryLevel.first_time,
       learningCount: 1,
       correctCount: 0,
       incorrectCount: 0,
@@ -136,9 +136,9 @@ class WordLearningRecord {
   MemoryLevel _calculateNewMemoryLevel(ReviewResult reviewResult) {
     switch (reviewResult) {
       case ReviewResult.forgot:
-        return MemoryLevel.new_word;
+        return MemoryLevel.first_time;
       case ReviewResult.hard:
-        return memoryLevel.index > 0 ? MemoryLevel.values[memoryLevel.index - 1] : MemoryLevel.new_word;
+        return memoryLevel.index > 0 ? MemoryLevel.values[memoryLevel.index - 1] : MemoryLevel.first_time;
       case ReviewResult.good:
         return memoryLevel.index < MemoryLevel.values.length - 1 
             ? MemoryLevel.values[memoryLevel.index + 1] 
@@ -176,14 +176,40 @@ class WordLearningRecord {
     return IntervalAndEase(interval: newInterval, easeFactor: newEaseFactor);
   }
 
-  /// 获取掌握程度百分比
+  /// 获取掌握程度百分比（简化版：基于连续正确次数）
   double get masteryPercentage {
     if (learningCount == 0) return 0.0;
     
-    final correctRate = correctCount / learningCount;
-    final levelBonus = memoryLevel.index / (MemoryLevel.values.length - 1);
+    // 获取最近的连续正确次数
+    final recentCorrectStreak = _getRecentCorrectStreak();
     
-    return (correctRate * 0.7 + levelBonus * 0.3).clamp(0.0, 1.0);
+    // 基础正确率
+    final correctRate = correctCount / learningCount;
+    
+    // 连续正确奖励：连续3次以上正确视为掌握良好
+    final streakBonus = recentCorrectStreak >= 3 ? 0.3 : 0.0;
+    
+    // 记忆级别奖励（简化）
+    final levelBonus = memoryLevel.index >= 3 ? 0.2 : 0.0;
+    
+    return (correctRate * 0.5 + streakBonus + levelBonus).clamp(0.0, 1.0);
+  }
+  
+  /// 获取最近的连续正确次数
+  int _getRecentCorrectStreak() {
+    if (reviewHistory.isEmpty) return 0;
+    
+    int streak = 0;
+    // 从最新的记录开始往前查找连续正确的次数
+    for (int i = reviewHistory.length - 1; i >= 0; i--) {
+      if (reviewHistory[i].reviewResult.isCorrect) {
+        streak++;
+      } else {
+        break; // 遇到错误就停止计算
+      }
+    }
+    
+    return streak;
   }
 
   /// 是否需要复习
@@ -207,11 +233,11 @@ class WordLearningRecord {
 
 /// 记忆程度枚举
 enum MemoryLevel {
-  new_word,    // 新单词
-  learning,    // 学习中
-  familiar,    // 熟悉
-  known,       // 认识
-  mastered,    // 掌握
+  first_time,    // 首次学习
+  reviewing,     // 复习中
+  strengthening, // 强化中
+  stable,        // 稳定掌握
+  mastered,      // 完全掌握
 }
 
 /// 复习结果枚举
@@ -280,34 +306,53 @@ extension ReviewResultExtension on ReviewResult {
   }
 }
 
+/// 扩展 MemoryLevel 枚举
 extension MemoryLevelExtension on MemoryLevel {
+  /// 显示名称
   String get displayName {
     switch (this) {
-      case MemoryLevel.new_word:
-        return '新单词';
-      case MemoryLevel.learning:
-        return '学习中';
-      case MemoryLevel.familiar:
-        return '熟悉';
-      case MemoryLevel.known:
-        return '认识';
+      case MemoryLevel.first_time:
+        return '首次学习';
+      case MemoryLevel.reviewing:
+        return '复习中';
+      case MemoryLevel.strengthening:
+        return '强化中';
+      case MemoryLevel.stable:
+        return '稳定掌握';
       case MemoryLevel.mastered:
-        return '掌握';
+        return '完全掌握';
     }
   }
   
+  /// 显示颜色
   Color get color {
     switch (this) {
-      case MemoryLevel.new_word:
-        return const Color(0xFFE57373);
-      case MemoryLevel.learning:
-        return const Color(0xFFFFB74D);
-      case MemoryLevel.familiar:
-        return const Color(0xFFFFF176);
-      case MemoryLevel.known:
-        return const Color(0xFF81C784);
+      case MemoryLevel.first_time:
+        return const Color(0xFF94A3B8); // 灰色
+      case MemoryLevel.reviewing:
+        return const Color(0xFFF59E0B); // 黄色
+      case MemoryLevel.strengthening:
+        return const Color(0xFF3B82F6); // 蓝色
+      case MemoryLevel.stable:
+        return const Color(0xFF10B981); // 绿色
       case MemoryLevel.mastered:
-        return const Color(0xFF64B5F6);
+        return const Color(0xFF8B5CF6); // 紫色
+    }
+  }
+  
+  /// 获取下一个记忆级别
+  MemoryLevel get nextLevel {
+    switch (this) {
+      case MemoryLevel.first_time:
+        return MemoryLevel.reviewing;
+      case MemoryLevel.reviewing:
+        return MemoryLevel.strengthening;
+      case MemoryLevel.strengthening:
+        return MemoryLevel.stable;
+      case MemoryLevel.stable:
+        return MemoryLevel.mastered;
+      case MemoryLevel.mastered:
+        return MemoryLevel.mastered; // 已经是最高级别
     }
   }
 }
