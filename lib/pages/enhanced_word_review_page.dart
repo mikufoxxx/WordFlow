@@ -57,7 +57,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _searchController.addListener(_onSearchChanged);
     _loadData();
   }
@@ -187,7 +187,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           tabs: const [
             Tab(text: '单词列表'),
             Tab(text: '学习统计'),
-            Tab(text: '详细历史'),
           ],
         ),
       ),
@@ -198,7 +197,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               children: [
                 _buildWordListTab(),
                 _buildStatisticsTab(),
-                _buildHistoryTab(),
               ],
             ),
     );
@@ -491,6 +489,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final totalWords = _allRecords.length;
     final masteredWords = _allRecords.where((r) => r.masteryPercentage >= 0.8).length;
     final studyingWords = _allRecords.where((r) => r.masteryPercentage >= 0.3 && r.masteryPercentage < 0.8).length;
+    final newWords = _allRecords.where((r) => r.masteryPercentage < 0.3).length;
     final masteryRate = totalWords > 0 ? (masteredWords / totalWords) : 0.0;
     
     return Card(
@@ -590,10 +589,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 ),
                 Expanded(
                   child: _buildStatItem(
-                    '掌握率',
-                    '${(masteryRate * 100).toStringAsFixed(1)}%',
-                    AppTheme.accentTeal,
-                    Icons.trending_up_outlined,
+                    '新单词',
+                    newWords.toString(),
+                    AppTheme.accentRed,
+                    Icons.add_circle_outline,
                   ),
                 ),
               ],
@@ -795,17 +794,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       dailyStats[date] = 0;
     }
     
-    // 统计每日学习量
+    // 统计每日学习量 - 基于学习记录的最后学习时间
     for (final record in _allRecords) {
-      for (final session in record.sessions) {
-        final sessionDate = DateTime(
-          session.sessionTime.year,
-          session.sessionTime.month,
-          session.sessionTime.day,
-        );
-        if (dailyStats.containsKey(sessionDate)) {
-          dailyStats[sessionDate] = dailyStats[sessionDate]! + 1;
-        }
+      final lastLearningDate = DateTime(
+        record.lastLearningTime.year,
+        record.lastLearningTime.month,
+        record.lastLearningTime.day,
+      );
+      if (dailyStats.containsKey(lastLearningDate)) {
+        dailyStats[lastLearningDate] = dailyStats[lastLearningDate]! + 1;
       }
     }
     
@@ -884,9 +881,12 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
 
   /// 构建记忆效果分析卡片
   Widget _buildMemoryEffectivenessCard() {
-    final totalSessions = _allRecords.expand((r) => r.sessions).length;
-    final correctSessions = _allRecords.expand((r) => r.sessions).where((s) => s.result.isCorrect).length;
-    final successRate = totalSessions > 0 ? (correctSessions / totalSessions) : 0.0;
+    // 使用已有的指标：学习次数、正确次数、掌握程度
+    final totalLearningCount = _allRecords.fold(0, (sum, r) => sum + r.learningCount);
+    final totalCorrectCount = _allRecords.fold(0, (sum, r) => sum + r.correctCount);
+    final averageMastery = _allRecords.isNotEmpty 
+        ? _allRecords.map((r) => r.masteryPercentage).reduce((a, b) => a + b) / _allRecords.length 
+        : 0.0;
     
     return Card(
       elevation: 2,
@@ -916,18 +916,41 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               children: [
                 Expanded(
                   child: _buildEffectivenessItem(
-                    '总体正确率',
-                    '${(successRate * 100).toStringAsFixed(1)}%',
-                    _getSuccessRateColor(successRate),
-                    Icons.track_changes_outlined,
+                    '总学习次数',
+                    totalLearningCount.toString(),
+                    AppTheme.accentBlue,
+                    Icons.school_outlined,
                   ),
                 ),
                 Expanded(
                   child: _buildEffectivenessItem(
-                    '学习会话',
-                    totalSessions.toString(),
-                    AppTheme.accentBlue,
-                    Icons.quiz_outlined,
+                    '总正确次数',
+                    totalCorrectCount.toString(),
+                    AppTheme.accentGreen,
+                    Icons.check_circle_outline,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: _buildEffectivenessItem(
+                    '平均掌握度',
+                    '${(averageMastery * 100).toStringAsFixed(1)}%',
+                    AppTheme.accentTeal,
+                    Icons.trending_up_outlined,
+                  ),
+                ),
+                Expanded(
+                  child:                   _buildEffectivenessItem(
+                    '正确率',
+                    totalLearningCount > 0 ? '${(totalCorrectCount / totalLearningCount * 100).toStringAsFixed(1)}%' : '0%',
+                    _getSuccessRateColor(totalLearningCount > 0 ? totalCorrectCount / totalLearningCount : 0.0),
+                    Icons.analytics_outlined,
                   ),
                 ),
               ],
@@ -936,16 +959,16 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             const SizedBox(height: 16),
             
             LinearProgressIndicator(
-              value: successRate,
+              value: averageMastery,
               backgroundColor: AppTheme.coolGray200,
-              valueColor: AlwaysStoppedAnimation<Color>(_getSuccessRateColor(successRate)),
+              valueColor: AlwaysStoppedAnimation<Color>(_getSuccessRateColor(averageMastery)),
               minHeight: 8,
             ),
             
             const SizedBox(height: 8),
             
             Text(
-              _getEffectivenessDescription(successRate),
+              _getEffectivenessDescription(averageMastery),
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.coolGray600,
@@ -1152,6 +1175,43 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     if (rate >= 0.6) return '记忆效果良好，可以适当提高难度';
     if (rate >= 0.4) return '记忆效果一般，建议加强复习';
     return '记忆效果较差，建议降低学习强度';
+  }
+
+  /// 构建进度条
+  Widget _buildProgressBar(String label, int count, double percentage, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.coolGray600,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: LinearProgressIndicator(
+              value: percentage,
+              backgroundColor: AppTheme.coolGray200,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count (${(percentage * 100).toStringAsFixed(1)}%)',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.coolGray500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 构建图表部分
@@ -1399,337 +1459,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建进度条
-  Widget _buildProgressBar(String label, int count, double percentage, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.coolGray600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: LinearProgressIndicator(
-              value: percentage,
-              backgroundColor: AppTheme.coolGray200,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$count (${(percentage * 100).toStringAsFixed(1)}%)',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.coolGray500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建历史记录标签页
-  Widget _buildHistoryTab() {
-    final allSessions = _allRecords.expand((r) => r.sessions).toList();
-    allSessions.sort((a, b) => b.sessionTime.compareTo(a.sessionTime));
-
-    return allSessions.isEmpty
-        ? _buildEmptyState('暂无学习历史')
-        : ListView.builder(
-            padding: ResponsiveHelper.getResponsivePadding(context),
-            itemCount: allSessions.length,
-            itemBuilder: (context, index) {
-              final session = allSessions[index];
-              final word = _allRecords.firstWhere((r) => r.sessions.contains(session)).word;
-              return _buildSessionCard(session, word);
-            },
-          );
-  }
-
-  /// 构建学习会话卡片
-  Widget _buildSessionCard(DetailedLearningSession session, String word) {
-    return Card(
-      color: AppTheme.cardColor,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题行
-            Row(
-              children: [
-                Icon(
-                  session.learningMode.icon,
-                  size: 20,
-                  color: AppTheme.coolGray500,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  word,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: session.result.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    session.result.displayName,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: session.result.color,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // 详细信息
-            Row(
-              children: [
-                Text(
-                  session.learningMode.displayName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.coolGray500,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '评分: ${session.score}/10',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.coolGray500,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '用时: ${_formatDuration(session.studyDuration.inSeconds)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.coolGray500,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  DateFormat('MM/dd HH:mm').format(session.sessionTime),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.coolGray400,
-                  ),
-                ),
-              ],
-            ),
-            
-            // 用户输入（造句）
-            if (session.userInput != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.coolGray50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '用户造句:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.coolGray500,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      session.userInput!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.coolGray700,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            
-            // 造句分析
-            if (session.sentenceAnalysis != null) ...[
-              const SizedBox(height: 8),
-              _buildSentenceAnalysis(session.sentenceAnalysis!),
-            ],
-            
-            // 反馈
-            if (session.feedback != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.feedback,
-                      size: 16,
-                      color: AppTheme.accentGreen,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        session.feedback!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.accentGreen,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建造句分析
-  Widget _buildSentenceAnalysis(SentenceAnalysis analysis) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: analysis.isCorrect ? Colors.green.shade50 : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: analysis.isCorrect ? Colors.green.shade200 : Colors.red.shade200,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 分析结果
-          Row(
-            children: [
-              Icon(
-                analysis.isCorrect ? Icons.check_circle : Icons.error,
-                size: 16,
-                color: analysis.isCorrect ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                analysis.isCorrect ? '句子正确' : '需要改进',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: analysis.isCorrect ? Colors.green.shade700 : Colors.red.shade700,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '复杂度: ${analysis.complexity.displayName}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: analysis.complexity.color,
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // 评分
-          Row(
-            children: [
-              _buildScoreChip('语法', analysis.grammarScore),
-              const SizedBox(width: 8),
-              _buildScoreChip('用法', analysis.usageScore),
-              const SizedBox(width: 8),
-              _buildScoreChip('复杂度', analysis.complexityScore),
-            ],
-          ),
-          
-          // 更好的句子
-          if (analysis.betterSentence != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '参考句子:',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    analysis.betterSentence!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 构建分数芯片
-  Widget _buildScoreChip(String label, int score) {
-    final color = score >= 8 ? Colors.green : score >= 6 ? Colors.orange : Colors.red;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        '$label: $score',
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

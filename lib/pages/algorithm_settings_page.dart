@@ -486,8 +486,8 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             // 基础设置
             _buildSectionTitle('基础设置'),
             _buildParameterSlider(
-              '毕业间隔',
-              '新单词完成学习后的首次间隔',
+              '首次复习间隔',
+              '新单词完成学习后的首次复习间隔',
               config.graduatingInterval.toDouble(),
               1.0,
               7.0,
