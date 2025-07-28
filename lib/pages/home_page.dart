@@ -2092,7 +2092,22 @@ class _HomePageState extends State<HomePage>
                   ],
                 )
                 : // 正常模式：显示完整的单词卡片
-                Card(
+                Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkCardColor 
+                          : AppTheme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: Theme.of(context).brightness == Brightness.dark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeOutQuart,
@@ -2926,6 +2941,15 @@ class _HomePageState extends State<HomePage>
                     color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray100,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray100),
+                    boxShadow: isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3189,6 +3213,15 @@ class _HomePageState extends State<HomePage>
         border: Border.all(
           color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray200),
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Text.rich(
         TextSpan(
@@ -3340,6 +3373,15 @@ class _HomePageState extends State<HomePage>
         border: Border.all(
           color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray200),
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3387,6 +3429,15 @@ class _HomePageState extends State<HomePage>
         border: Border.all(
           color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray200),
         ),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
