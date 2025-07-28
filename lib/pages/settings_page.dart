@@ -366,17 +366,17 @@ class _SettingsPageState extends State<SettingsPage> {
       title: Text(
         title,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkPrimaryTextColor 
-              : AppTheme.primaryTextColor,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkPrimaryTextColor
+              : AppTheme.darkGray,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkSecondaryTextColor 
-              : AppTheme.secondaryTextColor,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.mediumGray
+              : AppTheme.coolGray500,
         ),
       ),
       onTap: onTap,
@@ -397,7 +397,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkAccentGreen 
+              ? AppTheme.darkPrimaryTextColor
               : AppTheme.darkGray,
         ),
       ),
@@ -411,9 +411,18 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       value: value,
       onChanged: onChanged,
+      inactiveThumbColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkPrimaryGray
+          : AppTheme.darkAccentGreen,
+      inactiveTrackColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkSecondaryTextColor
+          : AppTheme.darkPrimaryTextColor,
+      activeTrackColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkSecondaryTextColor
+          : AppTheme.darkAccentGreen,
       activeColor: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkPrimaryGray 
-          : AppTheme.primaryGray,
+          ? AppTheme.secondaryTextColor
+          : AppTheme.secondaryTextColor,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
@@ -432,7 +441,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkAccentGreen 
+              ? AppTheme.darkPrimaryTextColor
               : AppTheme.darkGray,
         ),
       ),
