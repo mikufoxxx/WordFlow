@@ -80,4 +80,16 @@ class SettingsHelper {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('learning_mode', mode.code);
   }
-} 
+  
+  /// 获取智能同步设置
+  static Future<bool> getSmartSyncEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('smart_sync_enabled') ?? true;
+  }
+  
+  /// 保存智能同步设置
+  static Future<void> setSmartSyncEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('smart_sync_enabled', value);
+  }
+}

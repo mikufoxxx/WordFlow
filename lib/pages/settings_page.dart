@@ -13,6 +13,12 @@ import '../utils/file_helper.dart';
 import '../widgets/acrylic_app_bar.dart';
 import '../main.dart';
 
+/// 导入模式枚举
+enum ImportMode {
+  update,    // 数据更新：只更新学习进度更好的记录
+  overwrite, // 全部覆盖：清空现有数据，完全替换
+}
+
 /// 设置页面 - 用于配置应用的基本设置
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -25,6 +31,7 @@ class _SettingsPageState extends State<SettingsPage> {
   // 设置项状态
   bool _autoPlayPronunciation = true;
   bool _enableDarkMode = false;
+  bool _smartSyncEnabled = true; // 智能同步开关状态
   PronunciationType _pronunciationType = PronunciationType.uk;
   LearningMode? _learningMode; // 改为可空类型，避免默认值闪烁
   
@@ -311,36 +318,32 @@ class _SettingsPageState extends State<SettingsPage> {
                   // 数据管理部分
                   _buildSectionHeader('数据管理'),
                   _buildSettingsCard([
-                    _buildCompactListTile(
-                      leading: const Icon(Icons.file_download_outlined),
-                      title: '导出学习数据',
-                      subtitle: '选择目录导出当前词书的学习记录',
-                      onTap: _exportLearningData,
-                    ),
-                    _buildCompactListTile(
-                      leading: const Icon(Icons.file_upload_outlined),
-                      title: '导入学习数据',
-                      subtitle: '选择CSV文件导入学习记录',
-                      onTap: _importLearningData,
-                    ),
-                    _buildCompactListTile(
-                      leading: const Icon(Icons.auto_awesome_outlined),
+                    _buildSwitchTile(
                       title: '智能同步',
                       subtitle: '切换词书时自动继承学习记录',
-                      onTap: () {
+                      value: _smartSyncEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _smartSyncEnabled = value;
+                        });
+                        _saveSettings();
+
+                        // 显示状态变化提示
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Row(
                               children: [
                                 Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.white,
+                                  value ? Icons.sync : Icons.sync_disabled,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black87,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '智能同步已自动开启，切换词书时会自动继承相同单词的学习进度',
+                                    value ? '智能同步已开启' : '智能同步已关闭',
                                     style: TextStyle(
                                         fontSize: 14,
                                         color: Theme.of(context).brightness == Brightness.dark
@@ -352,8 +355,8 @@ class _SettingsPageState extends State<SettingsPage> {
                               ],
                             ),
                             backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                ? AppTheme.coolGray600
-                                : AppTheme.coolGray300,
+                                ? AppTheme.darkCardColor
+                                : AppTheme.cardColor,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.all(16),
                             shape: RoundedRectangleBorder(
@@ -363,6 +366,18 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         );
                       },
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.file_download_outlined),
+                      title: '导出学习数据',
+                      subtitle: '选择目录导出当前词书的学习记录',
+                      onTap: _exportLearningData,
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.file_upload_outlined),
+                      title: '导入学习数据',
+                      subtitle: '选择CSV文件导入学习记录',
+                      onTap: _importLearningData,
                     ),
                     _buildCompactListTile(
                       leading: const Icon(Icons.analytics_outlined),
@@ -387,7 +402,42 @@ class _SettingsPageState extends State<SettingsPage> {
                       leading: const Icon(Icons.info_outline),
                       title: '关于WordFlow',
                       subtitle: '版本 1.0.0',
-                      onTap: _showAboutDialog,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(
+                                  Icons.catching_pokemon_outlined,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '你知道吗，已经改了好几版了，但是版本号没有变。。',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black87
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.coolGray600
+                                : AppTheme.coolGray300,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.all(16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
                     _buildCompactListTile(
                       leading: const Icon(Icons.feedback_outlined),
@@ -779,6 +829,7 @@ class _SettingsPageState extends State<SettingsPage> {
       setState(() {
         _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
         _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+        _smartSyncEnabled = prefs.getBool('smart_sync_enabled') ?? true;
         final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
         _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
         _learningMode = finalLearningMode;
@@ -835,6 +886,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_play_pronunciation', _autoPlayPronunciation);
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
+    await prefs.setBool('smart_sync_enabled', _smartSyncEnabled);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
     
     // 只在学习模式不为null时保存，且确保API Key有效时才能保存深入学习模式
@@ -995,37 +1047,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     }
-  }
-
-  /// 显示关于对话框
-  void _showAboutDialog() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'WordFlow',
-      applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 64,
-        constraints: const BoxConstraints(minHeight: 64),
-        decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(
-          Icons.auto_stories_outlined,
-          color: Colors.white,
-          size: 32,
-        ),
-      ),
-      children: [
-        const Text('智能背单词应用，让学习如流水般自然。'),
-        const SizedBox(height: 16),
-        const Text('特性：'),
-        const Text('• 流式文字动画效果'),
-        const Text('• AI智能造句判断'),
-        const Text('• 简约优雅的界面设计'),
-        const Text('• 个性化学习设置'),
-      ],
-    );
   }
   
   /// 测试API连接
@@ -1369,45 +1390,6 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 导出学习数据
   void _exportLearningData() async {
     try {
-      final selectedWordBook = await CacheService.getSelectedWordBook();
-      if (selectedWordBook == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.warning_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '请先选择一个词书',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
       // 直接选择导出目录
       final selectedDirectory = await FileHelper.selectExportDirectory();
       if (selectedDirectory == null) {
@@ -1433,12 +1415,12 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
 
-      // 获取CSV数据
-      final csvData = await LearningDataService.instance.getLearningDataCsv(selectedWordBook);
+      // 获取公共单词本的CSV数据（传入null表示导出全局记录）
+      final csvData = await LearningDataService.instance.getLearningDataCsv();
       
       // 生成文件名
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'WordFlow_${selectedWordBook}_$timestamp.csv';
+      final fileName = 'WordFlow_公共单词本_$timestamp.csv';
       
       // 保存文件到选择的目录
       final filePath = await FileHelper.saveFile(selectedDirectory, fileName, csvData);
@@ -1447,7 +1429,7 @@ class _SettingsPageState extends State<SettingsPage> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('数据已导出到:\n$filePath'),
+          content: Text('公共单词本数据已导出到:\n$filePath'),
           duration: const Duration(seconds: 8),
           action: SnackBarAction(
             label: '复制路径',
@@ -1626,8 +1608,84 @@ class _SettingsPageState extends State<SettingsPage> {
             Text('文件名: ${file.name}'),
             Text('文件大小: ${FileHelper.getFileSizeString(fileSize)}'),
             Text('数据行数: $lines'),
-            const SizedBox(height: 12),
-            const Text('确定要导入这些数据吗？'),
+            const SizedBox(height: 16),
+            const Text('请选择导入模式：'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.coolGray700
+                    : AppTheme.coolGray100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.update, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text(
+                        '数据更新',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '只更新学习进度更好的记录，保留现有数据',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.coolGray700
+                    : AppTheme.coolGray100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.refresh, size: 16, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(
+                        '全部覆盖',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '清空现有数据，完全替换为导入的数据',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -1638,9 +1696,24 @@ class _SettingsPageState extends State<SettingsPage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await _performImport(csvData);
+              await _performImport(csvData, ImportMode.update);
             },
-            child: const Text('确认导入'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('数据更新'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _performImport(csvData, ImportMode.overwrite);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('全部覆盖'),
           ),
         ],
       ),
@@ -1648,7 +1721,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   /// 执行导入
-  Future<void> _performImport(String csvData) async {
+  Future<void> _performImport(String csvData, ImportMode importMode) async {
     if (csvData.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1688,48 +1761,11 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     try {
-      final selectedWordBook = await CacheService.getSelectedWordBook();
-      if (selectedWordBook == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.warning_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '请先选择一个词书',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      final result = await LearningDataService.instance.importLearningDataFromCsv(csvData, selectedWordBook);
+      // 导入到公共单词本（传入null表示导入到全局记录）
+      final result = await LearningDataService.instance.importLearningDataFromCsv(csvData, null, importMode);
       
       if (result.success) {
+        final modeText = importMode == ImportMode.update ? '数据更新' : '全部覆盖';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1742,7 +1778,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    result.message,
+                    '已通过${modeText}模式导入到公共单词本：${result.message}',
                     style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark

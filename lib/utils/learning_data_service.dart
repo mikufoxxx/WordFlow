@@ -2,8 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/word_book.dart';
 import '../models/word_learning_record.dart';
+import '../pages/settings_page.dart'; // 导入ImportMode枚举
 import 'spaced_repetition_service.dart';
+import 'settings_helper.dart';
+import 'cache_service.dart';
 
 /// 学习数据管理服务
 /// 统一管理所有学习相关数据的存储、加载和同步
@@ -145,39 +149,111 @@ class LearningDataService {
   /// 自动同步词书数据（切换词书时调用）
   Future<void> autoSyncWordBook(String targetWordBook) async {
     try {
-      // 从全局记录中继承相同单词的学习数据
+      // 检查智能同步是否开启
+      final smartSyncEnabled = await SettingsHelper.getSmartSyncEnabled();
+      if (!smartSyncEnabled) {
+        print('🔄 智能同步已关闭，跳过自动同步');
+        return;
+      }
+      
+      print('🔄 开始智能同步到词书: $targetWordBook');
+      print('📊 全局记录数量: ${_globalWordRecords.length}');
+      
+      // 获取目标词书现有的学习记录
       final targetRecords = await getWordBookRecords(targetWordBook);
       final targetWordsMap = {for (final record in targetRecords) record.word: record};
       
-      bool hasUpdates = false;
-      final List<WordLearningRecord> updatedRecords = [];
+      // 获取目标词书的所有可用单词（用于检查单词是否存在于目标词书中）
+      final targetWordData = await CacheService.getCachedWordData(targetWordBook);
+      final targetAvailableWords = targetWordData?.map((w) => w.word).toSet() ?? <String>{};
       
+      print('📝 目标词书现有记录数量: ${targetRecords.length}');
+      print('📚 目标词书可用单词数量: ${targetAvailableWords.length}');
+      
+      bool hasUpdates = false;
+      int checkedWords = 0;
+      int syncedWords = 0;
+      
+      // 遍历全局记录中的所有单词（这些是源词书的学习记录）
       for (final globalEntry in _globalWordRecords.entries) {
         final word = globalEntry.key;
         final globalRecord = globalEntry.value;
         
-        if (targetWordsMap.containsKey(word)) {
-          final targetRecord = targetWordsMap[word]!;
+        // 检查这个单词是否存在于目标词书中
+        if (targetAvailableWords.contains(word)) {
+          checkedWords++;
           
-          // 比较学习进度，选择更好的数据
-          if (_shouldInheritData(globalRecord, targetRecord)) {
-            final inheritedRecord = _inheritLearningData(globalRecord, targetRecord, targetWordBook);
-            updatedRecords.add(inheritedRecord);
-            targetWordsMap[word] = inheritedRecord;
+          print('🔍 检查单词: $word');
+          print('   全局记录: ${globalRecord.memoryLevel.displayName} (学习${globalRecord.learningCount}次)');
+          
+          // 检查目标词书中是否已有这个单词的学习记录
+          if (targetWordsMap.containsKey(word)) {
+            final targetRecord = targetWordsMap[word]!;
+            print('   目标记录: ${targetRecord.memoryLevel.displayName} (学习${targetRecord.learningCount}次)');
+            
+            // 如果目标记录需要更新，则同步数据
+            if (_shouldInheritData(globalRecord, targetRecord)) {
+              print('   ✅ 同步学习数据');
+              final syncedRecord = _inheritLearningData(globalRecord, targetRecord, targetWordBook);
+              targetWordsMap[word] = syncedRecord;
+              hasUpdates = true;
+              syncedWords++;
+            } else {
+              print('   ❌ 无需同步');
+            }
+          } else {
+            // 目标词书中没有这个单词的学习记录，但单词存在于词书中
+            // 创建新的学习记录，继承全局记录的数据
+            print('   目标记录: 无记录');
+            print('   ✅ 创建新记录并同步数据');
+            
+            // 获取目标词书中这个单词的翻译
+            final targetWordInfo = targetWordData?.firstWhere(
+              (w) => w.word == word,
+              orElse: () => WordData(word: word, translation: globalRecord.translation),
+            );
+            
+            final newRecord = WordLearningRecord(
+              word: word,
+              translation: targetWordInfo?.translation ?? globalRecord.translation,
+              wordBookName: targetWordBook,
+              firstLearningTime: globalRecord.firstLearningTime,
+              lastLearningTime: globalRecord.lastLearningTime,
+              nextReviewTime: globalRecord.nextReviewTime,
+              memoryLevel: globalRecord.memoryLevel,
+              learningCount: globalRecord.learningCount,
+              correctCount: globalRecord.correctCount,
+              incorrectCount: globalRecord.incorrectCount,
+              reviewInterval: globalRecord.reviewInterval,
+              easeFactor: globalRecord.easeFactor,
+              reviewHistory: globalRecord.reviewHistory.map((review) => ReviewRecord(
+                reviewTime: review.reviewTime,
+                reviewResult: review.reviewResult,
+                reviewInterval: review.reviewInterval,
+              )).toList(),
+            );
+            
+            targetWordsMap[word] = newRecord;
             hasUpdates = true;
+            syncedWords++;
           }
         }
       }
+      
+      print('🔍 检查了 $checkedWords 个单词');
+      print('📈 同步了 $syncedWords 个单词的数据');
       
       if (hasUpdates) {
         // 更新缓存和存储
         _cachedRecords[targetWordBook] = targetWordsMap.values.toList();
         await _saveWordBookRecords(targetWordBook, _cachedRecords[targetWordBook]!);
         
-        print('✅ 自动同步了 ${updatedRecords.length} 个单词的学习数据到 $targetWordBook');
+        print('✅ 智能同步完成：同步了 $syncedWords 个单词的学习数据');
+      } else {
+        print('ℹ️ 没有需要同步的数据');
       }
     } catch (e) {
-      print('❌ 自动同步失败: $e');
+      print('❌ 智能同步失败: $e');
     }
   }
 
@@ -185,21 +261,33 @@ class LearningDataService {
   bool _shouldInheritData(WordLearningRecord globalRecord, WordLearningRecord targetRecord) {
     // 如果全局记录的记忆程度更高，则继承
     if (globalRecord.memoryLevel.index > targetRecord.memoryLevel.index) {
+      print('     → 全局记录记忆程度更高 (${globalRecord.memoryLevel.index} > ${targetRecord.memoryLevel.index})');
       return true;
     }
     
     // 如果记忆程度相同，但学习次数更多，则继承
     if (globalRecord.memoryLevel == targetRecord.memoryLevel && 
         globalRecord.learningCount > targetRecord.learningCount) {
+      print('     → 记忆程度相同但全局学习次数更多 (${globalRecord.learningCount} > ${targetRecord.learningCount})');
       return true;
     }
     
     // 如果目标记录是新单词，但全局记录有学习历史，则继承
     if (targetRecord.memoryLevel == MemoryLevel.first_time && 
         globalRecord.learningCount > 1) {
+      print('     → 目标是新单词但全局有学习历史 (全局学习${globalRecord.learningCount}次)');
       return true;
     }
     
+    // 如果目标记录是新单词，全局记录也是新单词但有学习次数，则继承
+    if (targetRecord.memoryLevel == MemoryLevel.first_time && 
+        globalRecord.memoryLevel == MemoryLevel.first_time &&
+        globalRecord.learningCount > targetRecord.learningCount) {
+      print('     → 都是新单词但全局学习次数更多 (${globalRecord.learningCount} > ${targetRecord.learningCount})');
+      return true;
+    }
+    
+    print('     → 无需继承');
     return false;
   }
 
@@ -233,8 +321,17 @@ class LearningDataService {
   }
 
   /// 获取学习数据的CSV字符串
-  Future<String> getLearningDataCsv(String wordBookName) async {
-    final records = await getWordBookRecords(wordBookName);
+  Future<String> getLearningDataCsv([String? wordBookName]) async {
+    List<WordLearningRecord> records;
+    
+    if (wordBookName == null) {
+      // 导出公共单词本（全局记录）
+      records = _globalWordRecords.values.toList();
+    } else {
+      // 导出指定词书的记录
+      records = await getWordBookRecords(wordBookName);
+    }
+    
     final csvData = StringBuffer();
     
     // CSV头部
@@ -264,14 +361,16 @@ class LearningDataService {
   }
 
   /// 导出学习数据为CSV文件
-  Future<String> exportLearningDataToCsv(String wordBookName) async {
+  Future<String> exportLearningDataToCsv([String? wordBookName]) async {
     final csvData = await getLearningDataCsv(wordBookName);
     
     // 保存到文件
     try {
       final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'wordflow_${wordBookName}_$timestamp.csv';
+      final fileName = wordBookName == null 
+          ? 'wordflow_global_$timestamp.csv'
+          : 'wordflow_${wordBookName}_$timestamp.csv';
       final file = File('${directory.path}/$fileName');
       
       await file.writeAsString(csvData, encoding: utf8);
@@ -306,7 +405,7 @@ class LearningDataService {
   }
 
   /// 从CSV导入学习数据
-  Future<ImportResult> importLearningDataFromCsv(String csvData, String wordBookName) async {
+  Future<ImportResult> importLearningDataFromCsv(String csvData, [String? wordBookName, ImportMode importMode = ImportMode.update]) async {
     final lines = csvData.split('\n');
     if (lines.length < 2) {
       return ImportResult(success: false, message: 'CSV文件格式错误');
@@ -315,8 +414,33 @@ class LearningDataService {
     final importedRecords = <WordLearningRecord>[];
     var importedCount = 0;
     var errorCount = 0;
+    var updatedCount = 0;
+    var skippedCount = 0;
     
     try {
+      // 如果是全部覆盖模式，先清空现有数据
+      if (importMode == ImportMode.overwrite) {
+        if (wordBookName == null) {
+          // 清空全局记录
+          _globalWordRecords.clear();
+        } else {
+          // 清空指定词书的记录
+          _cachedRecords[wordBookName] = [];
+          await _saveWordBookRecords(wordBookName, []);
+          
+          // 从全局记录中移除该词书的记录
+          final recordsToRemove = <String>[];
+          for (final entry in _globalWordRecords.entries) {
+            if (entry.value.wordBookName == wordBookName) {
+              recordsToRemove.add(entry.key);
+            }
+          }
+          for (final word in recordsToRemove) {
+            _globalWordRecords.remove(word);
+          }
+        }
+      }
+      
       // 跳过头部，从第二行开始
       for (int i = 1; i < lines.length; i++) {
         final line = lines[i].trim();
@@ -368,10 +492,10 @@ class LearningDataService {
             ));
           }
           
-          final record = WordLearningRecord(
+          final newRecord = WordLearningRecord(
             word: parts[0],
             translation: '', // 导入时translation为空，需要重新获取
-            wordBookName: wordBookName,
+            wordBookName: wordBookName ?? parts[1], // 如果没有指定词书名，使用CSV中的词书名
             firstLearningTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2]) * 1000),
             lastLearningTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3]) * 1000),
             nextReviewTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[4]) * 1000),
@@ -384,20 +508,69 @@ class LearningDataService {
             reviewHistory: reviewHistory,
           );
           
-          importedRecords.add(record);
-          importedCount++;
+          // 根据导入模式处理记录
+          if (importMode == ImportMode.update) {
+            // 数据更新模式：检查是否需要更新
+            final existingRecord = wordBookName == null 
+                ? _globalWordRecords[newRecord.word]
+                : (await getWordBookRecords(wordBookName)).where((r) => r.word == newRecord.word).firstOrNull;
+            
+            if (existingRecord == null) {
+              // 新记录，直接添加
+              importedRecords.add(newRecord);
+              importedCount++;
+            } else {
+              // 已存在记录，检查是否需要更新（学习进度更好的记录）
+              if (_shouldInheritData(newRecord, existingRecord)) {
+                importedRecords.add(newRecord);
+                updatedCount++;
+              } else {
+                skippedCount++;
+              }
+            }
+          } else {
+            // 全部覆盖模式：直接添加所有记录
+            importedRecords.add(newRecord);
+            importedCount++;
+          }
         } catch (e) {
           errorCount++;
         }
       }
       
       // 保存导入的记录
-      await saveWordLearningRecords(importedRecords);
+      if (wordBookName == null) {
+        // 导入到公共单词本（全局记录）
+        for (final record in importedRecords) {
+          _globalWordRecords[record.word] = record;
+        }
+        await _saveGlobalWordRecords();
+      } else {
+        // 导入到指定词书
+        await saveWordLearningRecords(importedRecords);
+      }
+      
+      // 构建结果消息
+      String message;
+      if (importMode == ImportMode.update) {
+        message = '新增 $importedCount 条记录，更新 $updatedCount 条记录';
+        if (skippedCount > 0) {
+          message += '，跳过 $skippedCount 条记录';
+        }
+        if (errorCount > 0) {
+          message += '，$errorCount 条记录导入失败';
+        }
+      } else {
+        message = '成功导入 $importedCount 条记录';
+        if (errorCount > 0) {
+          message += '，$errorCount 条记录导入失败';
+        }
+      }
       
       return ImportResult(
         success: true,
-        message: '成功导入 $importedCount 条记录${errorCount > 0 ? '，$errorCount 条记录导入失败' : ''}',
-        importedCount: importedCount,
+        message: message,
+        importedCount: importedCount + updatedCount,
         errorCount: errorCount,
       );
       
@@ -591,4 +764,4 @@ class ImportResult {
     this.importedCount = 0,
     this.errorCount = 0,
   });
-} 
+}
