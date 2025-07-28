@@ -23,14 +23,30 @@ class _WordDetailPageState extends State<WordDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(widget.record.word),
-        backgroundColor: AppTheme.backgroundColor,
+        title: Text(
+          widget.record.word,
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkAccentGreen 
+                : AppTheme.darkGray,
+          ),
+        ),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.darkBackgroundColor 
+            : AppTheme.backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+          icon: Icon(
+            Icons.arrow_back_ios_new, 
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkPrimaryGray 
+                : AppTheme.primaryGray,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -62,6 +78,9 @@ class _WordDetailPageState extends State<WordDetailPage> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -158,6 +177,9 @@ class _WordDetailPageState extends State<WordDetailPage> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -353,6 +375,9 @@ class _WordDetailPageState extends State<WordDetailPage> {
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.darkCardColor 
+            : AppTheme.cardColor,
         child: Padding(
           padding: const EdgeInsets.all(40),
           child: Column(
@@ -383,6 +408,9 @@ class _WordDetailPageState extends State<WordDetailPage> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

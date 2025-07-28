@@ -179,7 +179,9 @@ class _OnboardingPageState extends State<OnboardingPage>
     return ResponsiveBuilder(
       builder: (context, deviceType) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       body: SafeArea(
             child: Center(
               child: ConstrainedBox(

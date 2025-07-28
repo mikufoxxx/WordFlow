@@ -50,7 +50,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: AcrylicAppBar(
         title: '算法设置',
         leading: IconButton(
@@ -597,7 +599,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.coolGray700,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkAccentGreen 
+                        : AppTheme.coolGray700,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -605,7 +609,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.coolGray500,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.mediumGray 
+                        : AppTheme.coolGray500,
                   ),
                 ),
               ],
@@ -614,7 +620,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryGray,
+            activeColor: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkPrimaryGray 
+                : AppTheme.primaryGray,
           ),
         ],
       ),
@@ -630,7 +638,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: AppTheme.coolGray700,
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkAccentGreen 
+              : AppTheme.coolGray700,
         ),
       ),
     );
@@ -639,7 +649,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   /// 构建预设按钮
   Widget _buildPresetButtons() {
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -649,7 +661,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               children: [
                 Icon(
                   Icons.tune,
-                  color: AppTheme.accentBlue,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkAccentBlue 
+                      : AppTheme.accentBlue,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -658,7 +672,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.coolGray700,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentGreen 
+                    : AppTheme.coolGray700,
               ),
                 ),
               ],
@@ -668,7 +684,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               '根据您的学习习惯选择合适的预设配置',
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.coolGray500,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.mediumGray 
+                    : AppTheme.coolGray500,
               ),
             ),
             const SizedBox(height: 16),
@@ -677,9 +695,15 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.coolGray50,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkGray.withOpacity(0.3) 
+                    : AppTheme.coolGray50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.coolGray200),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryGray.withOpacity(0.3) 
+                      : AppTheme.coolGray200,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,7 +725,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   child: OutlinedButton(
                     onPressed: () => _applyPreset('conservative'),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.coolGray300),
+                      side: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AppTheme.darkPrimaryGray 
+                            : AppTheme.coolGray300,
+                      ),
+                      foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkAccentGreen 
+                          : AppTheme.darkGray,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -714,7 +745,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   child: OutlinedButton(
                     onPressed: () => _applyPreset('balanced'),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.coolGray300),
+                      side: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AppTheme.darkPrimaryGray 
+                            : AppTheme.coolGray300,
+                      ),
+                      foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkAccentGreen 
+                          : AppTheme.darkGray,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -727,7 +765,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   child: OutlinedButton(
                     onPressed: () => _applyPreset('aggressive'),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.coolGray300),
+                      side: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AppTheme.darkPrimaryGray 
+                            : AppTheme.coolGray300,
+                      ),
+                      foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkAccentGreen 
+                          : AppTheme.darkGray,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -753,7 +798,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppTheme.coolGray700,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkAccentGreen 
+                : AppTheme.coolGray700,
           ),
         ),
         const SizedBox(height: 2),
@@ -761,7 +808,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           description,
           style: TextStyle(
             fontSize: 12,
-            color: AppTheme.coolGray600,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.mediumGray 
+                : AppTheme.coolGray600,
           ),
         ),
       ],

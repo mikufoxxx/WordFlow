@@ -5,29 +5,35 @@ import 'responsive_helper.dart';
 /// 应用主题配置类
 /// 性冷淡风格的简约灰白色调主题
 class AppTheme {
-  // 主要颜色定义 - 初音莫奈配色方案 (降低饱和度和明度)
-  static const Color primaryGray = Color(0xFF4FB3B7); // 柔和的初音色 - 降低饱和度
-  static const Color lightGray = Color(0xFFF9FAFB);
-  static const Color mediumGray = Color(0xFFE5E7EB);
-  static const Color darkGray = Color(0xFF374151);
+  // 主要颜色定义 - 初音莫奈配色方案 (用户指定配色)
+  static const Color primaryGray = Color(0xFF60B49D); // 主要初音色
+  static const Color lightGray = Color(0xFFDCEFEA);   // 很浅的绿色背景
+  static const Color mediumGray = Color(0xFFA5D5C8);  // 浅绿色
+  static const Color darkGray = Color(0xFF387665);    // 中等绿色
   static const Color backgroundColor = Color(0xFFFBFCFD);
   static const Color cardColor = Color(0xFFFFFFFF);
-  static const Color accentGreen = Color(0xFF7FB069);  // 柔和绿色
+  static const Color accentGreen = Color(0xFF60B49D);  // 主要初音色
   
-  // 莫奈配色方案 - 基于初音色的和谐色彩
-  static const Color accentBlue = Color(0xFF7BB3F0);   // 柔和蓝色
-  static const Color accentRed = Color(0xFFE57373);    // 柔和红色  
-  static const Color accentYellow = Color(0xFFFFD54F); // 柔和黄色
-  static const Color accentPurple = Color(0xFFBA68C8); // 柔和紫色
-  static const Color accentTeal = Color(0xFF4DB6AC);   // 柔和青色
-  static const Color accentOrange = Color(0xFFFFB74D); // 柔和橙色
+  // 初音莫奈配色方案 - 以初音色为基础的和谐色彩
+  static const Color accentBlue = Color(0xFF60A1B4);   // 蓝色调
+  static const Color accentRed = Color(0xFF387665);    // 深绿色替代红色
+  static const Color accentYellow = Color(0xFFA5D5C8); // 浅绿色替代黄色
+  static const Color accentPurple = Color(0xFF60B4B2); // 青色调
+  static const Color accentTeal = Color(0xFF60B488);   // 绿青色调
+  static const Color accentOrange = Color(0xFF60B473); // 绿色调
   
-  // 互补色和支持色 (基于初音色的莫奈配色)
-  static const Color mintGreen = Color(0xFF81C7B5);    // 薄荷绿
-  static const Color softCyan = Color(0xFF80DEEA);     // 柔和青色
-  static const Color warmPink = Color(0xFFF8BBD9);     // 温柔粉色
-  static const Color dustyBlue = Color(0xFF90CAF9);    // 灰蓝色
-  static const Color seafoamGreen = Color(0xFF92E5C8); // 海泡绿
+  // 书本封面专用配色 (莫奈风格)
+  static const Color bookColor1 = Color(0xFF60B473);   // 绿色调
+  static const Color bookColor2 = Color(0xFF60B488);   // 绿青色调
+  static const Color bookColor3 = Color(0xFF60B49D);   // 主要初音色
+  static const Color bookColor4 = Color(0xFF60B4B2);   // 青色调
+  static const Color bookColor5 = Color(0xFF60A1B4);   // 蓝色调
+  
+  // 统一文字颜色 - 用户要求
+  static const Color primaryTextColor = Color(0xFF17312A);    // 浅色模式主字体
+  static const Color secondaryTextColor = Color(0xFF387665);  // 浅色模式小字/注释
+  static const Color darkPrimaryTextColor = Color(0xFFDCEFEA); // 深色模式主字体
+  static const Color darkSecondaryTextColor = Color(0xFFA5D5C8); // 深色模式小字/注释
   
   // 性冷淡风格的辅助颜色
   static const Color coolGray50 = Color(0xFFF8FAFC);
@@ -41,17 +47,19 @@ class AppTheme {
   static const Color coolGray800 = Color(0xFF1E293B);
   static const Color coolGray900 = Color(0xFF0F172A);
   
-  // 深色主题颜色 - 初音莫奈配色方案
-  static const Color darkBackgroundColor = Color(0xFF0F172A);
-  static const Color darkCardColor = Color(0xFF1E293B);
-  static const Color darkPrimaryGray = Color(0xFF6BCAD0); // 深色模式的柔和初音色
-  static const Color darkAccentGreen = Color(0xFF8BC7A3); // 深色模式柔和绿色
+  // 深色主题颜色 - 恢复原背景色
+  static const Color darkBackgroundColor = Color(0xFF0F172A); // 恢复原深色背景
+  static const Color darkCardColor = Color(0xFF1E293B);       // 恢复原卡片颜色
+  static const Color darkPrimaryGray = Color(0xFF60B49D);     // 主要初音色
+  static const Color darkAccentGreen = Color(0xFFA5D5C8);     // 浅绿色
   
-  // 深色模式莫奈配色
-  static const Color darkAccentBlue = Color(0xFF8BC7F0);   // 深色模式柔和蓝色
-  static const Color darkAccentRed = Color(0xFFEF7B7B);    // 深色模式柔和红色
-  static const Color darkAccentYellow = Color(0xFFFFE074); // 深色模式柔和黄色
-  static const Color darkAccentOrange = Color(0xFFFFCC74); // 深色模式柔和橙色
+  // 深色模式初音莫奈配色
+  static const Color darkAccentBlue = Color(0xFF60A1B4);      // 蓝色调
+  static const Color darkAccentRed = Color(0xFF60B473);       // 绿色调替代红色
+  static const Color darkAccentYellow = Color(0xFFDCEFEA);    // 很浅绿色替代黄色
+  static const Color darkAccentOrange = Color(0xFF60B488);    // 绿青色调
+  static const Color darkAccentTeal = Color(0xFF60B4B2);      // 青色调
+  static const Color darkAccentPurple = Color(0xFF60B4B2);    // 青色调
 
   /// 配置浅色模式的系统UI
   static void setLightSystemUIOverlay() {

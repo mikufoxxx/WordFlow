@@ -38,13 +38,29 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
-          backgroundColor: AppTheme.backgroundColor,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkBackgroundColor 
+              : AppTheme.backgroundColor,
           appBar: AppBar(
-            title: const Text('造句测试'),
-            backgroundColor: AppTheme.backgroundColor,
+            title: Text(
+              '造句测试',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryTextColor 
+                    : AppTheme.primaryTextColor,
+              ),
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkBackgroundColor 
+                : AppTheme.backgroundColor,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new),
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryGray 
+                    : AppTheme.primaryGray,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),

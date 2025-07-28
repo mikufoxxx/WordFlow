@@ -29,26 +29,15 @@ class WordBook {
     };
   }
 
-  /// 生成封面颜色（更具差异化的配色）
+  /// 生成封面颜色（初音莫奈配色）
   int get coverColor {
     final hash = name.hashCode;
     final colors = [
-      0xFFFF6B6B, // 珊瑚红
-      0xFF4ECDC4, // 青绿色
-      0xFF45B7D1, // 天蓝色
-      0xFF96CEB4, // 薄荷绿
-      0xFFFFFAAC, // 柠檬黄
-      0xFFDD8C7A, // 桃粉色
-      0xFFB19CD9, // 淡紫色
-      0xFFC44569, // 玫红色
-      0xFF84A9AC, // 灰蓝色
-      0xFFD8DAA7, // 橄榄绿
-      0xFFFF8A80, // 橙红色
-      0xFF9575CD, // 中紫色
-      0xFF4CAF50, // 绿色
-      0xFF2196F3, // 蓝色
-      0xFFFF9800, // 橙色
-      0xFFE91E63, // 粉红色
+      0xFF60B473, // 绿色调
+      0xFF60B488, // 绿青色调
+      0xFF60B49D, // 主要初音色
+      0xFF60B4B2, // 青色调
+      0xFF60A1B4, // 蓝色调
     ];
     return colors[hash.abs() % colors.length];
   }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
 import '../utils/deepseek_api_service.dart';
@@ -82,6 +83,9 @@ class _SettingsPageState extends State<SettingsPage> {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkBackgroundColor 
+              : AppTheme.backgroundColor,
           appBar: AcrylicAppBar(
             title: '设置',
           ),
@@ -331,7 +335,9 @@ class _SettingsPageState extends State<SettingsPage> {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).primaryColor,
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkPrimaryTextColor 
+              : AppTheme.primaryTextColor,
         ),
       ),
     );
@@ -341,6 +347,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsCard(List<Widget> children) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Column(
         children: children,
       ),
@@ -356,8 +365,22 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return ListTile(
       leading: leading,
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkPrimaryTextColor 
+              : AppTheme.primaryTextColor,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkSecondaryTextColor 
+              : AppTheme.secondaryTextColor,
+        ),
+      ),
       onTap: onTap,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -372,11 +395,27 @@ class _SettingsPageState extends State<SettingsPage> {
     required ValueChanged<bool> onChanged,
   }) {
     return SwitchListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkAccentGreen 
+              : AppTheme.darkGray,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.mediumGray 
+              : AppTheme.coolGray500,
+        ),
+      ),
       value: value,
       onChanged: onChanged,
-      activeColor: Theme.of(context).primaryColor,
+      activeColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkPrimaryGray 
+          : AppTheme.primaryGray,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
@@ -391,12 +430,28 @@ class _SettingsPageState extends State<SettingsPage> {
     required ValueChanged<T?> onChanged,
   }) {
     return RadioListTile<T>(
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkAccentGreen 
+              : AppTheme.darkGray,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.mediumGray 
+              : AppTheme.coolGray500,
+        ),
+      ),
       value: value,
       groupValue: groupValue,
       onChanged: onChanged,
-      activeColor: Theme.of(context).primaryColor,
+      activeColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkPrimaryGray 
+          : AppTheme.primaryGray,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
@@ -466,11 +521,28 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 构建信息展示项
   Widget _buildInfoTile(String title, String description) {
     return ListTile(
-      leading: const Icon(Icons.info_outline, color: Colors.grey),
-      title: Text(title),
+      leading: Icon(
+        Icons.info_outline, 
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.mediumGray 
+            : Colors.grey,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkAccentGreen 
+              : AppTheme.darkGray,
+        ),
+      ),
       subtitle: Text(
         description,
-        style: const TextStyle(fontSize: 14, color: Colors.grey),
+        style: TextStyle(
+          fontSize: 14, 
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.mediumGray 
+              : Colors.grey,
+        ),
       ),
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -497,7 +569,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryTextColor 
+                      : AppTheme.primaryTextColor,
                 ),
               ),
               if (_isApiKeyValid)
@@ -525,7 +599,9 @@ class _SettingsPageState extends State<SettingsPage> {
             decoration: InputDecoration(
               hintText: '请输入DeepSeek API Key',
               hintStyle: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.secondaryTextColor,
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
@@ -564,7 +640,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     icon: Icon(
                       _showApiKey ? Icons.visibility_off : Icons.visibility,
                       size: 20,
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkSecondaryTextColor 
+                          : AppTheme.secondaryTextColor,
                     ),
                     onPressed: () {
                       setState(() {
@@ -585,7 +663,9 @@ class _SettingsPageState extends State<SettingsPage> {
             '用于AI造句判断功能，请在DeepSeek官网获取API Key',
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkSecondaryTextColor 
+                  : AppTheme.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -593,8 +673,21 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               TextButton.icon(
                 onPressed: _testApiConnection,
-                icon: const Icon(Icons.network_check, size: 16),
-                label: const Text('测试连接'),
+                icon: Icon(
+                  Icons.network_check, 
+                  size: 16,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryGray 
+                      : AppTheme.primaryGray,
+                ),
+                label: Text(
+                  '测试连接',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryGray 
+                        : AppTheme.primaryGray,
+                  ),
+                ),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   minimumSize: Size.zero,
@@ -604,8 +697,21 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () => _showApiKeyHelp(),
-                icon: const Icon(Icons.help_outline, size: 16),
-                label: const Text('获取帮助'),
+                icon: Icon(
+                  Icons.help_outline, 
+                  size: 16,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryGray 
+                      : AppTheme.primaryGray,
+                ),
+                label: Text(
+                  '获取帮助',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryGray 
+                        : AppTheme.primaryGray,
+                  ),
+                ),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   minimumSize: Size.zero,

@@ -483,7 +483,9 @@ class _LibraryPageState extends State<LibraryPage>
           minChildSize: 0.5,
           builder: (context, scrollController) => Container(
             decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkCardColor 
+                  : AppTheme.backgroundColor,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
@@ -516,7 +518,9 @@ class _LibraryPageState extends State<LibraryPage>
                         style: TextStyle(
                               fontSize: 18, // 从20减少到18
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.darkGray,
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? AppTheme.darkPrimaryTextColor 
+                              : AppTheme.primaryTextColor,
                         ),
                       ),
                       Spacer(),
@@ -524,7 +528,9 @@ class _LibraryPageState extends State<LibraryPage>
                         '${downloadedBooks.length} 个',
                         style: TextStyle(
                               fontSize: 14, // 从16减少到14
-                          color: AppTheme.coolGray500,
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? AppTheme.darkSecondaryTextColor 
+                              : AppTheme.secondaryTextColor,
                         ),
                       ),
                     ],
@@ -580,7 +586,9 @@ class _LibraryPageState extends State<LibraryPage>
     return Container(
       margin: EdgeInsets.only(bottom: 10), // 从12减少到10
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.darkCardColor 
+            : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(14), // 从16减少到14
         border: item.status == WordBookStatus.selected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)
@@ -614,7 +622,9 @@ class _LibraryPageState extends State<LibraryPage>
           style: TextStyle(
             fontSize: 15, // 从16减少到15
             fontWeight: FontWeight.w600,
-            color: AppTheme.darkGray,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkPrimaryTextColor 
+                : AppTheme.primaryTextColor,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -623,7 +633,9 @@ class _LibraryPageState extends State<LibraryPage>
           '${item.wordBook.wordCount} 个单词',
           style: TextStyle(
             fontSize: 13, // 从14减少到13
-            color: AppTheme.coolGray500,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkSecondaryTextColor 
+                : AppTheme.secondaryTextColor,
           ),
         ),
         trailing: item.status == WordBookStatus.selected
@@ -678,7 +690,9 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建手机端布局
   Widget _buildMobileLayout() {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: _buildAppBar(),
       body: _buildBody(),
     );
@@ -687,7 +701,9 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建平板端布局
   Widget _buildTabletLayout() {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: _buildAppBar(),
       body: Center(
         child: ConstrainedBox(
@@ -1120,7 +1136,9 @@ class _LibraryPageState extends State<LibraryPage>
     return Container(
       margin: const EdgeInsets.only(bottom: 12), // 从16减少到12
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.darkCardColor 
+            : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16), // 从20减少到16
         border: isSelected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)

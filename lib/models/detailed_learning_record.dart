@@ -462,14 +462,14 @@ extension LearningResultExtension on LearningResult {
     switch (this) {
       case LearningResult.unknown:
       case LearningResult.incorrect:
-        return Colors.red;
+        return const Color(0xFF387665); // 深绿色替代红色
       case LearningResult.known:
       case LearningResult.correct:
-        return Colors.green;
+        return const Color(0xFF60B49D); // 主要初音色
       case LearningResult.excellent:
-        return Colors.blue;
+        return const Color(0xFF60A1B4); // 蓝色调
       case LearningResult.skipped:
-        return Colors.orange;
+        return const Color(0xFF60B473); // 绿色调替代橙色
     }
   }
 }

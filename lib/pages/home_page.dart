@@ -929,12 +929,18 @@ class _HomePageState extends State<HomePage>
     return ResponsiveBuilder(
       builder: (context, deviceType) {
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(
           'WordFlow',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkPrimaryTextColor 
+                : AppTheme.primaryTextColor,
           ),
         ),
         leading: Padding(
@@ -1038,7 +1044,9 @@ class _HomePageState extends State<HomePage>
             Text(
               '词汇正在整理中...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.secondaryTextColor,
               ),
             ),
           ],
@@ -1062,7 +1070,9 @@ class _HomePageState extends State<HomePage>
               Text(
                 _errorMessage!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryTextColor 
+                      : AppTheme.primaryTextColor,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1202,7 +1212,9 @@ class _HomePageState extends State<HomePage>
                 child: Text(
                   _currentWordBookName!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryTextColor 
+                        : AppTheme.primaryTextColor,
                     fontWeight: FontWeight.w600,
                     fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
                   ),
@@ -1242,7 +1254,9 @@ class _HomePageState extends State<HomePage>
                   Text(
                     '今日单词 $_todayStudiedCount',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).primaryColor.withOpacity(0.7),
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkSecondaryTextColor 
+                          : AppTheme.secondaryTextColor,
                       fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11),
                     ),
                   ),
@@ -1274,7 +1288,9 @@ class _HomePageState extends State<HomePage>
                   Text(
                     '总计单词 $_totalStudiedCount',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).primaryColor.withOpacity(0.7),
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkSecondaryTextColor 
+                          : AppTheme.secondaryTextColor,
                       fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11),
                     ),
                   ),

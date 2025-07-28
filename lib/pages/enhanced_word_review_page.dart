@@ -115,28 +115,55 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkBackgroundColor 
+          : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('学习分析'),
-        backgroundColor: AppTheme.backgroundColor,
+        title: Text(
+          '学习分析',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkAccentGreen 
+                : AppTheme.darkGray,
+          ),
+        ),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+            ? AppTheme.darkBackgroundColor 
+            : AppTheme.backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+          icon: Icon(
+            Icons.arrow_back_ios_new, 
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkPrimaryGray 
+                : AppTheme.primaryGray,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.primaryGray),
+            icon: Icon(
+              Icons.refresh, 
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkPrimaryGray 
+                  : AppTheme.primaryGray,
+            ),
             onPressed: _loadData,
             tooltip: '刷新数据',
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppTheme.primaryGray,
-          unselectedLabelColor: AppTheme.coolGray500,
-          indicatorColor: AppTheme.primaryGray,
+          labelColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkPrimaryGray 
+              : AppTheme.primaryGray,
+          unselectedLabelColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.mediumGray 
+              : AppTheme.coolGray500,
+          indicatorColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkPrimaryGray 
+              : AppTheme.primaryGray,
           indicatorWeight: 3,
           tabs: const [
             Tab(text: '单词列表'),
@@ -449,7 +476,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   /// 构建增强的单词卡片
   Widget _buildEnhancedWordCard(EnhancedWordLearningRecord record) {
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: () => _showWordDetails(record),
@@ -667,6 +696,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -820,6 +852,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -872,6 +907,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -926,6 +964,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1262,6 +1303,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

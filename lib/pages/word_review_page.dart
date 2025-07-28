@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/word_learning_record.dart';
+import '../utils/app_theme.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/spaced_repetition_service.dart';
@@ -124,6 +125,9 @@ class _WordReviewPageState extends State<WordReviewPage> with SingleTickerProvid
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkBackgroundColor 
+              : AppTheme.backgroundColor,
           appBar: AppBar(
             title: Text(
               '单词回溯',
@@ -434,6 +438,9 @@ class _WordReviewPageState extends State<WordReviewPage> with SingleTickerProvid
     required List<Widget> children,
   }) {
     return Card(
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -441,9 +448,12 @@ class _WordReviewPageState extends State<WordReviewPage> with SingleTickerProvid
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryTextColor 
+                    : AppTheme.primaryTextColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -474,12 +484,24 @@ class _WordReviewPageState extends State<WordReviewPage> with SingleTickerProvid
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(label),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkPrimaryTextColor 
+                      : AppTheme.primaryTextColor,
+                ),
+              ),
             ],
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkPrimaryTextColor 
+                  : AppTheme.primaryTextColor,
+            ),
           ),
         ],
       ),

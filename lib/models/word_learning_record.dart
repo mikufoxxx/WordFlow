@@ -503,19 +503,19 @@ extension MemoryLevelExtension on MemoryLevel {
     }
   }
   
-  /// 显示颜色
+  /// 显示颜色（初音莫奈配色）
   Color get color {
     switch (this) {
       case MemoryLevel.first_time:
-        return const Color(0xFF94A3B8); // 灰色
+        return const Color(0xFFA5D5C8); // 浅绿色
       case MemoryLevel.reviewing:
-        return const Color(0xFFF59E0B); // 黄色
+        return const Color(0xFF60B473); // 绿色调
       case MemoryLevel.strengthening:
-        return const Color(0xFF3B82F6); // 蓝色
+        return const Color(0xFF60B488); // 绿青色调
       case MemoryLevel.stable:
-        return const Color(0xFF10B981); // 绿色
+        return const Color(0xFF60B49D); // 主要初音色
       case MemoryLevel.mastered:
-        return const Color(0xFF8B5CF6); // 紫色
+        return const Color(0xFF60A1B4); // 蓝色调
     }
   }
   
