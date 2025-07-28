@@ -46,10 +46,15 @@ class AppTheme {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
       statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: backgroundColor,
+      systemNavigationBarColor: Colors.transparent, // 设置为透明实现沉浸式效果
       systemNavigationBarIconBrightness: Brightness.dark,
       systemNavigationBarDividerColor: Colors.transparent,
     ));
+    
+    // 启用边缘到边缘显示模式
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
   }
 
   /// 配置深色模式的系统UI
@@ -58,10 +63,15 @@ class AppTheme {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: darkBackgroundColor,
+      systemNavigationBarColor: Colors.transparent, // 设置为透明实现沉浸式效果
       systemNavigationBarIconBrightness: Brightness.light,
       systemNavigationBarDividerColor: Colors.transparent,
     ));
+    
+    // 启用边缘到边缘显示模式
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
   }
 
   /// 浅色主题配置

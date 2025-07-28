@@ -241,7 +241,7 @@ class _LibraryPageState extends State<LibraryPage>
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = '加载词库失败：$e';
+        _errorMessage = '词书走丢了：$e';
       });
     }
   }
@@ -511,7 +511,7 @@ class _LibraryPageState extends State<LibraryPage>
                   child: Row(
                     children: [
                       Text(
-                        '已下载词库',
+                        '我的词书收藏',
                         style: TextStyle(
                               fontSize: 18, // 从20减少到18
                           fontWeight: FontWeight.w600,
@@ -744,7 +744,7 @@ class _LibraryPageState extends State<LibraryPage>
                   size: ResponsiveHelper.getResponsiveIconSize(context, 26),
               ),
               onPressed: _showDownloadedBooks,
-              tooltip: '查看已下载词库',
+              tooltip: '查看我的词书收藏',
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(
                   minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
@@ -958,7 +958,7 @@ class _LibraryPageState extends State<LibraryPage>
           ),
           const SizedBox(height: 16),
           Text(
-            '搜索中...',
+            '正在寻找词书...',
             style: TextStyle(
               color: AppTheme.primaryGray.withOpacity(0.8),
               fontSize: 14,
@@ -971,20 +971,36 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建加载状态
   Widget _buildLoadingState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+          // 使用更现代的加载动画
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+            ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
-            '正在加载词库...',
+            '词书正在赶来的路上...',
             style: TextStyle(
               color: AppTheme.primaryGray,
               fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '稍等一下，好词汇马上就来',
+            style: TextStyle(
+              color: AppTheme.primaryGray.withOpacity(0.7),
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -1027,7 +1043,7 @@ class _LibraryPageState extends State<LibraryPage>
                   vertical: 12,
                 ),
               ),
-              child: const Text('重新加载'),
+              child: const Text('重新试试'),
             ),
           ],
         ),
@@ -1267,7 +1283,7 @@ class _LibraryPageState extends State<LibraryPage>
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      '下载词库',
+                      '收集词书',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -1315,7 +1331,7 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
                 const SizedBox(width: 10),
                 const Text(
-                  '下载中...',
+                  '收集中...',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -1500,7 +1516,7 @@ class _LibraryPageState extends State<LibraryPage>
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
-            '下载中',
+            '收集中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
               color: Colors.amber.shade700,

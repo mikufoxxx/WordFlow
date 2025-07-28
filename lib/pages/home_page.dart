@@ -202,7 +202,7 @@ class _HomePageState extends State<HomePage>
       
       if (wordData == null || wordData.isEmpty) {
         setState(() {
-          _errorMessage = '词库数据为空，请重新下载词库';
+          _errorMessage = '词书好像空了，去收集一些新词汇吧';
           _isLoadingWords = false;
         });
         return;
@@ -221,7 +221,7 @@ class _HomePageState extends State<HomePage>
       
     } catch (e) {
       setState(() {
-        _errorMessage = '加载词库失败: $e';
+        _errorMessage = '词汇好像迷路了: $e';
         _isLoadingWords = false;
       });
     }
@@ -993,7 +993,7 @@ class _HomePageState extends State<HomePage>
             ),
             SizedBox(height: 12), // 从16减少到12
             Text(
-              '正在加载词库...',
+              '词汇正在整理中...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
               ),
@@ -1056,7 +1056,7 @@ class _HomePageState extends State<HomePage>
             ),
             SizedBox(height: 12),
             Text(
-              '正在加载新单词...',
+              '新单词马上就来...',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
           ),
@@ -2693,7 +2693,7 @@ class _HomePageState extends State<HomePage>
                         : '正在准备造句测试...')
                     : (_wordAnimationCompleted 
                         ? ''
-                        : '单词加载中...'),
+                        : '单词即将登场...'),
                 key: ValueKey('${_wordAnimationCompleted}_${_isTestingMode}_breath'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).brightness == Brightness.dark 
