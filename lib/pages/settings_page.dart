@@ -755,7 +755,7 @@ class _SettingsPageState extends State<SettingsPage> {
       applicationVersion: '1.0.0',
       applicationIcon: Container(
         width: 64,
-        height: 64,
+        constraints: const BoxConstraints(minHeight: 64),
         decoration: BoxDecoration(
           color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.circular(12),

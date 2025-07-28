@@ -836,7 +836,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               children: [
                 Container(
                   width: 24,
-                  height: 80,
+                  constraints: const BoxConstraints(minHeight: 80),
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     width: 24,
@@ -1704,4 +1704,4 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       return '${(seconds / 3600).toStringAsFixed(1)}小时';
     }
   }
-} 
+}

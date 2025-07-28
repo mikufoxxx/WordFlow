@@ -423,7 +423,7 @@ class _OnboardingPageState extends State<OnboardingPage>
         // API连接图标
         Container(
           width: 100, // 从120减少到100
-          height: 100, // 从120减少到100
+          constraints: const BoxConstraints(minHeight: 100), // 从120减少到100
           decoration: BoxDecoration(
             color: page.color.withOpacity(0.1),
             shape: BoxShape.circle,
@@ -789,4 +789,4 @@ class LearningStepData {
     required this.icon,
     required this.color,
   });
-} 
+}

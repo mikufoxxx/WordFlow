@@ -602,12 +602,12 @@ class _HomePageState extends State<HomePage>
         _wordAnimationCompleted = true;
       });
       
-      // 启动按钮动画
+      // 启动按钮动画，增加健壮性检查
       PerformanceOptimizer.createTimer(
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 200),
         callback: () {
-        if (mounted) {
+        if (mounted && _buttonsController.status != AnimationStatus.completed) {
           _buttonsController.forward();
         }
         },
@@ -1232,7 +1232,7 @@ class _HomePageState extends State<HomePage>
           child: Opacity(
             opacity: _buttonsOpacityAnimation.value,
             child: IgnorePointer(
-              ignoring: !_wordAnimationCompleted,
+              ignoring: !_wordAnimationCompleted || _buttonsController.status == AnimationStatus.dismissed,
                               child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   child: Column(
@@ -1474,13 +1474,17 @@ class _HomePageState extends State<HomePage>
       _showMeaning = !_showMeaning;
     });
     
+    // 只在展开释义时重置动画，收起时不需要重置
     if (_showMeaning) {
-      _resetMeaningCharacterAnimations();
-    } else {
       _resetMeaningCharacterAnimations();
     }
     
     _startMeaningAnimation();
+    
+    // 确保按钮动画在释义切换时保持可见状态
+    if (_buttonsController.status != AnimationStatus.completed) {
+      _buttonsController.forward();
+    }
   }
 
   /// 标记为不认识
@@ -1969,7 +1973,7 @@ class _HomePageState extends State<HomePage>
                           child: Transform.scale(
                             scale: _wordScaleAnimation.value,
                             child: Container(
-                              constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
+                              constraints: const BoxConstraints(minHeight: 60),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -2029,7 +2033,7 @@ class _HomePageState extends State<HomePage>
                         children: [
                           // 单词本体和发音按钮
                           Container(
-                            constraints: const BoxConstraints(minHeight: 60, maxHeight: 80),
+                            constraints: const BoxConstraints(minHeight: 60),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -2098,13 +2102,13 @@ class _HomePageState extends State<HomePage>
                               final hasPhonetic = snapshot.hasData && 
                                                  (snapshot.data!['phonetic'] as String).isNotEmpty;
                               
-                              return Column(
-                                children: [
-                                  SizedBox(height: hasPhonetic ? 2 : 6), // 有音标时间距为2，无音标时为6
-                                  _buildPhoneticSection(word),
-                                  if (hasPhonetic) const SizedBox(height: 6), // 音标和释义之间的间距
-                                ],
-                              );
+                              return               Column(
+                children: [
+                  SizedBox(height: hasPhonetic ? 2 : 8), // 有音标时间距为2，无音标时统一增加到8
+                  _buildPhoneticSection(word),
+                  if (hasPhonetic) const SizedBox(height: 8), // 音标和释义之间的间距统一为8
+                ],
+              );
                             },
                           ),
                             
@@ -2200,9 +2204,8 @@ class _HomePageState extends State<HomePage>
                     children: [
                       // 中文释义（包含所有词性，用 | 分割）
                       Container(
-                        constraints: BoxConstraints(
-                          minHeight: 28, 
-                          maxHeight: 80, // 增加最大高度，防止过长释义被截断
+                        constraints: const BoxConstraints(
+                          minHeight: 28,
                         ),
                         child: _buildAnimatedTextForMeaning(
                           word.translation,
@@ -2216,7 +2219,7 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       
-                      const SizedBox(height: 6), // 从10减少到6，更紧凑
+                      const SizedBox(height: 8), // 统一间距为8，与音标-释义间距保持一致
                       
                       // 例句容器
                       AnimatedContainer(
@@ -2241,7 +2244,7 @@ class _HomePageState extends State<HomePage>
                           children: [
                             // 例句
                             Container(
-                              constraints: BoxConstraints(minHeight: 30, maxHeight: 55), // 适度增加高度，支持换行
+                              constraints: const BoxConstraints(minHeight: 30),
                               child: _buildAnimatedTextForMeaning(
                                 '"${word.example}"',
                                 _exampleSlideAnimations,
@@ -2254,7 +2257,7 @@ class _HomePageState extends State<HomePage>
                             const SizedBox(height: 3), // 保持原来的间距
                             // 例句翻译
                             Container(
-                              constraints: BoxConstraints(minHeight: 20, maxHeight: 40), // 适度增加高度，支持换行
+                              constraints: const BoxConstraints(minHeight: 20),
                               child: _buildAnimatedTextForMeaning(
                                 '"${word.exampleTranslation}"',
                                 _exampleTranslationSlideAnimations,
@@ -2385,7 +2388,10 @@ class _HomePageState extends State<HomePage>
     
     // 计算可用宽度（考虑边距和内边距）
     final screenWidth = MediaQuery.of(context).size.width;
-    final maxWidth = screenWidth * 0.75; // 更保守的宽度，确保有足够边距
+    // 根据屏幕尺寸动态调整最大宽度，确保在各种设备上都有良好的显示效果
+    final maxWidth = screenWidth > 600 
+        ? screenWidth * 0.7  // 大屏设备：70%宽度
+        : screenWidth * 0.8; // 小屏设备：80%宽度
     
     // 检查是否主要是中文内容
     final chineseCharCount = text.runes.where((rune) => rune >= 0x4e00 && rune <= 0x9fff).length;
@@ -2451,7 +2457,7 @@ class _HomePageState extends State<HomePage>
       // 构建这一行的动画文本
       final lineWidget = Padding(
         padding: EdgeInsets.only(
-          bottom: lineIndex < lines.length - 1 ? 2.0 : 0.0,
+          bottom: lineIndex < lines.length - 1 ? 4.0 : 0.0,
         ),
         child: _buildAnimatedTextLine(
           line, 
@@ -2489,9 +2495,9 @@ class _HomePageState extends State<HomePage>
     TextStyle style,
     int globalStartIndex,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center, // 改回居中对齐
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: List.generate(line.length, (localIndex) {
         final char = line[localIndex];
         final globalIndex = globalStartIndex + localIndex;

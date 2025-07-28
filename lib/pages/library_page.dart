@@ -1206,7 +1206,7 @@ class _LibraryPageState extends State<LibraryPage>
   Widget _buildModernCover(WordBookItem item) {
     return Container(
       width: 52, // 从60减少到52
-      height: 52, // 从60减少到52
+      constraints: const BoxConstraints(minHeight: 52),
       decoration: BoxDecoration(
         color: Color(item.wordBook.coverColor),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
@@ -1234,7 +1234,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.notDownloaded:
         return Container(
           width: double.infinity,
-          height: 42,
+          constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1284,7 +1284,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.downloading:
         return Container(
           width: double.infinity,
-          height: 42,
+          constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1330,7 +1330,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.downloaded:
         return Container(
           width: double.infinity,
-          height: 42, // 从48减少到42
+          constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1380,7 +1380,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.selected:
         return Container(
           width: double.infinity,
-          height: 42,
+          constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1561,4 +1561,4 @@ class _LibraryPageState extends State<LibraryPage>
         );
     }
   }
-} 
+}

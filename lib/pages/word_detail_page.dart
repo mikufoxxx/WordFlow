@@ -382,8 +382,8 @@ class _WordDetailPageState extends State<WordDetailPage> {
             if (!isLast)
               Container(
                 width: 2,
-                height: 60,
                 color: AppTheme.coolGray200,
+                child: const SizedBox(height: 60),
               ),
           ],
         ),
@@ -517,4 +517,4 @@ class _WordDetailPageState extends State<WordDetailPage> {
         return AppTheme.accentBlue;
     }
   }
-} 
+}
