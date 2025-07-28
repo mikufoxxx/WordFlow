@@ -10,6 +10,7 @@ import '../utils/learning_data_service.dart';
 import '../utils/spaced_repetition_service.dart';
 import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
+import '../widgets/acrylic_app_bar.dart';
 import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
@@ -81,13 +82,8 @@ class _SettingsPageState extends State<SettingsPage> {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              '设置',
-              style: TextStyle(
-                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
-              ),
-            ),
+          appBar: AcrylicAppBar(
+            title: '设置',
           ),
           body: Center(
             child: ConstrainedBox(

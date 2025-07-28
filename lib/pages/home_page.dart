@@ -1353,9 +1353,15 @@ class _HomePageState extends State<HomePage>
                             onPressed: _undoLastAction,
                             icon: Icons.undo_rounded,
                             label: '撤回上一个',
-                            color: Colors.orange.shade100,
-                            textColor: Colors.orange.shade700,
-                            iconColor: Colors.orange.shade600,
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkAccentOrange.withOpacity(0.2)
+                                : AppTheme.accentOrange.withOpacity(0.15),
+                            textColor: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkAccentOrange
+                                : AppTheme.accentOrange.withOpacity(0.8),
+                            iconColor: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkAccentOrange.withOpacity(0.9)
+                                : AppTheme.accentOrange,
                           ),
                         ),
                       
@@ -1369,9 +1375,15 @@ class _HomePageState extends State<HomePage>
                               onPressed: _markAsUnknown,
                               icon: Icons.close_rounded,
                               label: '不认识',
-                              color: Colors.red.shade100,
-                              textColor: Colors.red.shade700,
-                              iconColor: Colors.red.shade600,
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentRed.withOpacity(0.2)
+                                  : AppTheme.accentRed.withOpacity(0.15),
+                              textColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentRed
+                                  : AppTheme.accentRed.withOpacity(0.8),
+                              iconColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentRed.withOpacity(0.9)
+                                  : AppTheme.accentRed,
                             ),
                           ),
                           
@@ -1383,9 +1395,15 @@ class _HomePageState extends State<HomePage>
                               onPressed: _markAsKnown,
                               icon: Icons.check_rounded,
                               label: '认识',
-                              color: Colors.green.shade100,
-                              textColor: Colors.green.shade700,
-                              iconColor: Colors.green.shade600,
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentGreen.withOpacity(0.2)
+                                  : AppTheme.accentGreen.withOpacity(0.15),
+                              textColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentGreen
+                                  : AppTheme.accentGreen.withOpacity(0.8),
+                              iconColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentGreen.withOpacity(0.9)
+                                  : AppTheme.accentGreen,
                             ),
                           ),
                         ],

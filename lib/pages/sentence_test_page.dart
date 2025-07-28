@@ -261,7 +261,13 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
       children: [
         // 判断结果卡片
         Card(
-          color: result.isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+          color: result.isCorrect 
+              ? (Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkAccentGreen.withOpacity(0.1)
+                  : AppTheme.accentGreen.withOpacity(0.1))
+              : (Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkAccentRed.withOpacity(0.1)
+                  : AppTheme.accentRed.withOpacity(0.1)),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -271,7 +277,13 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   children: [
                     Icon(
                       result.isCorrect ? Icons.check_circle : Icons.error,
-                      color: result.isCorrect ? Colors.green : Colors.red,
+                      color: result.isCorrect 
+                          ? (Theme.of(context).brightness == Brightness.dark 
+                              ? AppTheme.darkAccentGreen
+                              : AppTheme.accentGreen)
+                          : (Theme.of(context).brightness == Brightness.dark 
+                              ? AppTheme.darkAccentRed
+                              : AppTheme.accentRed),
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -280,7 +292,13 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: result.isCorrect ? Colors.green.shade700 : Colors.red.shade700,
+                        color: result.isCorrect 
+                            ? (Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkAccentGreen
+                                : AppTheme.accentGreen)
+                            : (Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkAccentRed
+                                : AppTheme.accentRed),
                       ),
                     ),
                     if (result.score > 0) ...[
@@ -288,7 +306,13 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: result.isCorrect ? Colors.green : Colors.orange,
+                          color: result.isCorrect 
+                              ? (Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentGreen
+                                  : AppTheme.accentGreen)
+                              : (Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.darkAccentOrange
+                                  : AppTheme.accentOrange),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -309,7 +333,9 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     result.errorMessage!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.red.shade700,
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkAccentRed
+                          : AppTheme.accentRed,
                     ),
                   ),
                 ],

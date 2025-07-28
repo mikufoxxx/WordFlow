@@ -9,6 +9,7 @@ import '../utils/responsive_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/cache_service.dart';
 import '../utils/chart_helper.dart';
+import '../widgets/custom_date_picker.dart';
 import 'word_detail_page.dart';
 
 /// 每日学习数据模型
@@ -429,25 +430,20 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       dailyWordCounts[date] = (dailyWordCounts[date] ?? 0) + 1;
     }
 
-    final selectedDate = await showDatePicker(
+    showDialog(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now(),
-      selectableDayPredicate: (day) {
-        // 只允许选择有学习记录的日期或今天
-        final dateKey = DateTime(day.year, day.month, day.day);
-        final today = DateTime.now();
-        final todayKey = DateTime(today.year, today.month, today.day);
-        return dailyWordCounts.containsKey(dateKey) || dateKey.isAtSameMomentAs(todayKey);
-      },
+      builder: (context) => CustomDatePicker(
+        initialDate: _selectedDate,
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now(),
+        dailyWordCounts: dailyWordCounts,
+        onDateSelected: (selectedDate) {
+          setState(() {
+            _selectedDate = selectedDate;
+          });
+        },
+      ),
     );
-
-    if (selectedDate != null) {
-      setState(() {
-        _selectedDate = selectedDate;
-      });
-    }
   }
 
   /// 构建增强的单词卡片
@@ -1145,7 +1141,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             _buildLegendItem('简单', AppTheme.accentGreen),
             _buildLegendItem('良好', AppTheme.accentBlue),
             _buildLegendItem('困难', AppTheme.accentYellow),
-            _buildLegendItem('忘记', Colors.red.shade400),
+            _buildLegendItem('忘记', AppTheme.accentRed),
             _buildLegendItem('掌握度', AppTheme.accentTeal),
           ],
         ),
@@ -1211,7 +1207,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             Container(
               height: forgotHeight,
               decoration: BoxDecoration(
-                color: Colors.red.shade400,
+                color: AppTheme.accentRed,
                 borderRadius: data.easyCount + data.goodCount + data.hardCount == 0 
                     ? BorderRadius.circular(4) 
                     : const BorderRadius.only(
@@ -1349,7 +1345,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   child: _buildEffectivenessItem(
                     '忘记',
                     totalForgotCount.toString(),
-                    Colors.red.shade400,
+                    AppTheme.accentRed,
                     Icons.sentiment_dissatisfied_outlined,
                   ),
                 ),

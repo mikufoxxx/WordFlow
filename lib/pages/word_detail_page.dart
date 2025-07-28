@@ -241,7 +241,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                     '忘记',
                     forgotCount.toString(),
                     Icons.sentiment_dissatisfied_outlined,
-                    Colors.red.shade400,
+                    AppTheme.accentRed,
                   ),
                 ),
               ],
@@ -509,7 +509,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
       case ReviewResult.hard:
         return AppTheme.accentYellow;
       case ReviewResult.forgot:
-        return Colors.red.shade400;
+        return AppTheme.accentRed;
     }
   }
 

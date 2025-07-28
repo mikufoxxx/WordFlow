@@ -7,6 +7,7 @@ import '../utils/learning_data_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
+import '../widgets/acrylic_app_bar.dart';
 
 /// 词库状态枚举
 enum WordBookStatus {
@@ -706,18 +707,8 @@ class _LibraryPageState extends State<LibraryPage>
                         item.status == WordBookStatus.selected)
         .length;
 
-    return AppBar(
-      title: Text(
-        '词库选择 (${_allWordBookItems.length})',
-        style: TextStyle(
-          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
-          fontWeight: FontWeight.w600,
-          color: AppTheme.darkGray,
-        ),
-      ),
-      backgroundColor: AppTheme.backgroundColor,
-      elevation: 0,
-      scrolledUnderElevation: 0,
+    return AcrylicAppBar(
+      title: '词库选择 (${_allWordBookItems.length})',
       leading: Padding(
         padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
         child: IconButton(
@@ -1304,14 +1295,20 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.amber.shade400,
-                Colors.amber.shade500,
+                (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentYellow
+                    : AppTheme.accentYellow).withOpacity(0.2),
+                (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentYellow
+                    : AppTheme.accentYellow),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.25),
+                color: (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentYellow
+                    : AppTheme.accentYellow).withOpacity(0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
             ),
@@ -1330,10 +1327,12 @@ class _LibraryPageState extends State<LibraryPage>
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   '收集中...',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkAccentYellow
+                        : AppTheme.accentYellow,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1443,14 +1442,20 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.red.shade400,
-                Colors.red.shade500,
+                (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentRed
+                    : AppTheme.accentRed).withOpacity(0.2),
+                (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentRed
+                    : AppTheme.accentRed).withOpacity(0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(0.25),
+                color: (Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkAccentRed
+                    : AppTheme.accentRed).withOpacity(0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
             ),
@@ -1512,14 +1517,18 @@ class _LibraryPageState extends State<LibraryPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.2),
+            color: (Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkAccentYellow 
+                : AppTheme.accentYellow).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
             '收集中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: Colors.amber.shade700,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkAccentYellow 
+                  : AppTheme.accentYellow,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1563,14 +1572,18 @@ class _LibraryPageState extends State<LibraryPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
+            color: (Theme.of(context).brightness == Brightness.dark 
+                ? AppTheme.darkAccentRed 
+                : AppTheme.accentRed).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
             '错误',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: Colors.red.shade700,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkAccentRed 
+                  : AppTheme.accentRed,
               fontWeight: FontWeight.w500,
             ),
           ),

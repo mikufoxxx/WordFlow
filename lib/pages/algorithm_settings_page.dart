@@ -4,6 +4,7 @@ import '../models/algorithm_config.dart';
 import '../utils/algorithm_manager.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/acrylic_app_bar.dart';
 
 /// 算法设置页面
 class AlgorithmSettingsPage extends StatefulWidget {
@@ -50,10 +51,8 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('算法设置'),
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+      appBar: AcrylicAppBar(
+        title: '算法设置',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.pop(context),
