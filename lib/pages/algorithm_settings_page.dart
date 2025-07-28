@@ -91,7 +91,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   /// 构建算法选择器
   Widget _buildAlgorithmSelector() {
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -110,7 +112,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryTextColor 
+                        : AppTheme.primaryTextColor,
                   ),
                 ),
               ],
@@ -160,7 +164,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? AppTheme.primaryGray : AppTheme.coolGray700,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AppTheme.darkPrimaryTextColor 
+                            : AppTheme.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -168,7 +174,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                       type.description,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.coolGray500,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? AppTheme.darkSecondaryTextColor 
+                            : AppTheme.secondaryTextColor,
                       ),
                     ),
                   ],
@@ -187,7 +195,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     if (config == null) return const SizedBox();
 
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -206,7 +216,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryTextColor 
+                        : AppTheme.primaryTextColor,
                   ),
                 ),
               ],
@@ -216,7 +228,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               _getAlgorithmDetailedDescription(_selectedAlgorithm),
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.coolGray600,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.secondaryTextColor,
                 height: 1.4,
               ),
             ),
@@ -244,7 +258,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     if (config == null) return const SizedBox();
 
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -255,7 +271,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.coolGray700,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryTextColor 
+                    : AppTheme.primaryTextColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -322,7 +340,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     if (config == null) return const SizedBox();
 
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -333,7 +353,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.coolGray700,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryTextColor 
+                    : AppTheme.primaryTextColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -378,7 +400,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     if (config == null) return const SizedBox();
 
     return Card(
-      color: AppTheme.cardColor,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? AppTheme.darkCardColor 
+          : AppTheme.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -389,7 +413,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.coolGray700,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkPrimaryTextColor 
+                    : AppTheme.primaryTextColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -398,7 +424,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               '自适应算法会根据您的学习表现自动调整复习间隔。以下参数影响算法的调整方向和强度。',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.coolGray600,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.coolGray600,
                 height: 1.4,
               ),
             ),
@@ -453,6 +481,8 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     String unit = '',
     int divisions = 100,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -469,7 +499,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.coolGray700,
+                    color: isDark 
+                        ? AppTheme.darkPrimaryTextColor 
+                        : AppTheme.coolGray700,
                   ),
                 ),
                     const SizedBox(height: 2),
@@ -477,7 +509,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                       '范围: ${min.toStringAsFixed(min < 1 ? 1 : 0)}-${max.toStringAsFixed(max < 10 ? 1 : 0)}${unit}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.coolGray400,
+                        color: isDark 
+                            ? AppTheme.darkSecondaryTextColor 
+                            : AppTheme.coolGray400,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -490,9 +524,11 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 height: 36,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.coolGray50,
+                  color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray50,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppTheme.coolGray300),
+                  border: Border.all(
+                    color: isDark ? AppTheme.coolGray600 : AppTheme.coolGray300,
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -504,7 +540,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: isDark 
+                        ? AppTheme.darkPrimaryTextColor 
+                        : AppTheme.coolGray700,
                   ),
                       ),
                     ),
@@ -513,7 +551,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                         unit,
                         style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.coolGray500,
+                      color: isDark 
+                          ? AppTheme.darkSecondaryTextColor 
+                          : AppTheme.coolGray500,
                     ),
                       ),
                   ],
@@ -526,7 +566,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             description,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.coolGray500,
+              color: isDark 
+                  ? AppTheme.darkSecondaryTextColor 
+                  : AppTheme.coolGray500,
             ),
           ),
           const SizedBox(height: 8),
@@ -538,7 +580,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 '${min.toStringAsFixed(min < 1 ? 1 : 0)}',
                 style: TextStyle(
                   fontSize: 10,
-                  color: AppTheme.coolGray400,
+                  color: isDark 
+                      ? AppTheme.darkSecondaryTextColor 
+                      : AppTheme.coolGray400,
                 ),
               ),
               Text(
@@ -553,7 +597,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 '${max.toStringAsFixed(max < 10 ? 1 : 0)}',
                 style: TextStyle(
                   fontSize: 10,
-                  color: AppTheme.coolGray400,
+                  color: isDark 
+                      ? AppTheme.darkSecondaryTextColor 
+                      : AppTheme.coolGray400,
                 ),
               ),
             ],
@@ -561,7 +607,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: AppTheme.primaryGray,
-              inactiveTrackColor: AppTheme.coolGray200,
+              inactiveTrackColor: isDark ? AppTheme.coolGray600 : AppTheme.coolGray200,
               thumbColor: AppTheme.primaryGray,
               trackHeight: 3,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
@@ -827,7 +873,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               child: OutlinedButton(
                 onPressed: _resetToDefaults,
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppTheme.coolGray300),
+                  side: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryGray 
+                        : AppTheme.coolGray300,
+                  ),
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkAccentGreen 
+                      : AppTheme.darkGray,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -840,7 +893,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               child: OutlinedButton(
                 onPressed: _exportConfig,
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppTheme.coolGray300),
+                  side: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryGray 
+                        : AppTheme.coolGray300,
+                  ),
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkAccentGreen 
+                      : AppTheme.darkGray,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -853,7 +913,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               child: OutlinedButton(
                 onPressed: _importConfig,
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppTheme.coolGray300),
+                  side: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? AppTheme.darkPrimaryGray 
+                        : AppTheme.coolGray300,
+                  ),
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? AppTheme.darkAccentGreen 
+                      : AppTheme.darkGray,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -869,7 +936,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           child: ElevatedButton(
             onPressed: _applyChanges,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryGray,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkPrimaryGray 
+                  : AppTheme.primaryGray,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1194,4 +1263,4 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         return '智能自适应算法结合了机器学习和AI技术，能够根据你的学习习惯、记忆能力和学习表现自动调整所有参数。无需手动配置，系统会持续优化以提供最适合你的学习体验。\n\n核心特点：\n• 自动参数优化\n• 个性化学习分析\n• AI辅助决策\n• 适合所有用户';
     }
   }
-} 
+}

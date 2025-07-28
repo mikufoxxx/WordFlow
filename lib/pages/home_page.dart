@@ -2994,7 +2994,9 @@ class _HomePageState extends State<HomePage>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.coolGray600,
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? AppTheme.darkSecondaryTextColor 
+                              : AppTheme.coolGray600,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -3006,9 +3008,15 @@ class _HomePageState extends State<HomePage>
                           height: 50, // 固定高度，与弹出框单行高度一致
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 与弹出框完全一致的padding
                           decoration: BoxDecoration(
-                            color: AppTheme.coolGray50,
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.darkCardColor 
+                                : AppTheme.coolGray50,
                             borderRadius: BorderRadius.circular(20), // 与弹出框完全一致的圆角
-                            border: Border.all(color: AppTheme.coolGray200),
+                            border: Border.all(
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? AppTheme.coolGray600 
+                                  : AppTheme.coolGray200,
+                            ),
                           ),
                           child: Align(
                             alignment: Alignment.centerLeft,
@@ -3019,8 +3027,12 @@ class _HomePageState extends State<HomePage>
                               style: TextStyle(
                                 fontSize: 16,
                                 color: _sentenceInputController.text.isEmpty 
-                                  ? AppTheme.coolGray400
-                                  : AppTheme.coolGray700,
+                                  ? (Theme.of(context).brightness == Brightness.dark 
+                                      ? AppTheme.coolGray500 
+                                      : AppTheme.coolGray400)
+                                  : (Theme.of(context).brightness == Brightness.dark 
+                                      ? AppTheme.darkPrimaryTextColor 
+                                      : AppTheme.coolGray700),
                               ),
                               maxLines: 1, // 原界面只显示单行
                               overflow: TextOverflow.ellipsis,
@@ -3106,7 +3118,9 @@ class _HomePageState extends State<HomePage>
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.coolGray500,
+                                color: Theme.of(context).brightness == Brightness.dark 
+                                    ? AppTheme.darkSecondaryTextColor 
+                                    : AppTheme.coolGray500,
                               ),
                             ),
                           ),
@@ -3223,20 +3237,25 @@ class _HomePageState extends State<HomePage>
   Widget _buildHighlightedSentence() {
     final words = _userSentence.split(' ');
     final result = _judgmentResult!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.coolGray50,
+        color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.coolGray200),
+        border: Border.all(
+          color: isDark ? AppTheme.coolGray700 : AppTheme.coolGray200,
+        ),
       ),
       child: Text.rich(
         TextSpan(
           children: words.map((word) {
             // 智能错误检测逻辑
-            Color textColor = AppTheme.coolGray700;
+            Color textColor = isDark 
+                ? AppTheme.darkPrimaryTextColor 
+                : AppTheme.coolGray700;
             bool isErrorWord = false;
             
             // 只有当句子有错误时，才检查并标记错误单词
@@ -3244,7 +3263,7 @@ class _HomePageState extends State<HomePage>
               isErrorWord = _isWordError(word, result);
               
               if (isErrorWord) {
-                textColor = Colors.red.shade700;
+                textColor = isDark ? Colors.red.shade300 : Colors.red.shade700;
               }
             }
             
@@ -3369,13 +3388,17 @@ class _HomePageState extends State<HomePage>
 
   /// 构建正确句子
   Widget _buildCorrectSentence() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.coolGray50,
+        color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.coolGray200),
+        border: Border.all(
+          color: isDark ? AppTheme.coolGray700 : AppTheme.coolGray200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3393,7 +3416,9 @@ class _HomePageState extends State<HomePage>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.coolGray700,
+                  color: isDark 
+                      ? AppTheme.darkPrimaryTextColor 
+                      : AppTheme.coolGray700,
                 ),
               ),
             ],
@@ -3411,14 +3436,17 @@ class _HomePageState extends State<HomePage>
   /// 构建错误说明
   Widget _buildErrorExplanation() {
     final hasErrors = _judgmentResult!.errors.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppTheme.darkCardColor : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.coolGray200),
+        border: Border.all(
+          color: isDark ? AppTheme.coolGray700 : AppTheme.coolGray200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3427,7 +3455,9 @@ class _HomePageState extends State<HomePage>
             children: [
               Icon(
                 hasErrors ? Icons.info_outline_rounded : Icons.check_circle_outline_rounded,
-                color: hasErrors ? AppTheme.coolGray600 : AppTheme.accentGreen,
+                color: hasErrors 
+                    ? (isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray600)
+                    : AppTheme.accentGreen,
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -3436,7 +3466,9 @@ class _HomePageState extends State<HomePage>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.coolGray700,
+                  color: isDark 
+                      ? AppTheme.darkPrimaryTextColor 
+                      : AppTheme.coolGray700,
                 ),
               ),
             ],
@@ -3449,7 +3481,9 @@ class _HomePageState extends State<HomePage>
                 '• ${error.description}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppTheme.coolGray600,
+                  color: isDark 
+                      ? AppTheme.darkSecondaryTextColor 
+                      : AppTheme.coolGray600,
                   height: 1.4,
                 ),
               ),
@@ -3459,7 +3493,9 @@ class _HomePageState extends State<HomePage>
               '• 您的句子语法正确，用词恰当',
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.coolGray600,
+                color: isDark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.coolGray600,
                 height: 1.4,
               ),
             ),
@@ -3468,7 +3504,9 @@ class _HomePageState extends State<HomePage>
               '• 参考句子提供了更地道的表达方式',
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.coolGray600,
+                color: isDark 
+                    ? AppTheme.darkSecondaryTextColor 
+                    : AppTheme.coolGray600,
                 height: 1.4,
               ),
             ),
@@ -3481,14 +3519,17 @@ class _HomePageState extends State<HomePage>
   /// 构建逐单词浮现的正确句子
   Widget _buildAnimatedBetterSentence() {
     final words = _betterSentenceText.trim().split(RegExp(r'\s+'));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       width: double.infinity, // 使用Container而不是SizedBox，让高度自适应
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppTheme.darkCardColor : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.coolGray200),
+        border: Border.all(
+          color: isDark ? AppTheme.coolGray700 : AppTheme.coolGray200,
+        ),
       ),
       child: Wrap(
         alignment: WrapAlignment.start,
@@ -3687,17 +3728,21 @@ class _HomePageState extends State<HomePage>
   
   /// 获取单词高亮颜色
   Color _getWordHighlightColor(WordModificationInfo info) {
-    if (!info.isModified) return AppTheme.coolGray700;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    if (!info.isModified) {
+      return isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700;
+    }
     
     switch (info.modificationType) {
       case ModificationType.grammar:
         return AppTheme.accentGreen; // 绿色表示语法修改
       case ModificationType.idiomatic:
-        return Colors.orange.shade600; // 橙色表示地道性改进
+        return isDark ? Colors.orange.shade300 : Colors.orange.shade600; // 橙色表示地道性改进
       case ModificationType.simplicity:
-        return Colors.amber.shade600; // 黄色表示简单性改进
+        return isDark ? Colors.amber.shade300 : Colors.amber.shade600; // 黄色表示简单性改进
       case ModificationType.none:
-        return AppTheme.coolGray700;
+        return isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700;
     }
   }
 
