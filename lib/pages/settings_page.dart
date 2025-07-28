@@ -511,8 +511,27 @@ class _SettingsPageState extends State<SettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Column(
-        children: children,
+      elevation: 0, // 移除默认阴影，使用自定义阴影
+      shadowColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          children: children,
+        ),
       ),
     );
   }
@@ -661,6 +680,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: BoxDecoration(
                     color: Colors.green.shade100,
                     borderRadius: BorderRadius.circular(4),
+                    boxShadow: Theme.of(context).brightness == Brightness.dark 
+                        ? null 
+                        : [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.15),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
                   ),
                   child: Text(
                     '已配置',

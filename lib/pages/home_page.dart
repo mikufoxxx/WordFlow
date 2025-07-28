@@ -1375,13 +1375,15 @@ class _HomePageState extends State<HomePage>
           color: textColor.withOpacity(0.2),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: textColor.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark 
+            ? null 
+            : [
+                BoxShadow(
+                  color: textColor.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1433,13 +1435,15 @@ class _HomePageState extends State<HomePage>
           color: textColor.withOpacity(0.2),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: textColor.withOpacity(0.08),
-            blurRadius: 6,
-            offset: Offset(0, 1),
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark 
+            ? null 
+            : [
+                BoxShadow(
+                  color: textColor.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: Offset(0, 1),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,

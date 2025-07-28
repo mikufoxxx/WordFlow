@@ -493,13 +493,15 @@ class _LibraryPageState extends State<LibraryPage>
                   ? AppTheme.darkCardColor 
                   : AppTheme.backgroundColor,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, -2),
-                    ),
-                  ],
+                  boxShadow: Theme.of(context).brightness == Brightness.dark 
+                      ? null 
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: Offset(0, -2),
+                          ),
+                        ],
             ),
             child: Column(
               children: [
@@ -554,15 +556,15 @@ class _LibraryPageState extends State<LibraryPage>
                             children: [
                               Icon(
                                 Icons.download_outlined,
-                                    size: 52, // 从64减少到52
+                                size: 52, // 从64减少到52
                                 color: AppTheme.coolGray300,
                               ),
-                                  SizedBox(height: 12), // 从16减少到12
+                              SizedBox(height: 12), // 从16减少到12
                               Text(
                                 '暂无已下载的词库',
                                 style: TextStyle(
                                   color: AppTheme.coolGray500,
-                                      fontSize: 14, // 从16减少到14
+                                  fontSize: 14, // 从16减少到14
                                 ),
                               ),
                             ],
@@ -570,7 +572,7 @@ class _LibraryPageState extends State<LibraryPage>
                         )
                       : ListView.builder(
                           controller: scrollController,
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
                           itemCount: downloadedBooks.length,
                           itemBuilder: (context, index) => _buildDownloadedBookCard(
                             downloadedBooks[index],
@@ -578,12 +580,12 @@ class _LibraryPageState extends State<LibraryPage>
                         ),
                 ),
               ],
-                ),
-              ),
             ),
           ),
         ),
       ),
+        ),
+      )
     );
   }
 
@@ -597,13 +599,15 @@ class _LibraryPageState extends State<LibraryPage>
         border: item.status == WordBookStatus.selected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04), // 从0.05减少到0.04
-            blurRadius: 6, // 从8减少到6
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark 
+            ? null 
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04), // 从0.05减少到0.04
+                  blurRadius: 6, // 从8减少到6
+                  offset: Offset(0, 2),
+                ),
+              ],
       ),
       child: ListTile(
         contentPadding: EdgeInsets.all(14), // 从16减少到14
@@ -1159,15 +1163,17 @@ class _LibraryPageState extends State<LibraryPage>
         border: isSelected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)
             : null,
-        boxShadow: [
-          BoxShadow(
-            color: isSelected 
-                ? AppTheme.accentGreen.withOpacity(0.15) // 从0.2减少到0.15
-                : AppTheme.coolGray200.withOpacity(0.25), // 从0.3减少到0.25
-            blurRadius: isSelected ? 12 : 8, // 从16,12减少到12,8
-            offset: const Offset(0, 3), // 从4减少到3
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark 
+            ? null 
+            : [
+                BoxShadow(
+                  color: isSelected 
+                      ? AppTheme.accentGreen.withOpacity(0.15) // 从0.2减少到0.15
+                      : AppTheme.coolGray200.withOpacity(0.25), // 从0.3减少到0.25
+                  blurRadius: isSelected ? 12 : 8, // 从16,12减少到12,8
+                  offset: const Offset(0, 3), // 从4减少到3
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1255,13 +1261,15 @@ class _LibraryPageState extends State<LibraryPage>
       decoration: BoxDecoration(
         color: Color(item.wordBook.coverColor),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
-        boxShadow: [
-          BoxShadow(
-            color: Color(item.wordBook.coverColor).withOpacity(0.3),
-            blurRadius: 8, // 从10减少到8
-            offset: const Offset(0, 3), // 从4减少到3
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark 
+            ? null 
+            : [
+                BoxShadow(
+                  color: Color(item.wordBook.coverColor).withOpacity(0.3),
+                  blurRadius: 8, // 从10减少到8
+                  offset: const Offset(0, 3), // 从4减少到3
+                ),
+              ],
         ),
         child: Center(
           child: Icon(
@@ -1288,13 +1296,15 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.accentGreen.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-            ),
-            ],
+            boxShadow: Theme.of(context).brightness == Brightness.dark 
+                ? null 
+                : [
+                    BoxShadow(
+                      color: AppTheme.accentGreen.withOpacity(0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Material(
             color: Colors.transparent,
@@ -1342,15 +1352,17 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentYellow
-                    : AppTheme.accentYellow).withOpacity(0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-            ),
-            ],
+            boxShadow: Theme.of(context).brightness == Brightness.dark 
+                ? null 
+                : [
+                    BoxShadow(
+                      color: (Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.darkAccentYellow
+                          : AppTheme.accentYellow).withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Center(
             child: Row(
@@ -1392,13 +1404,15 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12), // 从16减少到12
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.coolGray600.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: Theme.of(context).brightness == Brightness.dark 
+                ? null 
+                : [
+                    BoxShadow(
+                      color: AppTheme.coolGray600.withOpacity(0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Material(
             color: Colors.transparent,
@@ -1442,13 +1456,15 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.accentGreen.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: Theme.of(context).brightness == Brightness.dark 
+                ? null 
+                : [
+                    BoxShadow(
+                      color: AppTheme.accentGreen.withOpacity(0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Center(
             child: Row(
@@ -1496,7 +1512,7 @@ class _LibraryPageState extends State<LibraryPage>
                     : AppTheme.accentRed).withOpacity(0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
-            ),
+              ),
             ],
           ),
           child: Material(
