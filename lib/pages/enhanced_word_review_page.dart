@@ -11,19 +11,14 @@ import '../utils/cache_service.dart';
 import '../utils/chart_helper.dart';
 import 'word_detail_page.dart';
 
-/// 个性化推荐数据模型
-class PersonalizedRecommendation {
-  final String title;
-  final String description;
-  final Color color;
-  final IconData icon;
-
-  const PersonalizedRecommendation({
-    required this.title,
-    required this.description,
-    required this.color,
-    required this.icon,
-  });
+/// 每日学习数据模型
+class DailyLearningData {
+  int totalLearningCount = 0;
+  int easyCount = 0;
+  int goodCount = 0;
+  int hardCount = 0;
+  int forgotCount = 0;
+  double averageMastery = 0.0;
 }
 
 /// 增强的单词回溯页面
@@ -40,16 +35,16 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   
   // 数据状态
   List<EnhancedWordLearningRecord> _allRecords = [];
-  List<EnhancedWordLearningRecord> _filteredRecords = [];
+
   Map<String, dynamic> _statistics = {};
   bool _isLoading = true;
   
-  // 筛选状态
-  MemoryLevel? _selectedLevel;
-  WordDifficulty? _selectedDifficulty;
-  LearningMode? _selectedMode;
+  // 搜索状态
   String _searchQuery = '';
-  bool _showOnlyDueWords = false;
+  
+  // 日期导航状态
+  DateTime _selectedDate = DateTime.now();
+  PageController _datePageController = PageController(initialPage: 1000); // 设置一个较大的初始页面以支持前后滑动
   
   // 当前选中的词书
   String _currentWordBook = '';
@@ -66,13 +61,13 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _datePageController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
-      _filterRecords();
     });
   }
 
@@ -103,7 +98,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
         setState(() {
           _allRecords = enhancedRecords;
           _statistics = stats;
-          _filterRecords();
         });
       }
     } catch (e) {
@@ -115,48 +109,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     }
   }
 
-  /// 筛选记录
-  void _filterRecords() {
-    _filteredRecords = _allRecords.where((record) {
-      // 搜索过滤
-      if (_searchQuery.isNotEmpty) {
-        final matchesSearch = record.word.toLowerCase().contains(_searchQuery) ||
-            record.translation.toLowerCase().contains(_searchQuery);
-        if (!matchesSearch) return false;
-      }
-      
-      // 记忆程度过滤
-      if (_selectedLevel != null && record.memoryLevel != _selectedLevel) {
-        return false;
-      }
-      
-      // 难度过滤
-      if (_selectedDifficulty != null && record.difficulty != _selectedDifficulty) {
-        return false;
-      }
-      
-      // 学习模式过滤
-      if (_selectedMode != null) {
-        final hasMode = record.sessions.any((s) => s.learningMode == _selectedMode);
-        if (!hasMode) return false;
-      }
-      
-      // 到期单词过滤
-      if (_showOnlyDueWords && !record.needsReview) {
-        return false;
-      }
-      
-      return true;
-    }).toList();
-    
-    // 按掌握程度排序
-    _filteredRecords.sort((a, b) {
-      if (a.memoryLevel != b.memoryLevel) {
-        return a.memoryLevel.index.compareTo(b.memoryLevel.index);
-      }
-      return a.word.compareTo(b.word);
-    });
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +147,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
+              physics: const NeverScrollableScrollPhysics(), // 禁用滑动切换
               children: [
                 _buildWordListTab(),
                 _buildStatisticsTab(),
@@ -206,31 +160,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   Widget _buildWordListTab() {
     return Column(
       children: [
-        _buildSearchAndFilter(),
-        Expanded(
-          child: _filteredRecords.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: ResponsiveHelper.getResponsivePadding(context),
-                  itemCount: _filteredRecords.length,
-                  itemBuilder: (context, index) {
-                    final record = _filteredRecords[index];
-                    return _buildEnhancedWordCard(record);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  /// 构建搜索和筛选
-  Widget _buildSearchAndFilter() {
-    return Container(
-      padding: ResponsiveHelper.getResponsivePadding(context),
-      child: Column(
-        children: [
-          // 搜索框
-          TextField(
+        // 搜索框
+        Container(
+          padding: ResponsiveHelper.getResponsivePadding(context),
+          child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
               hintText: '搜索单词或释义...',
@@ -253,40 +186,268 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               ),
             ),
           ),
-          const SizedBox(height: 12),
+        ),
+        
+        // 日期导航
+        _buildDateNavigation(),
+        
+        // 单词列表
+        Expanded(
+          child: _buildWordListForDate(_selectedDate),
+        ),
+      ],
+    );
+  }
+
+  /// 按日期分组学习记录
+  Map<String, List<EnhancedWordLearningRecord>> _groupRecordsByDate() {
+    final filteredRecords = _allRecords.where((record) {
+      if (_searchQuery.isNotEmpty) {
+        return record.word.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+               record.translation.toLowerCase().contains(_searchQuery.toLowerCase());
+      }
+      return true;
+    }).toList();
+    
+    final Map<String, List<EnhancedWordLearningRecord>> groupedRecords = {};
+    
+    for (final record in filteredRecords) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(record.lastLearningTime);
+      final displayDate = _getDateDisplayText(record.lastLearningTime);
+      
+      if (!groupedRecords.containsKey(displayDate)) {
+        groupedRecords[displayDate] = [];
+      }
+      groupedRecords[displayDate]!.add(record);
+    }
+    
+    // 按日期排序（最新的在前）
+    final sortedEntries = groupedRecords.entries.toList()
+      ..sort((a, b) => _getDateFromDisplayText(b.key).compareTo(_getDateFromDisplayText(a.key)));
+    
+    return Map.fromEntries(sortedEntries);
+  }
+
+  /// 获取日期显示文本
+  String _getDateDisplayText(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final recordDate = DateTime(date.year, date.month, date.day);
+    
+    final difference = today.difference(recordDate).inDays;
+    
+    if (difference == 0) {
+      return '今天';
+    } else if (difference == 1) {
+      return '昨天';
+    } else if (difference == 2) {
+      return '前天';
+    } else if (difference <= 7) {
+      return '${difference}天前';
+    } else {
+      return DateFormat('yyyy年MM月dd日').format(date);
+    }
+  }
+
+  /// 从显示文本获取日期（用于排序）
+  DateTime _getDateFromDisplayText(String displayText) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    switch (displayText) {
+      case '今天':
+        return today;
+      case '昨天':
+        return today.subtract(const Duration(days: 1));
+      case '前天':
+        return today.subtract(const Duration(days: 2));
+      default:
+        if (displayText.contains('天前')) {
+          final days = int.parse(displayText.replaceAll('天前', ''));
+          return today.subtract(Duration(days: days));
+        }
+        // 对于具体日期，尝试解析
+        try {
+          return DateFormat('yyyy年MM月dd日').parse(displayText);
+        } catch (e) {
+          return DateTime(2000); // 默认返回一个很早的日期
+        }
+    }
+  }
+
+  /// 构建日期导航
+  Widget _buildDateNavigation() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // 上一天按钮
+          IconButton(
+            onPressed: () => _changeDate(-1),
+            icon: const Icon(Icons.chevron_left),
+            iconSize: 24,
+          ),
           
-          // 筛选选项
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('记忆程度', _selectedLevel?.displayName, () => _showLevelFilter()),
-                _buildFilterChip('难度', _selectedDifficulty?.displayName, () => _showDifficultyFilter()),
-                _buildFilterChip('学习模式', _selectedMode?.displayName, () => _showModeFilter()),
-                _buildFilterChip('到期单词', _showOnlyDueWords ? '是' : null, () => _toggleDueWordsFilter()),
-              ],
+          // 日期显示和选择
+          Expanded(
+            child: GestureDetector(
+              onTap: _showDatePicker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.coolGray100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: AppTheme.coolGray600,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getDateDisplayText(_selectedDate),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.coolGray700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ),
+          
+          // 下一天按钮
+          IconButton(
+            onPressed: _canGoToNextDay() ? () => _changeDate(1) : null,
+            icon: const Icon(Icons.chevron_right),
+            iconSize: 24,
           ),
         ],
       ),
     );
   }
 
-  /// 构建筛选芯片
-  Widget _buildFilterChip(String label, String? value, VoidCallback onTap) {
-    final isSelected = value != null;
+  /// 构建指定日期的单词列表
+  Widget _buildWordListForDate(DateTime date) {
+    final dateKey = DateTime(date.year, date.month, date.day);
+    final recordsForDate = _getRecordsForDate(dateKey);
     
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        label: Text(isSelected ? '$label: $value' : label),
-        onPressed: onTap,
-        backgroundColor: isSelected ? AppTheme.primaryGray.withOpacity(0.1) : null,
-        side: BorderSide(
-          color: isSelected ? AppTheme.primaryGray : AppTheme.coolGray300,
-        ),
-      ),
+    if (recordsForDate.isEmpty) {
+      return _buildEmptyState();
+    }
+    
+    return ListView.builder(
+      padding: ResponsiveHelper.getResponsivePadding(context),
+      itemCount: recordsForDate.length + 1, // +1 for header
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          // 日期标题
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.coolGray100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.event_note_outlined,
+                  size: 16,
+                  color: AppTheme.coolGray600,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${recordsForDate.length}个单词',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.coolGray700,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        final record = recordsForDate[index - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _buildEnhancedWordCard(record),
+        );
+      },
     );
+  }
+
+  /// 获取指定日期的学习记录
+  List<EnhancedWordLearningRecord> _getRecordsForDate(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    
+    return _allRecords.where((record) {
+      final lastLearningDate = record.lastLearningTime;
+      if (_searchQuery.isNotEmpty) {
+        final matchesSearch = record.word.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+               record.translation.toLowerCase().contains(_searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
+      }
+      return lastLearningDate.isAfter(startOfDay) && lastLearningDate.isBefore(endOfDay);
+    }).toList();
+  }
+
+  /// 改变日期
+  void _changeDate(int days) {
+    setState(() {
+      _selectedDate = _selectedDate.add(Duration(days: days));
+    });
+  }
+
+  /// 是否可以前往下一天
+  bool _canGoToNextDay() {
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final selectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    return selectedDate.isBefore(todayDate);
+  }
+
+  /// 显示日期选择器
+  void _showDatePicker() async {
+    // 计算每天的单词数量
+    final dailyWordCounts = <DateTime, int>{};
+    for (final record in _allRecords) {
+      final date = DateTime(
+        record.lastLearningTime.year,
+        record.lastLearningTime.month,
+        record.lastLearningTime.day,
+      );
+      dailyWordCounts[date] = (dailyWordCounts[date] ?? 0) + 1;
+    }
+
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+      selectableDayPredicate: (day) {
+        // 只允许选择有学习记录的日期或今天
+        final dateKey = DateTime(day.year, day.month, day.day);
+        final today = DateTime.now();
+        final todayKey = DateTime(today.year, today.month, today.day);
+        return dailyWordCounts.containsKey(dateKey) || dateKey.isAtSameMomentAs(todayKey);
+      },
+    );
+
+    if (selectedDate != null) {
+      setState(() {
+        _selectedDate = selectedDate;
+      });
+    }
   }
 
   /// 构建增强的单词卡片
@@ -364,6 +525,22 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                     ),
                 ],
               ),
+              
+              // 详细统计
+              if (record.learningCount > 0) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      '简单:${record.easyCount} 良好:${record.goodCount} 困难:${record.hardCount} 忘记:${record.forgotCount}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.coolGray400,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               
               // 最近学习会话
               if (record.lastSession != null) ...[
@@ -477,8 +654,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           
           const SizedBox(height: 16),
           
-          // 个性化建议
-          _buildPersonalizedRecommendationsCard(),
+          
         ],
       ),
     );
@@ -786,27 +962,64 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   /// 构建每日学习量图表
   Widget _buildDailyLearningChart() {
     final now = DateTime.now();
-    final dailyStats = <DateTime, int>{};
+    final dailyData = <DateTime, DailyLearningData>{};
     
     // 初始化最近7天的数据
     for (int i = 6; i >= 0; i--) {
       final date = DateTime(now.year, now.month, now.day - i);
-      dailyStats[date] = 0;
+      dailyData[date] = DailyLearningData();
     }
     
-    // 统计每日学习量 - 基于学习记录的最后学习时间
+    // 统计每日数据 - 基于reviewHistory
     for (final record in _allRecords) {
-      final lastLearningDate = DateTime(
-        record.lastLearningTime.year,
-        record.lastLearningTime.month,
-        record.lastLearningTime.day,
-      );
-      if (dailyStats.containsKey(lastLearningDate)) {
-        dailyStats[lastLearningDate] = dailyStats[lastLearningDate]! + 1;
+      for (final review in record.reviewHistory) {
+        final reviewDate = DateTime(
+          review.reviewTime.year,
+          review.reviewTime.month,
+          review.reviewTime.day,
+        );
+        
+        if (dailyData.containsKey(reviewDate)) {
+          final data = dailyData[reviewDate]!;
+          data.totalLearningCount++;
+          
+          switch (review.reviewResult) {
+            case ReviewResult.easy:
+              data.easyCount++;
+              break;
+            case ReviewResult.good:
+              data.goodCount++;
+              break;
+            case ReviewResult.hard:
+              data.hardCount++;
+              break;
+            case ReviewResult.forgot:
+              data.forgotCount++;
+              break;
+          }
+        }
       }
     }
     
-    if (dailyStats.values.every((count) => count == 0)) {
+    // 计算每日平均掌握度
+    for (final entry in dailyData.entries) {
+      final date = entry.key;
+      final data = entry.value;
+      final recordsOnDate = _allRecords.where((r) {
+        final lastDate = DateTime(
+          r.lastLearningTime.year,
+          r.lastLearningTime.month,
+          r.lastLearningTime.day,
+        );
+        return lastDate == date;
+      }).toList();
+      
+      if (recordsOnDate.isNotEmpty) {
+        data.averageMastery = recordsOnDate.map((r) => r.masteryPercentage).reduce((a, b) => a + b) / recordsOnDate.length;
+      }
+    }
+    
+    if (dailyData.values.every((data) => data.totalLearningCount == 0)) {
       return Container(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -821,55 +1034,127 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       );
     }
     
-    final maxCount = dailyStats.values.reduce((a, b) => a > b ? a : b);
+    final maxCount = dailyData.values.map((data) => data.totalLearningCount).reduce((a, b) => a > b ? a : b);
+    final maxMastery = 1.0; // 掌握度最大值为100%
     
     return Column(
       children: [
+        // 图表
+        SizedBox(
+          height: 120,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: dailyData.entries.map((entry) {
+              final date = entry.key;
+              final data = entry.value;
+              
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    children: [
+                      // 堆叠柱状图
+                      Expanded(
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            // 总高度容器
+                            Container(
+                              width: double.infinity,
+                              constraints: const BoxConstraints(minHeight: 80),
+                              alignment: Alignment.bottomCenter,
+                              child: maxCount > 0 ? _buildStackedBar(data, maxCount) : Container(height: 2, color: AppTheme.coolGray200),
+                            ),
+                            // 掌握度折线图点和百分比
+                            if (data.averageMastery > 0)
+                              Positioned(
+                                bottom: (data.averageMastery / maxMastery * 80),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // 百分比文本
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentTeal,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${(data.averageMastery * 100).toStringAsFixed(0)}%',
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    // 圆点
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentTeal,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 4),
+                      
+                      // 日期
+                      Text(
+                        '${date.month}/${date.day}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.coolGray600,
+                        ),
+                      ),
+                      
+                      // 学习次数
+                      Text(
+                        '${data.totalLearningCount}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.coolGray700,
+                        ),
+                      ),
+                      
+
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // 图例
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: dailyStats.entries.map((entry) {
-            final date = entry.key;
-            final count = entry.value;
-            final height = maxCount > 0 ? (count / maxCount * 80) : 0.0;
-            
-            return Column(
-              children: [
-                Container(
-                  width: 24,
-                  constraints: const BoxConstraints(minHeight: 80),
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    width: 24,
-                    height: height,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentBlue,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${date.month}/${date.day}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.coolGray600,
-                  ),
-                ),
-                Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.coolGray700,
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+          children: [
+            _buildLegendItem('简单', AppTheme.accentGreen),
+            _buildLegendItem('良好', AppTheme.accentBlue),
+            _buildLegendItem('困难', AppTheme.accentYellow),
+            _buildLegendItem('忘记', Colors.red.shade400),
+            _buildLegendItem('掌握度', AppTheme.accentTeal),
+          ],
         ),
-        const SizedBox(height: 12),
+        
+        const SizedBox(height: 8),
+        
+        // 统计信息
         Text(
-          '最近7天平均每日学习 ${(dailyStats.values.reduce((a, b) => a + b) / 7).toStringAsFixed(1)} 个单词',
+          '最近7天总学习次数 ${dailyData.values.map((d) => d.totalLearningCount).reduce((a, b) => a + b)} 次',
           style: TextStyle(
             fontSize: 12,
             color: AppTheme.coolGray600,
@@ -879,11 +1164,101 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
+  /// 构建堆叠柱状图
+  Widget _buildStackedBar(DailyLearningData data, int maxCount) {
+    final totalHeight = 80.0;
+    final barHeight = (data.totalLearningCount / maxCount * totalHeight);
+    
+    if (data.totalLearningCount == 0) {
+      return Container(height: 2, color: AppTheme.coolGray200);
+    }
+    
+    final total = data.totalLearningCount;
+    final easyHeight = (data.easyCount / total) * barHeight;
+    final goodHeight = (data.goodCount / total) * barHeight;
+    final hardHeight = (data.hardCount / total) * barHeight;
+    final forgotHeight = (data.forgotCount / total) * barHeight;
+    
+    return Container(
+      width: double.infinity,
+      height: barHeight,
+      child: Column(
+        children: [
+          if (data.easyCount > 0)
+            Container(
+              height: easyHeight,
+              decoration: BoxDecoration(
+                color: AppTheme.accentGreen,
+                borderRadius: data.goodCount + data.hardCount + data.forgotCount == 0 
+                    ? BorderRadius.circular(4) 
+                    : const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(4),
+                      ),
+              ),
+            ),
+          if (data.goodCount > 0)
+            Container(
+              height: goodHeight,
+              color: AppTheme.accentBlue,
+            ),
+          if (data.hardCount > 0)
+            Container(
+              height: hardHeight,
+              color: AppTheme.accentYellow,
+            ),
+          if (data.forgotCount > 0)
+            Container(
+              height: forgotHeight,
+              decoration: BoxDecoration(
+                color: Colors.red.shade400,
+                borderRadius: data.easyCount + data.goodCount + data.hardCount == 0 
+                    ? BorderRadius.circular(4) 
+                    : const BorderRadius.only(
+                        bottomLeft: Radius.circular(4),
+                        bottomRight: Radius.circular(4),
+                      ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建图例项
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: label == '掌握度' ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: label == '掌握度' ? null : BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppTheme.coolGray600,
+          ),
+        ),
+      ],
+    );
+  }
+
   /// 构建记忆效果分析卡片
   Widget _buildMemoryEffectivenessCard() {
-    // 使用已有的指标：学习次数、正确次数、掌握程度
+    // 统计4个分类的学习表现
     final totalLearningCount = _allRecords.fold(0, (sum, r) => sum + r.learningCount);
-    final totalCorrectCount = _allRecords.fold(0, (sum, r) => sum + r.correctCount);
+    final totalForgotCount = _allRecords.fold(0, (sum, r) => sum + r.forgotCount);
+    final totalHardCount = _allRecords.fold(0, (sum, r) => sum + r.hardCount);
+    final totalGoodCount = _allRecords.fold(0, (sum, r) => sum + r.goodCount);
+    final totalEasyCount = _allRecords.fold(0, (sum, r) => sum + r.easyCount);
     final averageMastery = _allRecords.isNotEmpty 
         ? _allRecords.map((r) => r.masteryPercentage).reduce((a, b) => a + b) / _allRecords.length 
         : 0.0;
@@ -901,7 +1276,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 Icon(Icons.psychology_outlined, size: 20, color: AppTheme.coolGray600),
                 const SizedBox(width: 8),
                 Text(
-                  '记忆效果分析',
+                  '学习表现统计',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -912,6 +1287,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             ),
             const SizedBox(height: 16),
             
+            // 第一行：总学习次数和平均掌握度
             Row(
               children: [
                 Expanded(
@@ -924,10 +1300,34 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 ),
                 Expanded(
                   child: _buildEffectivenessItem(
-                    '总正确次数',
-                    totalCorrectCount.toString(),
+                    '平均掌握度',
+                    '${(averageMastery * 100).toStringAsFixed(1)}%',
+                    AppTheme.accentTeal,
+                    Icons.trending_up_outlined,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // 第二行：4分类统计
+            Row(
+              children: [
+                Expanded(
+                  child: _buildEffectivenessItem(
+                    '简单',
+                    totalEasyCount.toString(),
                     AppTheme.accentGreen,
-                    Icons.check_circle_outline,
+                    Icons.sentiment_very_satisfied_outlined,
+                  ),
+                ),
+                Expanded(
+                  child: _buildEffectivenessItem(
+                    '良好',
+                    totalGoodCount.toString(),
+                    AppTheme.accentBlue,
+                    Icons.sentiment_satisfied_outlined,
                   ),
                 ),
               ],
@@ -939,18 +1339,18 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               children: [
                 Expanded(
                   child: _buildEffectivenessItem(
-                    '平均掌握度',
-                    '${(averageMastery * 100).toStringAsFixed(1)}%',
-                    AppTheme.accentTeal,
-                    Icons.trending_up_outlined,
+                    '困难',
+                    totalHardCount.toString(),
+                    AppTheme.accentYellow,
+                    Icons.sentiment_neutral_outlined,
                   ),
                 ),
                 Expanded(
-                  child:                   _buildEffectivenessItem(
-                    '正确率',
-                    totalLearningCount > 0 ? '${(totalCorrectCount / totalLearningCount * 100).toStringAsFixed(1)}%' : '0%',
-                    _getSuccessRateColor(totalLearningCount > 0 ? totalCorrectCount / totalLearningCount : 0.0),
-                    Icons.analytics_outlined,
+                  child: _buildEffectivenessItem(
+                    '忘记',
+                    totalForgotCount.toString(),
+                    Colors.red.shade400,
+                    Icons.sentiment_dissatisfied_outlined,
                   ),
                 ),
               ],
@@ -1014,153 +1414,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
-  /// 构建个性化推荐卡片
-  Widget _buildPersonalizedRecommendationsCard() {
-    final recommendations = _generatePersonalizedRecommendations();
-    
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.lightbulb_outline, size: 20, color: AppTheme.coolGray600),
-                const SizedBox(width: 8),
-                Text(
-                  '个性化建议',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            ...recommendations.map((recommendation) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: recommendation.color.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: recommendation.color.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    recommendation.icon,
-                    size: 20,
-                    color: recommendation.color,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          recommendation.title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.coolGray700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          recommendation.description,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.coolGray600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            )).toList(),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 生成个性化推荐
-  List<PersonalizedRecommendation> _generatePersonalizedRecommendations() {
-    final recommendations = <PersonalizedRecommendation>[];
-    
-    // 分析学习数据
-    final totalSessions = _allRecords.expand((r) => r.sessions).length;
-    final correctSessions = _allRecords.expand((r) => r.sessions).where((s) => s.result.isCorrect).length;
-    final successRate = totalSessions > 0 ? (correctSessions / totalSessions) : 0.0;
-    final masteredWords = _allRecords.where((r) => r.masteryPercentage >= 0.8).length;
-    final totalWords = _allRecords.length;
-    
-    // 正确率低的建议
-    if (successRate < 0.6) {
-      recommendations.add(PersonalizedRecommendation(
-        title: '加强基础练习',
-        description: '当前正确率较低，建议多进行基础记忆练习，降低学习强度',
-        color: AppTheme.accentRed,
-        icon: Icons.trending_down_outlined,
-      ));
-    }
-    
-    // 掌握率低的建议
-    if (totalWords > 0 && masteredWords / totalWords < 0.3) {
-      recommendations.add(PersonalizedRecommendation(
-        title: '增加复习频率',
-        description: '已掌握单词较少，建议增加复习频率，巩固学习成果',
-        color: AppTheme.accentYellow,
-        icon: Icons.repeat_outlined,
-      ));
-    }
-    
-    // 学习量建议
-    final recentSessions = _allRecords.expand((r) => r.sessions)
-        .where((s) => DateTime.now().difference(s.sessionTime).inDays <= 7)
-        .length;
-    
-    if (recentSessions < 10) {
-      recommendations.add(PersonalizedRecommendation(
-        title: '保持学习节奏',
-        description: '最近一周学习量较少，建议每天至少学习10-15个单词',
-        color: AppTheme.accentBlue,
-        icon: Icons.schedule_outlined,
-      ));
-    }
-    
-    // 正面鼓励
-    if (successRate >= 0.8) {
-      recommendations.add(PersonalizedRecommendation(
-        title: '学习效果很好',
-        description: '正确率很高，可以适当增加学习难度或新词汇量',
-        color: AppTheme.accentGreen,
-        icon: Icons.trending_up_outlined,
-      ));
-    }
-    
-    // 默认建议
-    if (recommendations.isEmpty) {
-      recommendations.add(PersonalizedRecommendation(
-        title: '继续保持',
-        description: '学习状态良好，建议保持当前的学习节奏和习惯',
-        color: AppTheme.accentTeal,
-        icon: Icons.thumb_up_outlined,
-      ));
-    }
-    
-    return recommendations;
-  }
+
+
 
   /// 获取正确率颜色
   Color _getSuccessRateColor(double rate) {
@@ -1537,148 +1793,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
-  /// 显示记忆程度筛选
-  void _showLevelFilter() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择记忆程度'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('全部'),
-              onTap: () {
-                setState(() {
-                  _selectedLevel = null;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ...MemoryLevel.values.map((level) => ListTile(
-              title: Text(level.displayName),
-              leading: CircleAvatar(
-                backgroundColor: level.color,
-                radius: 8,
-              ),
-              onTap: () {
-                setState(() {
-                  _selectedLevel = level;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            )),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 显示难度筛选
-  void _showDifficultyFilter() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择难度'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('全部'),
-              onTap: () {
-                setState(() {
-                  _selectedDifficulty = null;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ...WordDifficulty.values.map((difficulty) => ListTile(
-              title: Text(difficulty.displayName),
-              leading: CircleAvatar(
-                backgroundColor: difficulty.color,
-                radius: 8,
-              ),
-              onTap: () {
-                setState(() {
-                  _selectedDifficulty = difficulty;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            )),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 显示学习模式筛选
-  void _showModeFilter() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择学习模式'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('全部'),
-              onTap: () {
-                setState(() {
-                  _selectedMode = null;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ...LearningMode.values.map((mode) => ListTile(
-              title: Text(mode.displayName),
-              leading: Icon(mode.icon),
-              onTap: () {
-                setState(() {
-                  _selectedMode = mode;
-                  _filterRecords();
-                });
-                Navigator.pop(context);
-              },
-            )),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 切换到期单词筛选
-  void _toggleDueWordsFilter() {
-    setState(() {
-      _showOnlyDueWords = !_showOnlyDueWords;
-      _filterRecords();
-    });
-  }
-
-  /// 清除筛选
-  void _clearFilter(String filterType) {
-    setState(() {
-      switch (filterType) {
-        case '记忆程度':
-          _selectedLevel = null;
-          break;
-        case '难度':
-          _selectedDifficulty = null;
-          break;
-        case '学习模式':
-          _selectedMode = null;
-          break;
-        case '到期单词':
-          _showOnlyDueWords = false;
-          break;
-      }
-      _filterRecords();
-    });
-  }
 
   /// 导出学习数据
   void _exportLearningData() async {

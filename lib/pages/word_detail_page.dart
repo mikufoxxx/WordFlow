@@ -148,8 +148,12 @@ class _WordDetailPageState extends State<WordDetailPage> {
   /// 构建学习状态概览
   Widget _buildLearningOverview() {
     final totalSessions = widget.record.sessions.length;
-    final correctSessions = widget.record.sessions.where((s) => s.result.isCorrect).length;
-    final successRate = totalSessions > 0 ? (correctSessions / totalSessions * 100) : 0;
+    
+    // 统计4分类
+    final forgotCount = widget.record.forgotCount;
+    final hardCount = widget.record.hardCount;
+    final goodCount = widget.record.goodCount;
+    final easyCount = widget.record.easyCount;
     
     return Card(
       elevation: 2,
@@ -170,23 +174,26 @@ class _WordDetailPageState extends State<WordDetailPage> {
             
             const SizedBox(height: 16),
             
-            // 统计信息网格
+            // 统计信息网格 - 第一行
             Row(
               children: [
                 Expanded(
                   child: _buildStatItem(
                     '总学习次数',
-                    totalSessions.toString(),
+                    widget.record.learningCount.toString(),
                     Icons.school_outlined,
                     AppTheme.accentBlue,
                   ),
                 ),
                 Expanded(
-                  child: _buildStatItem(
-                    '正确次数',
-                    correctSessions.toString(),
-                    Icons.check_circle_outline,
-                    AppTheme.accentGreen,
+                  child: GestureDetector(
+                    onTap: () => _showMasteryExplanation(),
+                    child: _buildStatItem(
+                      '掌握程度 ⓘ',
+                      '${(widget.record.masteryPercentage * 100).toStringAsFixed(1)}%',
+                      Icons.trending_up_outlined,
+                      AppTheme.accentTeal,
+                    ),
                   ),
                 ),
               ],
@@ -194,13 +201,62 @@ class _WordDetailPageState extends State<WordDetailPage> {
             
             const SizedBox(height: 12),
             
+            // 4分类统计 - 第二行
             Row(
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    '成功率',
-                    '${successRate.toStringAsFixed(1)}%',
-                    Icons.trending_up_outlined,
+                    '简单',
+                    easyCount.toString(),
+                    Icons.sentiment_very_satisfied_outlined,
+                    AppTheme.accentGreen,
+                  ),
+                ),
+                Expanded(
+                  child: _buildStatItem(
+                    '良好',
+                    goodCount.toString(),
+                    Icons.sentiment_satisfied_outlined,
+                    AppTheme.accentBlue,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // 4分类统计 - 第三行
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    '困难',
+                    hardCount.toString(),
+                    Icons.sentiment_neutral_outlined,
+                    AppTheme.accentYellow,
+                  ),
+                ),
+                Expanded(
+                  child: _buildStatItem(
+                    '忘记',
+                    forgotCount.toString(),
+                    Icons.sentiment_dissatisfied_outlined,
+                    Colors.red.shade400,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // 学习时间信息
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    '复习间隔',
+                    '${widget.record.reviewInterval.toStringAsFixed(1)}天',
+                    Icons.schedule_outlined,
                     AppTheme.accentTeal,
                   ),
                 ),
@@ -293,7 +349,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
   /// 构建学习时间轴
   Widget _buildLearningTimeline() {
-    if (widget.record.sessions.isEmpty) {
+    if (widget.record.reviewHistory.isEmpty) {
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -320,9 +376,9 @@ class _WordDetailPageState extends State<WordDetailPage> {
       );
     }
 
-    // 按时间排序学习记录
-    final sortedSessions = [...widget.record.sessions];
-    sortedSessions.sort((a, b) => a.sessionTime.compareTo(b.sessionTime));
+    // 按时间排序学习记录（最新的在上面）
+    final sortedReviews = [...widget.record.reviewHistory];
+    sortedReviews.sort((a, b) => b.reviewTime.compareTo(a.reviewTime));
 
     return Card(
       elevation: 2,
@@ -347,12 +403,12 @@ class _WordDetailPageState extends State<WordDetailPage> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: sortedSessions.length,
+              itemCount: sortedReviews.length,
               itemBuilder: (context, index) {
-                final session = sortedSessions[index];
-                final isLast = index == sortedSessions.length - 1;
+                final review = sortedReviews[index];
+                final isLast = index == sortedReviews.length - 1;
                 
-                return _buildTimelineItem(session, isLast);
+                return _buildTimelineItem(review, isLast);
               },
             ),
           ],
@@ -362,8 +418,8 @@ class _WordDetailPageState extends State<WordDetailPage> {
   }
 
   /// 构建时间轴项目
-  Widget _buildTimelineItem(DetailedLearningSession session, bool isLast) {
-    final color = session.result.isCorrect ? AppTheme.accentGreen : AppTheme.accentRed;
+  Widget _buildTimelineItem(ReviewRecord review, bool isLast) {
+    final color = _getReviewResultColor(review.reviewResult);
     
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +439,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
               Container(
                 width: 2,
                 color: AppTheme.coolGray200,
-                child: const SizedBox(height: 60),
+                child: const SizedBox(height: 50),
               ),
           ],
         ),
@@ -393,51 +449,32 @@ class _WordDetailPageState extends State<WordDetailPage> {
         // 内容
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.only(bottom: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 时间和模式
-                Row(
-                  children: [
-                    Text(
-                      DateFormat('yyyy-MM-dd HH:mm').format(session.sessionTime),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.coolGray600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _getLearningModeColor(session.learningMode).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        session.learningMode.displayName,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: _getLearningModeColor(session.learningMode),
-                        ),
-                      ),
-                    ),
-                  ],
+                // 时间
+                Text(
+                  DateFormat('yyyy-MM-dd HH:mm').format(review.reviewTime),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.coolGray600,
+                  ),
                 ),
                 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 
-                // 结果和分数
+                // 学习结果
                 Row(
                   children: [
                     Icon(
-                      session.result.isCorrect ? Icons.check_circle : Icons.cancel,
+                      _getReviewResultIcon(review.reviewResult),
                       size: 16,
                       color: color,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
-                      session.result.displayName,
+                      review.reviewResult.displayName,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -445,55 +482,15 @@ class _WordDetailPageState extends State<WordDetailPage> {
                       ),
                     ),
                     const Spacer(),
-                    if (session.score > 0) ...[
-                      Icon(
-                        Icons.star,
-                        size: 14,
-                        color: AppTheme.accentYellow,
+                    Text(
+                      '复习间隔: ${review.reviewInterval.toStringAsFixed(1)}天',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.coolGray500,
                       ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${session.score}/10',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.coolGray600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
-                
-                // 用户输入（如果有）
-                if (session.userInput != null && session.userInput!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.coolGray50,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '造句：${session.userInput}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.coolGray700,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ],
-                
-                // 反馈信息（如果有）
-                if (session.feedback != null && session.feedback!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    session.feedback!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.coolGray500,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -502,19 +499,65 @@ class _WordDetailPageState extends State<WordDetailPage> {
     );
   }
 
-  /// 获取学习模式颜色
-  Color _getLearningModeColor(LearningMode mode) {
-    switch (mode) {
-      case LearningMode.quickMemory:
-        return AppTheme.accentBlue;
-      case LearningMode.deepLearning:
+  /// 获取复习结果颜色
+  Color _getReviewResultColor(ReviewResult result) {
+    switch (result) {
+      case ReviewResult.easy:
         return AppTheme.accentGreen;
-      case LearningMode.review:
-        return AppTheme.accentYellow;
-      case LearningMode.test:
-        return AppTheme.accentPurple;
-      default:
+      case ReviewResult.good:
         return AppTheme.accentBlue;
+      case ReviewResult.hard:
+        return AppTheme.accentYellow;
+      case ReviewResult.forgot:
+        return Colors.red.shade400;
     }
+  }
+
+  /// 获取复习结果图标
+  IconData _getReviewResultIcon(ReviewResult result) {
+    switch (result) {
+      case ReviewResult.easy:
+        return Icons.sentiment_very_satisfied_outlined;
+      case ReviewResult.good:
+        return Icons.sentiment_satisfied_outlined;
+      case ReviewResult.hard:
+        return Icons.sentiment_neutral_outlined;
+      case ReviewResult.forgot:
+        return Icons.sentiment_dissatisfied_outlined;
+    }
+  }
+
+  /// 显示掌握程度计算说明
+  void _showMasteryExplanation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('掌握程度计算说明'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('掌握程度基于你的学习表现综合计算：'),
+            SizedBox(height: 12),
+            Text('📊 基础分数（70%权重）：'),
+            Text('  • 简单：3分'),
+            Text('  • 良好：2分'),
+            Text('  • 困难：1分'),
+            Text('  • 忘记：0分'),
+            SizedBox(height: 8),
+            Text('🎯 记忆级别奖励（每级+5%）'),
+            Text('⚡ 连续3次以上正确额外+15%'),
+            SizedBox(height: 12),
+            Text('掌握程度会随着学习表现实时更新，帮助你了解单词的熟练程度。'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('了解'),
+          ),
+        ],
+      ),
+    );
   }
 }

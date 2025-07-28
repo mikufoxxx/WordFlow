@@ -76,8 +76,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   const SizedBox(height: 24),
                   _buildAlgorithmDescription(),
                   const SizedBox(height: 24),
-                  _buildCurrentStats(),
-                  const SizedBox(height: 24),
                   _buildParameterSettings(),
                   const SizedBox(height: 24),
                   _buildPresetButtons(),
@@ -227,150 +225,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     );
   }
 
-  /// 构建当前统计
-  Widget _buildCurrentStats() {
-    return Card(
-      color: AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.assessment_outlined,
-                  color: AppTheme.accentBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '当前算法状态',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    '使用算法',
-                    _selectedAlgorithm.displayName,
-                    Icons.psychology_outlined,
-                    AppTheme.accentBlue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    '参数配置',
-                    _getConfigDescription(_selectedAlgorithm),
-                    Icons.settings_outlined,
-                    AppTheme.accentGreen,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    '估计性能',
-                    _getPerformanceEstimate(_selectedAlgorithm),
-                    Icons.speed_outlined,
-                    AppTheme.accentYellow,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    '适用场景',
-                    _getScenarioDescription(_selectedAlgorithm),
-                    Icons.track_changes_outlined,
-                    AppTheme.accentPurple,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.accentBlue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.accentBlue.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    color: AppTheme.accentBlue,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _getAlgorithmTip(_selectedAlgorithm),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.accentBlue,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建统计卡片
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.coolGray600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.coolGray700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 构建参数设置
   Widget _buildParameterSettings() {
     switch (_selectedAlgorithm) {
@@ -396,7 +250,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'SuperMemo 参数设置',
+              'SuperMemo (SM-2) 参数设置',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -409,7 +263,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             _buildSectionTitle('基础间隔设置'),
             _buildParameterSlider(
               '初始间隔',
-              '新单词首次复习间隔',
+              '新单词学习完成后的首次复习间隔。较短会增加复习频率，较长会减少复习次数。推荐1-3天。',
               config.initialInterval,
               0.5,
               7.0,
@@ -418,7 +272,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
             _buildParameterSlider(
               '最小间隔',
-              '任何单词的最短复习间隔',
+              '单词复习的最短间隔限制。即使答错多次，复习间隔也不会小于此值。推荐0.5-2天。',
               config.minInterval,
               0.1,
               3.0,
@@ -427,7 +281,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
             _buildParameterSlider(
               '最大间隔',
-              '任何单词的最长复习间隔',
+              '单词复习的最长间隔限制。即使掌握得很好，复习间隔也不会超过此值。推荐60-180天。',
               config.maxInterval,
               30.0,
               180.0,
@@ -441,15 +295,15 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             _buildSectionTitle('学习反馈调整'),
             _buildParameterSlider(
               '忘记惩罚',
-              '答错时间隔缩短倍数',
+              '当答错单词时，下次复习间隔缩短的幅度。数值越小惩罚越重，复习越频繁。推荐0.2-0.5。',
               config.forgotPenalty,
               0.1,
               1.0,
               (value) => _updateSuperMemoConfig(config.copyWith(newParameters: {'forgotPenalty': value})),
             ),
             _buildParameterSlider(
-              '记住奖励',
-              '答对时间隔延长倍数',
+              '简单奖励',
+              '当单词答对且感觉很简单时，下次复习间隔延长的倍数。数值越大间隔延长越多。推荐1.2-1.5。',
               config.easyBonus,
               1.1,
               2.0,
@@ -474,7 +328,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Anki 参数设置',
+              'Anki 算法参数设置',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -487,7 +341,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             _buildSectionTitle('基础设置'),
             _buildParameterSlider(
               '首次复习间隔',
-              '新单词完成学习后的首次复习间隔',
+              '新单词完成学习阶段后进入复习阶段的首次间隔。这是从"学习"转为"复习"的重要节点。推荐1-4天。',
               config.graduatingInterval.toDouble(),
               1.0,
               7.0,
@@ -496,7 +350,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
             _buildParameterSlider(
               '最大间隔',
-              '任何单词的最长间隔',
+              '复习间隔的上限。即使单词掌握得非常好，间隔也不会超过此值。较大值适合长期记忆。推荐180-365天。',
               config.maxInterval.toDouble(),
               90.0,
               365.0,
@@ -505,7 +359,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
             _buildParameterSlider(
               '间隔修正',
-              '全局间隔调整百分比',
+              '全局间隔调整系数。>1.0 延长间隔（学习节奏放慢），<1.0 缩短间隔（学习节奏加快）。推荐0.8-1.2。',
               config.intervalModifier,
               0.8,
               1.3,
@@ -530,7 +384,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '智能自适应算法',
+              '智能自适应算法参数设置',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -540,7 +394,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             const SizedBox(height: 16),
             
             Text(
-              '自适应算法会根据您的学习表现自动调整复习间隔，推荐新手使用。',
+              '自适应算法会根据您的学习表现自动调整复习间隔。以下参数影响算法的调整方向和强度。',
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.coolGray600,
@@ -551,10 +405,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             const SizedBox(height: 16),
             
             // 基础设置
-            _buildSectionTitle('基础设置'),
+            _buildSectionTitle('核心参数'),
             _buildParameterSlider(
               '学习强度',
-              '调整整体学习节奏',
+              '控制整体学习节奏的快慢。数值越高学习节奏越快（新词推送更频繁，间隔调整更激进），越低则越保守。推荐0.6-1.0。',
               config.learningAbility,
               0.5,
               1.5,
@@ -562,7 +416,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
             _buildParameterSlider(
               '复习密度',
-              '控制复习频率',
+              '调节复习频率的高低。数值越高复习越频繁（间隔相对较短），越低复习越稀疏（间隔相对较长）。推荐0.4-0.7。',
               config.reviewDensity,
               0.3,
               0.8,
@@ -572,10 +426,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             const SizedBox(height: 16),
             
             // 个性化设置
-            _buildSectionTitle('个性化设置'),
+            _buildSectionTitle('智能化功能'),
             _buildParameterSwitch(
               '实时调整',
-              '根据学习表现自动调整参数',
+              '根据最近的学习表现实时微调算法参数，让复习计划更贴合当前学习状态',
               config.realTimeAdjustment,
               (value) => _updateAdaptiveConfig(config.copyWith(newParameters: {'realTimeAdjustment': value})),
             ),
@@ -606,7 +460,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                   title,
                   style: TextStyle(
                     fontSize: 14,
@@ -614,48 +471,51 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                     color: AppTheme.coolGray700,
                   ),
                 ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '范围: ${min.toStringAsFixed(min < 1 ? 1 : 0)}-${max.toStringAsFixed(max < 10 ? 1 : 0)}${unit}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.coolGray400,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              // 可编辑的数值输入框
-              SizedBox(
+              // 数值显示框
+              Container(
                 width: 90,
                 height: 36,
-                child: TextFormField(
-                  initialValue: value.toStringAsFixed(value < 1 ? 2 : value < 10 ? 1 : 0),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.coolGray50,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppTheme.coolGray300),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value.toStringAsFixed(value < 1 ? 2 : value < 10 ? 1 : 0),
                   textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.coolGray700,
                   ),
-                  decoration: InputDecoration(
-                    suffixText: unit,
-                    suffixStyle: TextStyle(
+                      ),
+                    ),
+                    if (unit.isNotEmpty)
+                      Text(
+                        unit,
+                        style: TextStyle(
                       fontSize: 10,
                       color: AppTheme.coolGray500,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppTheme.coolGray300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppTheme.primaryGray),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: BorderSide(color: AppTheme.coolGray300),
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.coolGray50,
-                  ),
-                  onChanged: (text) {
-                    final newValue = double.tryParse(text);
-                    if (newValue != null && newValue >= min && newValue <= max) {
-                      onChanged(newValue);
-                    }
-                  },
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -669,6 +529,34 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             ),
           ),
           const SizedBox(height: 8),
+          // 范围标签
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${min.toStringAsFixed(min < 1 ? 1 : 0)}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.coolGray400,
+                ),
+              ),
+              Text(
+                '当前: ${value.toStringAsFixed(value < 1 ? 2 : value < 10 ? 1 : 0)}${unit}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.primaryGray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${max.toStringAsFixed(max < 10 ? 1 : 0)}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.coolGray400,
+                ),
+              ),
+            ],
+          ),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: AppTheme.primaryGray,
@@ -758,6 +646,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.tune,
+                  color: AppTheme.accentBlue,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
             Text(
               '预设配置',
               style: TextStyle(
@@ -765,16 +661,41 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 fontWeight: FontWeight.w600,
                 color: AppTheme.coolGray700,
               ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Text(
-              '选择一个预设配置快速开始',
+              '根据您的学习习惯选择合适的预设配置',
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.coolGray500,
               ),
             ),
             const SizedBox(height: 16),
+            
+            // 预设说明
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.coolGray50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.coolGray200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPresetDescription('保守模式', '复习频率高，间隔增长慢，适合记忆力较弱或希望稳固掌握的用户'),
+                  const SizedBox(height: 8),
+                  _buildPresetDescription('平衡模式', '适中的复习频率和间隔增长，适合大多数用户的日常学习'),
+                  const SizedBox(height: 8),
+                  _buildPresetDescription('激进模式', '复习频率低，间隔增长快，适合记忆力较好或时间紧张的用户'),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
             Row(
               children: [
                 Expanded(
@@ -820,6 +741,31 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
+    );
+  }
+
+  /// 构建预设描述
+  Widget _buildPresetDescription(String title, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.coolGray700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          description,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.coolGray600,
+          ),
+        ),
+      ],
     );
   }
 
@@ -919,6 +865,19 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   /// 应用预设
   void _applyPreset(String presetName) {
     AlgorithmConfig? preset;
+    String presetDisplayName = '';
+    
+    switch (presetName) {
+      case 'conservative':
+        presetDisplayName = '保守模式';
+        break;
+      case 'balanced':
+        presetDisplayName = '平衡模式';
+        break;
+      case 'aggressive':
+        presetDisplayName = '激进模式';
+        break;
+    }
     
     switch (_selectedAlgorithm) {
       case AlgorithmType.superMemo:
@@ -948,7 +907,26 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         }
         break;
       case AlgorithmType.adaptive:
+        // 自适应算法的预设配置
+        switch (presetName) {
+          case 'conservative':
+            preset = const AdaptiveConfig(
+              learningAbility: 0.6,
+              reviewDensity: 0.6,
+              realTimeAdjustment: true,
+            );
+            break;
+          case 'balanced':
         preset = const AdaptiveConfig();
+            break;
+          case 'aggressive':
+            preset = const AdaptiveConfig(
+              learningAbility: 1.0,
+              reviewDensity: 0.4,
+              realTimeAdjustment: true,
+            );
+            break;
+        }
         break;
     }
 
@@ -958,12 +936,12 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已应用${presetName == 'conservative' ? '保守' : presetName == 'balanced' ? '平衡' : '激进'}预设'),
-        ),
+        SnackBar(content: Text('已应用$presetDisplayName')),
       );
     }
   }
+
+
 
   /// 重置为默认值
   void _resetToDefaults() {
@@ -1166,54 +1144,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         return 'Anki 算法是注重长期记忆保持的稳定算法。它采用更保守的间隔策略，确保单词不会被遗忘。特别适合希望稳定学习、循序渐进的用户。\n\n核心特点：\n• 保守的间隔策略\n• 强调长期记忆\n• 水蛭卡片识别\n• 适合稳定学习';
       case AlgorithmType.adaptive:
         return '智能自适应算法结合了机器学习和AI技术，能够根据你的学习习惯、记忆能力和学习表现自动调整所有参数。无需手动配置，系统会持续优化以提供最适合你的学习体验。\n\n核心特点：\n• 自动参数优化\n• 个性化学习分析\n• AI辅助决策\n• 适合所有用户';
-    }
-  }
-
-  /// 获取配置描述
-  String _getConfigDescription(AlgorithmType type) {
-    switch (type) {
-      case AlgorithmType.superMemo:
-        return '精确控制';
-      case AlgorithmType.anki:
-        return '稳定保守';
-      case AlgorithmType.adaptive:
-        return '智能自适应';
-    }
-  }
-
-  /// 获取性能评估
-  String _getPerformanceEstimate(AlgorithmType type) {
-    switch (type) {
-      case AlgorithmType.superMemo:
-        return '高效率';
-      case AlgorithmType.anki:
-        return '高稳定性';
-      case AlgorithmType.adaptive:
-        return '智能化';
-    }
-  }
-
-  /// 获取适用场景描述
-  String _getScenarioDescription(AlgorithmType type) {
-    switch (type) {
-      case AlgorithmType.superMemo:
-        return '系统学习';
-      case AlgorithmType.anki:
-        return '稳定复习';
-      case AlgorithmType.adaptive:
-        return '个性化学习';
-    }
-  }
-
-  /// 获取算法提示
-  String _getAlgorithmTip(AlgorithmType type) {
-    switch (type) {
-      case AlgorithmType.superMemo:
-        return '建议配合定时复习，效果最佳。适合有规律学习习惯的用户。';
-      case AlgorithmType.anki:
-        return '注重长期记忆保持，复习间隔较保守。适合希望稳定掌握的用户。';
-      case AlgorithmType.adaptive:
-        return '系统会根据你的学习表现自动调整，无需手动设置。适合新手用户。';
     }
   }
 } 

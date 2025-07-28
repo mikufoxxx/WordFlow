@@ -233,32 +233,40 @@ class LearningDataService {
     );
   }
 
-  /// 导出学习数据为CSV文件
-  Future<String> exportLearningDataToCsv(String wordBookName) async {
+  /// 获取学习数据的CSV字符串
+  Future<String> getLearningDataCsv(String wordBookName) async {
     final records = await getWordBookRecords(wordBookName);
     final csvData = StringBuffer();
     
     // CSV头部
-    csvData.writeln('单词,翻译,词书,首次学习时间,最后学习时间,下次复习时间,记忆程度,学习次数,正确次数,错误次数,复习间隔,难度系数,掌握程度');
+    csvData.writeln('word,word_book,first_learned_timestamp,last_learned_timestamp,next_review_timestamp,memory_level,learning_count,forgot_count,hard_count,good_count,easy_count,review_interval,ease_factor,mastery_percentage');
     
     // 数据行
     for (final record in records) {
       csvData.writeln([
-        record.word,
-        record.translation,
-        record.wordBookName ?? '',
-        record.firstLearningTime.toIso8601String(),
-        record.lastLearningTime.toIso8601String(),
-        record.nextReviewTime.toIso8601String(),
-        record.memoryLevel.displayName,
+        _escapeCsvField(record.word),
+        _escapeCsvField(record.wordBookName ?? ''),
+        (record.firstLearningTime.millisecondsSinceEpoch / 1000).round(),
+        (record.lastLearningTime.millisecondsSinceEpoch / 1000).round(),
+        (record.nextReviewTime.millisecondsSinceEpoch / 1000).round(),
+        _getMemoryLevelName(record.memoryLevel),
         record.learningCount,
-        record.correctCount,
-        record.incorrectCount,
-        record.reviewInterval,
-        record.easeFactor,
-        '${(record.masteryPercentage * 100).toStringAsFixed(1)}%',
+        record.forgotCount,
+        record.hardCount,
+        record.goodCount,
+        record.easyCount,
+        record.reviewInterval.toStringAsFixed(2),
+        record.easeFactor.toStringAsFixed(2),
+        (record.masteryPercentage * 100).toStringAsFixed(1),
       ].join(','));
     }
+    
+    return csvData.toString();
+  }
+
+  /// 导出学习数据为CSV文件
+  Future<String> exportLearningDataToCsv(String wordBookName) async {
+    final csvData = await getLearningDataCsv(wordBookName);
     
     // 保存到文件
     try {
@@ -267,10 +275,34 @@ class LearningDataService {
       final fileName = 'wordflow_${wordBookName}_$timestamp.csv';
       final file = File('${directory.path}/$fileName');
       
-      await file.writeAsString(csvData.toString());
+      await file.writeAsString(csvData, encoding: utf8);
       return file.path;
     } catch (e) {
       throw Exception('导出文件失败: $e');
+    }
+  }
+
+  /// 转义CSV字段
+  String _escapeCsvField(String field) {
+    if (field.contains(',') || field.contains('"') || field.contains('\n')) {
+      return '"${field.replaceAll('"', '""')}"';
+    }
+    return field;
+  }
+
+  /// 获取记忆等级的英文名称
+  String _getMemoryLevelName(MemoryLevel level) {
+    switch (level) {
+      case MemoryLevel.first_time:
+        return 'first_time';
+      case MemoryLevel.reviewing:
+        return 'reviewing';
+      case MemoryLevel.strengthening:
+        return 'strengthening';
+      case MemoryLevel.stable:
+        return 'stable';
+      case MemoryLevel.mastered:
+        return 'mastered';
     }
   }
 
@@ -292,26 +324,65 @@ class LearningDataService {
         if (line.isEmpty) continue;
         
         final parts = line.split(',');
-        if (parts.length < 13) {
+        if (parts.length < 14) {
           errorCount++;
           continue;
         }
         
         try {
+          // 根据导入的统计数据重建reviewHistory（简化版本）
+          final forgotCount = int.parse(parts[7]);
+          final hardCount = int.parse(parts[8]);
+          final goodCount = int.parse(parts[9]);
+          final easyCount = int.parse(parts[10]);
+          
+          final reviewHistory = <ReviewRecord>[];
+          final now = DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3]) * 1000); // 使用lastLearningTime，转换为毫秒
+          
+          // 创建简化的复习历史记录（用于统计计算）
+          for (int i = 0; i < forgotCount; i++) {
+            reviewHistory.add(ReviewRecord(
+              reviewTime: now.subtract(Duration(days: forgotCount - i)),
+              reviewResult: ReviewResult.forgot,
+              reviewInterval: 1.0,
+            ));
+          }
+          for (int i = 0; i < hardCount; i++) {
+            reviewHistory.add(ReviewRecord(
+              reviewTime: now.subtract(Duration(days: hardCount - i)),
+              reviewResult: ReviewResult.hard,
+              reviewInterval: 1.0,
+            ));
+          }
+          for (int i = 0; i < goodCount; i++) {
+            reviewHistory.add(ReviewRecord(
+              reviewTime: now.subtract(Duration(days: goodCount - i)),
+              reviewResult: ReviewResult.good,
+              reviewInterval: 1.0,
+            ));
+          }
+          for (int i = 0; i < easyCount; i++) {
+            reviewHistory.add(ReviewRecord(
+              reviewTime: now.subtract(Duration(days: easyCount - i)),
+              reviewResult: ReviewResult.easy,
+              reviewInterval: 1.0,
+            ));
+          }
+          
           final record = WordLearningRecord(
             word: parts[0],
-            translation: parts[1],
+            translation: '', // 导入时translation为空，需要重新获取
             wordBookName: wordBookName,
-            firstLearningTime: DateTime.parse(parts[3]),
-            lastLearningTime: DateTime.parse(parts[4]),
-            nextReviewTime: DateTime.parse(parts[5]),
-            memoryLevel: _parseMemoryLevel(parts[6]),
-            learningCount: int.parse(parts[7]),
-            correctCount: int.parse(parts[8]),
-            incorrectCount: int.parse(parts[9]),
-            reviewInterval: double.parse(parts[10]),
-            easeFactor: double.parse(parts[11]),
-            reviewHistory: [], // 复习历史暂不导入
+            firstLearningTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2]) * 1000),
+            lastLearningTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3]) * 1000),
+            nextReviewTime: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[4]) * 1000),
+            memoryLevel: _parseMemoryLevel(parts[5]),
+            learningCount: int.parse(parts[6]),
+            correctCount: goodCount + easyCount, // 兼容旧字段，根据good和easy计算
+            incorrectCount: forgotCount + hardCount, // 兼容旧字段，根据forgot和hard计算
+            reviewInterval: double.parse(parts[11]),
+            easeFactor: double.parse(parts[12]),
+            reviewHistory: reviewHistory,
           );
           
           importedRecords.add(record);
@@ -473,11 +544,27 @@ class LearningDataService {
 
   /// 解析记忆程度
   MemoryLevel _parseMemoryLevel(String levelName) {
+    // 先尝试英文名称
+    switch (levelName.toLowerCase()) {
+      case 'first_time':
+        return MemoryLevel.first_time;
+      case 'reviewing':
+        return MemoryLevel.reviewing;
+      case 'strengthening':
+        return MemoryLevel.strengthening;
+      case 'stable':
+        return MemoryLevel.stable;
+      case 'mastered':
+        return MemoryLevel.mastered;
+    }
+    
+    // 兼容旧的中文名称
     for (final level in MemoryLevel.values) {
       if (level.displayName == levelName) {
         return level;
       }
     }
+    
     return MemoryLevel.first_time;
   }
 

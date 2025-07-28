@@ -456,8 +456,8 @@ class AnkiImplementation extends BaseAlgorithmImplementation {
     stats['totalWords'] = records.length;
     stats['reviewWords'] = getReviewWords(records).length;
     
-    // 水蛭卡片统计
-    final leechCards = records.where((r) => r.incorrectCount >= ankiConfig.leechThreshold).length;
+    // 水蛭卡片统计 - 基于忘记和困难的总次数
+    final leechCards = records.where((r) => (r.forgotCount + r.hardCount) >= ankiConfig.leechThreshold).length;
     stats['leechCards'] = leechCards;
     
     // 学习阶段分布
@@ -574,9 +574,9 @@ class AdaptiveImplementation extends BaseAlgorithmImplementation {
     // 记忆程度权重（越低越优先）
     score += (MemoryLevel.values.length - record.memoryLevel.index) * 0.2;
     
-    // 错误率权重
+    // 错误率权重 - 基于忘记和困难的比例
     if (record.learningCount > 0) {
-      final errorRate = record.incorrectCount / record.learningCount;
+      final errorRate = (record.forgotCount + record.hardCount) / record.learningCount;
       score += errorRate * 0.3;
     }
     

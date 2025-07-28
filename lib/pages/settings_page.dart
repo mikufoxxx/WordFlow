@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import '../utils/settings_helper.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/spaced_repetition_service.dart';
 import '../utils/cache_service.dart';
+import '../utils/file_helper.dart';
 import '../main.dart';
 
 /// 设置页面 - 用于配置应用的基本设置
@@ -258,13 +260,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     _buildCompactListTile(
                       leading: const Icon(Icons.file_download_outlined),
                       title: '导出学习数据',
-                      subtitle: '导出当前词书的学习记录',
+                      subtitle: '选择目录导出当前词书的学习记录',
                       onTap: _exportLearningData,
                     ),
                     _buildCompactListTile(
                       leading: const Icon(Icons.file_upload_outlined),
                       title: '导入学习数据',
-                      subtitle: '从CSV文件导入学习记录',
+                      subtitle: '选择CSV文件导入学习记录',
                       onTap: _importLearningData,
                     ),
                     _buildCompactListTile(
@@ -928,6 +930,15 @@ class _SettingsPageState extends State<SettingsPage> {
         return;
       }
 
+      // 直接选择导出目录
+      final selectedDirectory = await FileHelper.selectExportDirectory();
+      if (selectedDirectory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('未选择导出位置')),
+        );
+        return;
+      }
+
       // 显示导出中的提示
       showDialog(
         context: context,
@@ -944,14 +955,22 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
 
-      final filePath = await LearningDataService.instance.exportLearningDataToCsv(selectedWordBook);
+      // 获取CSV数据
+      final csvData = await LearningDataService.instance.getLearningDataCsv(selectedWordBook);
+      
+      // 生成文件名
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'WordFlow_${selectedWordBook}_$timestamp.csv';
+      
+      // 保存文件到选择的目录
+      final filePath = await FileHelper.saveFile(selectedDirectory, fileName, csvData);
       
       Navigator.of(context).pop(); // 关闭加载对话框
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('数据已导出到: $filePath'),
-          duration: const Duration(seconds: 5),
+          content: Text('数据已导出到:\n$filePath'),
+          duration: const Duration(seconds: 8),
           action: SnackBarAction(
             label: '复制路径',
             onPressed: () {
@@ -970,25 +989,74 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 导入学习数据
   void _importLearningData() async {
-    final controller = TextEditingController();
+    try {
+      // 直接选择CSV文件
+      final selectedFile = await FileHelper.selectImportFile();
+      if (selectedFile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('未选择文件')),
+        );
+        return;
+      }
+
+      // 显示导入中的提示
+    showDialog(
+      context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('正在读取文件...'),
+            ],
+          ),
+        ),
+      );
+
+      // 读取文件内容
+      String csvData;
+      if (selectedFile.bytes != null) {
+        // 从内存读取，使用UTF-8解码
+        csvData = utf8.decode(selectedFile.bytes!);
+      } else if (selectedFile.path != null) {
+        // 从文件路径读取
+        csvData = await FileHelper.readFile(selectedFile.path!);
+      } else {
+        throw Exception('无法读取文件内容');
+      }
+
+      Navigator.of(context).pop(); // 关闭加载对话框
+
+      // 显示文件信息并确认导入
+      _showImportConfirmation(selectedFile, csvData);
+    } catch (e) {
+      Navigator.of(context).pop(); // 关闭加载对话框
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('读取文件失败: ${e.toString()}')),
+      );
+    }
+  }
+
+  /// 显示导入确认对话框
+  void _showImportConfirmation(dynamic file, String csvData) {
+    final lines = csvData.split('\n').where((line) => line.trim().isNotEmpty).length;
+    final fileSize = file.bytes?.length ?? 0;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('导入学习数据'),
+        title: const Text('确认导入'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('请粘贴CSV格式的学习数据：'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: '粘贴CSV数据到这里...',
-                border: OutlineInputBorder(),
-              ),
-            ),
+            Text('文件名: ${file.name}'),
+            Text('文件大小: ${FileHelper.getFileSizeString(fileSize)}'),
+            Text('数据行数: $lines'),
+            const SizedBox(height: 12),
+            const Text('确定要导入这些数据吗？'),
           ],
         ),
         actions: [
@@ -996,12 +1064,12 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('取消'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await _performImport(controller.text);
+              await _performImport(csvData);
             },
-            child: const Text('导入'),
+            child: const Text('确认导入'),
           ),
         ],
       ),

@@ -166,8 +166,8 @@ class AlgorithmManager {
     final avgDifficulty = records.map((r) => r.difficulty.index).reduce((a, b) => a + b) / records.length;
     final challengingPreference = avgDifficulty / (WordDifficulty.values.length - 1);
     
-    // 计算稳定性偏好
-    final avgAccuracy = records.map((r) => r.correctCount / math.max(1, r.learningCount.toDouble())).reduce((a, b) => a + b) / records.length;
+    // 计算稳定性偏好 - 基于good和easy的比例
+    final avgAccuracy = records.map((r) => (r.goodCount + r.easyCount) / math.max(1, r.learningCount.toDouble())).reduce((a, b) => a + b) / records.length;
     
     return UserLearningPattern(
       isConsistent: consistency > 0.7,

@@ -11,6 +11,7 @@ import '../utils/english_word_api_service.dart';
 import '../utils/settings_helper.dart';
 import '../utils/deepseek_api_service.dart';
 import '../utils/learning_data_service.dart';
+import '../utils/algorithm_manager.dart';
 import '../utils/app_theme.dart';
 
 /// 修改类型枚举
@@ -54,6 +55,8 @@ class _HomePageState extends State<HomePage>
   
   // 当前学习的单词数量（无限流模式）
   int _studiedWordsCount = 0;
+  int _todayStudiedCount = 0;
+  int _totalStudiedCount = 0;
   
   // 是否显示单词释义
   bool _showMeaning = false;
@@ -153,9 +156,45 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    _initializeAlgorithmManager();
     _initializeAudioPlayer();
     _initializeMainAnimations();
     _loadWordsFromSelectedWordBook();
+  }
+
+  /// 初始化算法管理器
+  Future<void> _initializeAlgorithmManager() async {
+    try {
+      await AlgorithmManager.instance.initialize();
+      print('✅ 算法管理器初始化成功');
+    } catch (e) {
+      print('❌ 算法管理器初始化失败: $e');
+    }
+  }
+
+  /// 更新学习统计
+  Future<void> _updateLearningStats() async {
+    if (_currentWordBookName == null) return;
+    
+    try {
+      final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      
+      // 计算今日学习的单词数（基于最后学习时间）
+      final todayRecords = records.where((record) {
+        return record.lastLearningTime.isAfter(todayStart) && 
+               record.lastLearningTime.isBefore(todayEnd);
+      }).toList();
+      
+      setState(() {
+        _todayStudiedCount = todayRecords.length;
+        _totalStudiedCount = records.length;
+      });
+    } catch (e) {
+      print('❌ 更新学习统计失败: $e');
+    }
   }
 
   /// 检查并重新加载词库（仅在词库发生变化时）
@@ -216,6 +255,10 @@ class _HomePageState extends State<HomePage>
       
       // 生成第一个单词
       await _generateNextWord();
+      
+      // 更新学习统计
+      await _updateLearningStats();
+      
     _initializeCharacterAnimations();
     _startWordAnimation();
       
@@ -1174,33 +1217,71 @@ class _HomePageState extends State<HomePage>
         SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
         
         // 学习进度
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 10),
-            vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 12)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                color: Theme.of(context).primaryColor.withOpacity(0.7),
-                size: ResponsiveHelper.getResponsiveIconSize(context, 12),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 今日已背单词
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveHelper.getResponsiveSpacing(context, 8),
+                vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
-              Text(
-                '已学 $_studiedWordsCount 词',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).primaryColor.withOpacity(0.7),
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 10)),
               ),
-            ],
-          ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.today_outlined,
+                    color: Theme.of(context).primaryColor.withOpacity(0.7),
+                    size: ResponsiveHelper.getResponsiveIconSize(context, 12),
+                  ),
+                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                  Text(
+                    '今日单词 $_todayStudiedCount',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).primaryColor.withOpacity(0.7),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+            
+            // 总背单词
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveHelper.getResponsiveSpacing(context, 8),
+                vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 10)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    color: Theme.of(context).primaryColor.withOpacity(0.7),
+                    size: ResponsiveHelper.getResponsiveIconSize(context, 12),
+                  ),
+                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                  Text(
+                    '总计单词 $_totalStudiedCount',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).primaryColor.withOpacity(0.7),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1238,7 +1319,7 @@ class _HomePageState extends State<HomePage>
           ),
           SizedBox(width: 6), // 从8减少到6
           Text(
-            '已学 $_studiedWordsCount 词',
+            '今日 $_todayStudiedCount | 总计 $_totalStudiedCount',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).primaryColor.withOpacity(0.7),
             ),
@@ -1650,17 +1731,18 @@ class _HomePageState extends State<HomePage>
           wordBookName: _currentWordBookName,
         );
         
-        // 如果不是第一次学习，更新为相应的结果
-        if (result != ReviewResult.good) {
-          newRecord = newRecord.updateLearning(
-            reviewResult: result,
-            reviewTime: now,
-          );
-        }
+        // 无论什么结果，都要调用updateLearning来记录到reviewHistory
+        newRecord = newRecord.updateLearning(
+          reviewResult: result,
+          reviewTime: now,
+        );
       }
       
       // 保存记录
       await LearningDataService.instance.saveWordLearningRecord(newRecord);
+      
+      // 更新学习统计
+      await _updateLearningStats();
       
       print('✅ 保存学习记录: ${_currentWord!.word} - ${result.displayName}');
     } catch (e) {

@@ -1,4 +1,8 @@
 import 'dart:math' as math;
+import '../utils/algorithm_manager.dart';
+import '../utils/multi_algorithm_service.dart';
+import 'detailed_learning_record.dart';
+import 'algorithm_config.dart';
 import 'package:flutter/material.dart';
 /// 单词学习记录模型
 /// 存储单词的学习进度和记忆情况
@@ -88,7 +92,7 @@ class WordLearningRecord {
       lastLearningTime: now,
       nextReviewTime: now.add(const Duration(days: 1)),
       memoryLevel: MemoryLevel.first_time,
-      learningCount: 1,
+      learningCount: 0,
       correctCount: 0,
       incorrectCount: 0,
       reviewInterval: 1.0,
@@ -112,8 +116,8 @@ class WordLearningRecord {
     // 计算新的记忆程度
     final newMemoryLevel = _calculateNewMemoryLevel(reviewResult);
     
-    // 计算新的复习间隔和难度系数
-    final newIntervalAndEase = _calculateNewIntervalAndEase(reviewResult);
+    // 使用算法管理器计算复习间隔
+    final newIntervalAndEase = _calculateIntervalUsingAlgorithm(reviewResult, reviewTime);
     
     return WordLearningRecord(
       word: word,
@@ -121,7 +125,7 @@ class WordLearningRecord {
       wordBookName: newWordBookName ?? wordBookName,
       firstLearningTime: firstLearningTime,
       lastLearningTime: reviewTime,
-      nextReviewTime: reviewTime.add(Duration(days: newIntervalAndEase.interval.round())),
+      nextReviewTime: newIntervalAndEase.nextReviewTime,
       memoryLevel: newMemoryLevel,
       learningCount: learningCount + 1,
       correctCount: correctCount + (reviewResult.isCorrect ? 1 : 0),
@@ -130,6 +134,126 @@ class WordLearningRecord {
       easeFactor: newIntervalAndEase.easeFactor,
       reviewHistory: [...reviewHistory, newReviewRecord],
     );
+  }
+
+  /// 使用算法管理器计算复习间隔
+  IntervalAndNextTime _calculateIntervalUsingAlgorithm(ReviewResult reviewResult, DateTime reviewTime) {
+    try {
+      // 导入算法管理器
+      final algorithmManager = AlgorithmManager.instance;
+      final algorithmService = algorithmManager.currentService;
+      
+      if (algorithmService != null) {
+        // 创建增强学习记录用于算法计算
+        final enhancedRecord = EnhancedWordLearningRecord(
+          word: word,
+          translation: translation,
+          wordBookName: wordBookName,
+          firstLearningTime: firstLearningTime,
+          lastLearningTime: lastLearningTime,
+          nextReviewTime: DateTime.now().add(Duration(days: reviewInterval.round())),
+          memoryLevel: memoryLevel,
+          learningCount: learningCount,
+          correctCount: correctCount,
+          incorrectCount: incorrectCount,
+          reviewInterval: reviewInterval,
+          easeFactor: easeFactor,
+          reviewHistory: reviewHistory,
+          sessions: [], // 暂时为空，因为这是旧的会话系统
+          difficulty: _getWordDifficulty(),
+        );
+        
+        // 创建学习会话
+        final session = algorithmService.createLearningSession(
+          mode: LearningMode.quickMemory, // 默认为快速记忆模式
+          result: _mapReviewResultToLearningResult(reviewResult),
+          score: _calculateScore(reviewResult),
+          studyDuration: const Duration(seconds: 10), // 默认学习时长
+        );
+        
+        // 使用算法计算下次复习时间
+        final nextReviewTime = algorithmService.calculateNextReviewTime(enhancedRecord, session);
+        
+        // 计算新的间隔和难度系数
+        final intervalInDays = nextReviewTime.difference(reviewTime).inHours / 24.0;
+        
+        // 调试信息
+        print('🔧 算法计算: 算法类型=${algorithmManager.currentConfig?.type.displayName}, 间隔=${intervalInDays.toStringAsFixed(2)}天, 学习结果=${reviewResult.displayName}');
+        
+        // 根据学习结果调整难度系数
+        double newEaseFactor = easeFactor;
+        switch (reviewResult) {
+          case ReviewResult.forgot:
+            newEaseFactor = math.max(1.3, easeFactor - 0.2);
+            break;
+          case ReviewResult.hard:
+            newEaseFactor = math.max(1.3, easeFactor - 0.15);
+            break;
+          case ReviewResult.good:
+            // 保持不变
+            break;
+          case ReviewResult.easy:
+            newEaseFactor = math.min(2.5, easeFactor + 0.15);
+            break;
+        }
+        
+        return IntervalAndNextTime(
+          interval: intervalInDays,
+          easeFactor: newEaseFactor,
+          nextReviewTime: nextReviewTime,
+        );
+      }
+    } catch (e) {
+      print('⚠️ 算法计算失败，使用备用计算: $e');
+    }
+    
+    // 备用：使用原来的SuperMemo算法
+    final fallbackResult = _calculateNewIntervalAndEase(reviewResult);
+    return IntervalAndNextTime(
+      interval: fallbackResult.interval,
+      easeFactor: fallbackResult.easeFactor,
+      nextReviewTime: reviewTime.add(Duration(days: fallbackResult.interval.round())),
+    );
+  }
+
+  /// 获取单词难度（基于学习表现）
+  WordDifficulty _getWordDifficulty() {
+    if (learningCount == 0) return WordDifficulty.unknown;
+    
+    final errorRate = incorrectCount / learningCount;
+    if (errorRate > 0.5) {
+      return WordDifficulty.unknown;
+    } else {
+      return WordDifficulty.known;
+    }
+  }
+
+  /// 将ReviewResult映射到LearningResult
+  LearningResult _mapReviewResultToLearningResult(ReviewResult reviewResult) {
+    switch (reviewResult) {
+      case ReviewResult.forgot:
+        return LearningResult.incorrect;
+      case ReviewResult.hard:
+        return LearningResult.correct;
+      case ReviewResult.good:
+        return LearningResult.known;
+      case ReviewResult.easy:
+        return LearningResult.excellent;
+    }
+  }
+
+  /// 根据学习结果计算分数
+  int _calculateScore(ReviewResult reviewResult) {
+    switch (reviewResult) {
+      case ReviewResult.forgot:
+        return 2;
+      case ReviewResult.hard:
+        return 5;
+      case ReviewResult.good:
+        return 7;
+      case ReviewResult.easy:
+        return 9;
+    }
   }
 
   /// 计算新的记忆程度
@@ -180,19 +304,21 @@ class WordLearningRecord {
   double get masteryPercentage {
     if (learningCount == 0) return 0.0;
     
-    // 获取最近的连续正确次数
+    // 基于4分类统计计算掌握程度
+    final total = forgotCount + hardCount + goodCount + easyCount;
+    if (total == 0) return 0.0;
+    
+    // 权重计算：简单3分，良好2分，困难1分，忘记0分
+    final weightedScore = (easyCount * 3 + goodCount * 2 + hardCount * 1 + forgotCount * 0) / (total * 3);
+    
+    // 记忆级别奖励
+    final levelBonus = memoryLevel.index * 0.05; // 每个等级+5%
+    
+    // 最近连续正确奖励
     final recentCorrectStreak = _getRecentCorrectStreak();
+    final streakBonus = recentCorrectStreak >= 3 ? 0.15 : 0.0;
     
-    // 基础正确率
-    final correctRate = correctCount / learningCount;
-    
-    // 连续正确奖励：连续3次以上正确视为掌握良好
-    final streakBonus = recentCorrectStreak >= 3 ? 0.3 : 0.0;
-    
-    // 记忆级别奖励（简化）
-    final levelBonus = memoryLevel.index >= 3 ? 0.2 : 0.0;
-    
-    return (correctRate * 0.5 + streakBonus + levelBonus).clamp(0.0, 1.0);
+    return (weightedScore * 0.7 + levelBonus + streakBonus).clamp(0.0, 1.0);
   }
   
   /// 获取最近的连续正确次数
@@ -210,6 +336,46 @@ class WordLearningRecord {
     }
     
     return streak;
+  }
+
+  /// 获取忘记次数
+  int get forgotCount {
+    final count = reviewHistory.where((r) => r.reviewResult == ReviewResult.forgot).length;
+    // 如果没有reviewHistory但有旧统计数据，估算忘记次数
+    if (reviewHistory.isEmpty && learningCount > 0) {
+      return (incorrectCount * 0.6).round(); // 假设60%的错误是忘记
+    }
+    return count;
+  }
+  
+  /// 获取困难次数
+  int get hardCount {
+    final count = reviewHistory.where((r) => r.reviewResult == ReviewResult.hard).length;
+    // 如果没有reviewHistory但有旧统计数据，估算困难次数
+    if (reviewHistory.isEmpty && learningCount > 0) {
+      return (incorrectCount * 0.4).round(); // 假设40%的错误是困难
+    }
+    return count;
+  }
+  
+  /// 获取良好次数
+  int get goodCount {
+    final count = reviewHistory.where((r) => r.reviewResult == ReviewResult.good).length;
+    // 如果没有reviewHistory但有旧统计数据，估算良好次数
+    if (reviewHistory.isEmpty && learningCount > 0) {
+      return (correctCount * 0.8).round(); // 假设80%的正确是良好
+    }
+    return count;
+  }
+  
+  /// 获取简单次数
+  int get easyCount {
+    final count = reviewHistory.where((r) => r.reviewResult == ReviewResult.easy).length;
+    // 如果没有reviewHistory但有旧统计数据，估算简单次数
+    if (reviewHistory.isEmpty && learningCount > 0) {
+      return (correctCount * 0.2).round(); // 假设20%的正确是简单
+    }
+    return count;
   }
 
   /// 是否需要复习
@@ -285,6 +451,19 @@ class IntervalAndEase {
   const IntervalAndEase({
     required this.interval,
     required this.easeFactor,
+  });
+}
+
+/// 间隔和下次复习时间结果
+class IntervalAndNextTime {
+  final double interval;
+  final double easeFactor;
+  final DateTime nextReviewTime;
+  
+  const IntervalAndNextTime({
+    required this.interval,
+    required this.easeFactor,
+    required this.nextReviewTime,
   });
 }
 
