@@ -13,6 +13,24 @@ import '../utils/deepseek_api_service.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/app_theme.dart';
 
+/// 修改类型枚举
+enum ModificationType {
+  none,      // 无修改
+  grammar,   // 语法修改
+  idiomatic, // 地道性改进
+}
+
+/// 单词修改信息
+class WordModificationInfo {
+  final bool isModified;
+  final ModificationType modificationType;
+  
+  WordModificationInfo({
+    required this.isModified,
+    required this.modificationType,
+  });
+}
+
 /// 主页 - 背单词页面
 /// 以流的形式显示单词，每次显示一个单词，背过就显示下一个
 /// 支持无限流模式，从词库中随机获取单词
@@ -127,6 +145,9 @@ class _HomePageState extends State<HomePage>
   late Animation<double> _skipButtonFadeAnimation;
   late AnimationController _sendButtonFadeController;
   late Animation<double> _sendButtonFadeAnimation;
+  
+  // 输入框相关
+  final FocusNode _inputFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -432,6 +453,8 @@ class _HomePageState extends State<HomePage>
       parent: _sendButtonFadeController,
       curve: Curves.easeOutCubic,
     ));
+    
+
   }
 
   /// 初始化字符级动画
@@ -1650,7 +1673,7 @@ class _HomePageState extends State<HomePage>
     
     setState(() {
       _isTestingMode = true;
-      _showSentenceInput = true;
+      _showSentenceInput = true; // 恢复显示原位置
       _showAdvancedResults = false;
     });
     
@@ -1765,10 +1788,11 @@ class _HomePageState extends State<HomePage>
       // 不再显示提示
     }
     
-    /// 跳过造句测试
-    void _skipSentenceTest() {
-      _continueOrNext();
-    }
+      /// 跳过造句测试
+  void _skipSentenceTest() {
+    _sentenceInputController.clear(); // 清空输入框
+    _continueOrNext();
+  }
     
       /// 初始化逐单词浮现动画
   void _initializeBetterSentenceAnimation() {
@@ -1854,6 +1878,7 @@ class _HomePageState extends State<HomePage>
   
   /// 重新开始造句或下一个单词
   void _continueOrNext() async {
+    
     // 根据造句测试结果保存学习记录
     if (_judgmentResult != null) {
       ReviewResult result;
@@ -1884,6 +1909,7 @@ class _HomePageState extends State<HomePage>
       _showAdvancedResults = false;
     });
     
+    // 清空输入框
     _sentenceInputController.clear();
     _wordMoveController.reset();
     _sentenceAnimationController.reset();
@@ -1897,6 +1923,7 @@ class _HomePageState extends State<HomePage>
   
     /// 下一个单词（无限流模式）
   Future<void> _nextWord() async {
+    
     // 重置动画状态
     _fadeController.reset();
     _slideController.reset();
@@ -2697,7 +2724,131 @@ class _HomePageState extends State<HomePage>
     );
   }
   
-  /// 构建句子输入框
+    /// 显示编辑浮层
+  void _showInputOverlay() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (BuildContext dialogContext) {
+        double? previousKeyboardHeight;
+        bool isClosing = false; // 防止重复关闭
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            
+            // 键盘高度监听逻辑
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!isClosing && 
+                  previousKeyboardHeight != null && 
+                  previousKeyboardHeight! > 0 && 
+                  currentKeyboardHeight == 0) {
+                // 键盘从显示状态变为隐藏状态
+                isClosing = true;
+                Navigator.of(dialogContext).pop();
+                setState(() {});
+              }
+              previousKeyboardHeight = currentKeyboardHeight;
+            });
+            
+            return WillPopScope(
+              onWillPop: () async {
+                setState(() {});
+                return true;
+              },
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                resizeToAvoidBottomInset: true,
+                body: GestureDetector(
+                  onTap: () {
+                    if (!isClosing) {
+                      _inputFocusNode.unfocus();
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      Expanded(child: Container()), // 占位
+                      Container(
+                        color: Colors.white,
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 12,
+                          bottom: MediaQuery.of(context).padding.bottom + 12,
+                        ),
+                        child: SafeArea(
+                          top: false,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.coolGray50,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: AppTheme.coolGray200),
+                                  ),
+                                  child: TextField(
+                                    controller: _sentenceInputController,
+                                    focusNode: _inputFocusNode,
+                                    maxLines: 4,
+                                    minLines: 1,
+                                    maxLength: null,
+                                    autofocus: true,
+                                    decoration: InputDecoration(
+                                      hintText: '输入句子...',
+                                      border: InputBorder.none,
+                                      counterText: '',
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (!isClosing) {
+                                    isClosing = true;
+                                    Navigator.of(dialogContext).pop();
+                                    setState(() {});
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentGreen,
+                                  foregroundColor: Colors.white,
+                                  shape: CircleBorder(),
+                                  padding: EdgeInsets.all(12),
+                                  minimumSize: Size(44, 44),
+                                ),
+                                child: Icon(
+                                  Icons.check,
+                                  size: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  
+
+  
+
+
+  /// 构建句子输入框（原方法，现在仅用于兼容性）
   Widget _buildSentenceInput() {
     return AnimatedBuilder(
       animation: _sentenceInputAnimation,
@@ -2730,35 +2881,35 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // 输入框
-                      TextField(
-                        controller: _sentenceInputController,
-                        maxLines: null,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.done,
-                        decoration: InputDecoration(
-                          hintText: '在这里输入你的句子...',
-                          hintStyle: TextStyle(
-                            color: AppTheme.coolGray400,
-                            fontSize: 14,
+                      // 输入框（点击时弹出编辑浮层）
+                      GestureDetector(
+                        onTap: _showInputOverlay,
+                        child: Container(
+                          width: double.infinity,
+                          height: 50, // 固定高度，与弹出框单行高度一致
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 与弹出框完全一致的padding
+                          decoration: BoxDecoration(
+                            color: AppTheme.coolGray50,
+                            borderRadius: BorderRadius.circular(20), // 与弹出框完全一致的圆角
+                            border: Border.all(color: AppTheme.coolGray200),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: AppTheme.coolGray200),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _sentenceInputController.text.isEmpty 
+                                ? '输入句子...'
+                                : _sentenceInputController.text,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: _sentenceInputController.text.isEmpty 
+                                  ? AppTheme.coolGray400
+                                  : AppTheme.coolGray700,
+                              ),
+                              maxLines: 1, // 原界面只显示单行
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: AppTheme.primaryGray, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.all(12),
-                          filled: true,
-                          fillColor: Colors.white,
                         ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                        onSubmitted: (_) => _submitSentence(),
                       ),
                     ],
                   ),
@@ -3229,15 +3380,15 @@ class _HomePageState extends State<HomePage>
         runSpacing: 4.0, // 行之间的垂直间距
         children: List.generate(words.length, (index) {
           final word = words[index];
-          final isModified = _isWordModified(word, index);
+          final modificationInfo = _getWordModificationInfo(word, index);
           
           if (index >= _betterSentenceAnimations.length) {
             return Text(
               word,
               style: TextStyle(
                 fontSize: 15,
-                color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
-                fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                color: _getWordHighlightColor(modificationInfo),
+                fontWeight: modificationInfo.isModified ? FontWeight.w600 : FontWeight.w500,
                 height: 1.5,
               ),
             );
@@ -3254,8 +3405,8 @@ class _HomePageState extends State<HomePage>
                       word,
                       style: TextStyle(
                         fontSize: 15,
-                        color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
-                        fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                        color: _getWordHighlightColor(modificationInfo),
+                        fontWeight: modificationInfo.isModified ? FontWeight.w600 : FontWeight.w500,
                         height: 1.5,
                       ),
                     ),
@@ -3310,26 +3461,88 @@ class _HomePageState extends State<HomePage>
     return _isWordInCorrectedGrammarRange(currentWord, wordIndex, userWords, correctWords);
   }
   
-  /// 判断正确句子中的单词是否为修改过的
-  bool _isWordModified(String correctWord, int index) {
+  /// 单词修改信息
+  WordModificationInfo _getWordModificationInfo(String correctWord, int index) {
     final userWords = _userSentence.split(' ');
     final correctWords = _judgmentResult!.betterSentences.first.split(' ');
     
     // 新增的单词（正确句子更长）
-    if (index >= userWords.length) return true;
+    if (index >= userWords.length) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.grammar);
+    }
     
     final userWord = userWords[index];
     final userWordClean = userWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
     final correctWordClean = correctWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
     
     // 拼写不同
-    if (userWordClean != correctWordClean) return true;
+    if (userWordClean != correctWordClean) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.grammar);
+    }
     
     // 大小写不同
-    if (userWord != correctWord) return true;
+    if (userWord != correctWord) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.grammar);
+    }
+    
+    // 检查是否是地道性修改
+    if (_isWordInIdiomaticImprovement(correctWord, index)) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.idiomatic);
+    }
     
     // 检查是否在语法修正的范围内
-    return _isWordInCorrectedGrammarRange(correctWord, index, userWords, correctWords);
+    if (_isWordInCorrectedGrammarRange(correctWord, index, userWords, correctWords)) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.grammar);
+    }
+    
+    return WordModificationInfo(isModified: false, modificationType: ModificationType.none);
+  }
+  
+  /// 检查是否是地道性改进（基于错误类型判断）
+  bool _isWordInIdiomaticImprovement(String correctWord, int index) {
+    // 检查是否有地道性相关的错误
+    final hasIdiomaticErrors = _judgmentResult!.errors.any((error) => 
+      error.type.toLowerCase().contains('地道') || 
+      error.type.toLowerCase().contains('idiomatic') ||
+      error.description.contains('地道') ||
+      error.description.contains('更自然') ||
+      error.description.contains('更常用')
+    );
+    
+    if (!hasIdiomaticErrors) return false;
+    
+    // 如果有地道性错误，且当前单词在建议的句子中，则可能是地道性改进
+    final userWords = _userSentence.split(' ');
+    final correctWords = _judgmentResult!.betterSentences.first.split(' ');
+    
+    // 简单的启发式规则：如果句子结构相同但用词不同，可能是地道性改进
+    if (userWords.length == correctWords.length && index < userWords.length) {
+      final userWord = userWords[index].toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+      final correctWordClean = correctWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+      return userWord != correctWordClean;
+    }
+    
+    return false;
+  }
+  
+  /// 获取单词高亮颜色
+  Color _getWordHighlightColor(WordModificationInfo info) {
+    if (!info.isModified) return AppTheme.coolGray700;
+    
+    switch (info.modificationType) {
+      case ModificationType.grammar:
+        return AppTheme.accentGreen;
+      case ModificationType.idiomatic:
+        return Colors.orange.shade600; // 黄橙色表示地道性改进
+      case ModificationType.none:
+        return AppTheme.coolGray700;
+    }
+  }
+
+  /// 判断正确句子中的单词是否为修改过的（已废弃，保留兼容性）
+  bool _isWordModified(String correctWord, int index) {
+    final info = _getWordModificationInfo(correctWord, index);
+    return info.isModified;
   }
   
   /// 检查单词是否在语法修正的范围内
@@ -3360,6 +3573,9 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
+    // 清理FocusNode
+    _inputFocusNode.dispose();
+    
     // 使用性能优化器清理资源
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
     PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
