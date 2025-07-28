@@ -1163,6 +1163,15 @@ class _HomePageState extends State<HomePage>
               color: Theme.of(context).primaryColor.withOpacity(0.3),
               width: 1,
             ),
+            boxShadow: Theme.of(context).brightness == Brightness.dark 
+                ? null 
+                : [
+                    BoxShadow(
+                      color: Theme.of(context).primaryColor.withOpacity(0.20),
+                      blurRadius: 12,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1206,6 +1215,15 @@ class _HomePageState extends State<HomePage>
               decoration: BoxDecoration(
                 color: Theme.of(context).primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 10)),
+                boxShadow: Theme.of(context).brightness == Brightness.dark 
+                    ? null 
+                    : [
+                        BoxShadow(
+                          color: Theme.of(context).primaryColor.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1240,6 +1258,15 @@ class _HomePageState extends State<HomePage>
               decoration: BoxDecoration(
                 color: Theme.of(context).primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 10)),
+                boxShadow: Theme.of(context).brightness == Brightness.dark 
+                    ? null 
+                    : [
+                        BoxShadow(
+                          color: Theme.of(context).primaryColor.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -2164,6 +2191,15 @@ class _HomePageState extends State<HomePage>
                                             decoration: BoxDecoration(
                                               color: Theme.of(context).primaryColor.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(12),
+                                              boxShadow: Theme.of(context).brightness == Brightness.dark
+                                                  ? null
+                                                  : [
+                                                BoxShadow(
+                                                  color: Theme.of(context).primaryColor.withOpacity(0.15),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Icon(
                                               Icons.volume_up_outlined,

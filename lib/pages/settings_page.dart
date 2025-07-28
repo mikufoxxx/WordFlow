@@ -523,9 +523,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ? null 
               : [
                   BoxShadow(
+                    color: Theme.of(context).primaryColor.withOpacity(0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
                     color: Colors.black.withOpacity(0.04),
                     blurRadius: 8,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
         ),
