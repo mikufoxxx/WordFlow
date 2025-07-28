@@ -623,7 +623,7 @@ class _LibraryPageState extends State<LibraryPage>
             fontSize: 15, // 从16减少到15
             fontWeight: FontWeight.w600,
             color: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkPrimaryTextColor 
+                ? const Color(0xFFDCEFEA)
                 : AppTheme.primaryTextColor,
           ),
           maxLines: 1,
@@ -808,10 +808,11 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建搜索栏
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 6), // 从20,8,20,8减少到16,6,16,6
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(12), // 从16减少到12
         boxShadow: [
           BoxShadow(
@@ -826,19 +827,25 @@ class _LibraryPageState extends State<LibraryPage>
         decoration: InputDecoration(
           hintText: '搜索词库...',
           hintStyle: TextStyle(
-            color: AppTheme.primaryGray.withOpacity(0.6),
+            color: isDark 
+                ? AppTheme.coolGray500 
+                : AppTheme.primaryGray.withOpacity(0.6),
             fontSize: 14, // 从16减少到14
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: AppTheme.primaryGray.withOpacity(0.6),
+            color: isDark 
+                ? AppTheme.coolGray500 
+                : AppTheme.primaryGray.withOpacity(0.6),
             size: 20, // 添加图标大小限制
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: AppTheme.primaryGray.withOpacity(0.6),
+                    color: isDark 
+                        ? AppTheme.coolGray500 
+                        : AppTheme.primaryGray.withOpacity(0.6),
                     size: 20, // 添加图标大小限制
                   ),
                   onPressed: () {
@@ -851,7 +858,7 @@ class _LibraryPageState extends State<LibraryPage>
           ),
         style: TextStyle(
           fontSize: 14, // 从16减少到14
-          color: AppTheme.darkGray,
+          color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.darkGray,
         ),
       ),
     );
@@ -859,11 +866,12 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建统计栏
   Widget _buildStatsBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12), // 从20,0,20,16减少到16,0,16,12
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 从20,12减少到16,10
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(12), // 从16减少到12
         boxShadow: [
           BoxShadow(
@@ -882,12 +890,12 @@ class _LibraryPageState extends State<LibraryPage>
               Container(
                 padding: const EdgeInsets.all(6), // 从8减少到6
                 decoration: BoxDecoration(
-                  color: AppTheme.coolGray100,
+                  color: isDark ? AppTheme.coolGray600 : AppTheme.coolGray100,
                   borderRadius: BorderRadius.circular(8), // 从10减少到8
                 ),
                 child: Icon(
                   Icons.library_books,
-                  color: AppTheme.coolGray500,
+                  color: isDark ? AppTheme.coolGray400 : AppTheme.coolGray500,
                   size: 16, // 从20减少到16
                 ),
               ),
@@ -896,7 +904,7 @@ class _LibraryPageState extends State<LibraryPage>
                 '总计: ${_allWordBookItems.length}',
             style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: AppTheme.coolGray600,
+                  color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray600,
                   fontWeight: FontWeight.w500,
             ),
           ),
@@ -923,7 +931,7 @@ class _LibraryPageState extends State<LibraryPage>
                 '已下载: ${_allWordBookItems.where((item) => item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected).length}',
               style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: AppTheme.coolGray600,
+                  color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray600,
                   fontWeight: FontWeight.w500,
               ),
               ),
@@ -951,6 +959,7 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建搜索状态
   Widget _buildSearchingState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -960,14 +969,18 @@ class _LibraryPageState extends State<LibraryPage>
             height: 32,
             child: CircularProgressIndicator(
               strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark ? AppTheme.coolGray400 : AppTheme.primaryGray
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             '正在寻找词书...',
             style: TextStyle(
-              color: AppTheme.primaryGray.withOpacity(0.8),
+              color: isDark 
+                  ? AppTheme.darkSecondaryTextColor 
+                  : AppTheme.primaryGray.withOpacity(0.8),
               fontSize: 14,
             ),
           ),
@@ -978,6 +991,7 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建加载状态
   Widget _buildLoadingState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -988,14 +1002,16 @@ class _LibraryPageState extends State<LibraryPage>
             height: 40,
             child: CircularProgressIndicator(
               strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGray),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark ? AppTheme.coolGray400 : AppTheme.primaryGray
+              ),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             '词书正在赶来的路上...',
             style: TextStyle(
-              color: AppTheme.primaryGray,
+              color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.primaryGray,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -1181,7 +1197,9 @@ class _LibraryPageState extends State<LibraryPage>
                             style: TextStyle(
                               fontSize: 16, // 从18减少到16
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.coolGray800,
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? const Color(0xFFDCEFEA) 
+                                  : AppTheme.coolGray800,
                               height: 1.2,
                             ),
                             maxLines: 2,

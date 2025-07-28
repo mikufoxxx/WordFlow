@@ -75,6 +75,8 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
   /// 构建单词基本信息卡片
   Widget _buildWordInfoCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -96,10 +98,10 @@ class _WordDetailPageState extends State<WordDetailPage> {
                     children: [
                       Text(
                         widget.record.word,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryGray,
+                          color: isDark ? const Color(0xFFDCEFEA) : AppTheme.primaryGray,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -107,7 +109,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                         widget.record.translation,
                         style: TextStyle(
                           fontSize: 18,
-                          color: AppTheme.coolGray600,
+                          color: isDark ? const Color(0xFFDCEFEA) : AppTheme.coolGray600,
                         ),
                       ),
                     ],
@@ -145,14 +147,14 @@ class _WordDetailPageState extends State<WordDetailPage> {
                   Icon(
                     Icons.book_outlined,
                     size: 16,
-                    color: AppTheme.coolGray500,
+                    color: isDark ? const Color(0xFFA5D5C8) : AppTheme.coolGray500,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '来自词书：${widget.record.wordBookName}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.coolGray600,
+                      color: isDark ? const Color(0xFFA5D5C8) : AppTheme.coolGray600,
                     ),
                   ),
                 ],
@@ -167,6 +169,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
   /// 构建学习状态概览
   Widget _buildLearningOverview() {
     final totalSessions = widget.record.sessions.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // 统计4分类
     final forgotCount = widget.record.forgotCount;
@@ -187,10 +190,10 @@ class _WordDetailPageState extends State<WordDetailPage> {
           children: [
             Text(
               '学习概览',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryGray,
+                color: isDark ? const Color(0xFFDCEFEA) : AppTheme.primaryGray,
               ),
             ),
             
@@ -304,7 +307,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.coolGray700,
+                    color: isDark ? const Color(0xFFDCEFEA) : AppTheme.coolGray700,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -319,7 +322,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                   '${(widget.record.masteryPercentage * 100).toStringAsFixed(1)}%',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.coolGray600,
+                    color: isDark ? const Color(0xFFDCEFEA) : AppTheme.coolGray600,
                   ),
                 ),
               ],
@@ -332,6 +335,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
   /// 构建统计项
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -350,7 +354,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: color,
+                  color: isDark ? const Color(0xFFDCEFEA) : color,
                 ),
               ),
             ],
@@ -360,7 +364,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.coolGray600,
+              color: isDark ? const Color(0xFFA5D5C8) : AppTheme.coolGray600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -371,6 +375,8 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
   /// 构建学习时间轴
   Widget _buildLearningTimeline() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (widget.record.reviewHistory.isEmpty) {
       return Card(
         elevation: 2,
@@ -418,10 +424,10 @@ class _WordDetailPageState extends State<WordDetailPage> {
           children: [
             Text(
               '学习时间轴',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryGray,
+                color: isDark ? const Color(0xFFDCEFEA) : AppTheme.primaryGray,
               ),
             ),
             

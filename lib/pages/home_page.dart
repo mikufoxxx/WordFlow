@@ -2901,9 +2901,15 @@ class _HomePageState extends State<HomePage>
                               Expanded(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppTheme.coolGray50,
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? AppTheme.darkCardColor 
+                                        : AppTheme.coolGray50,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppTheme.coolGray200),
+                                    border: Border.all(
+                                      color: Theme.of(context).brightness == Brightness.dark 
+                                          ? AppTheme.coolGray600 
+                                          : AppTheme.coolGray200,
+                                    ),
                                   ),
                                   child: TextField(
                                     controller: _sentenceInputController,
@@ -2914,6 +2920,11 @@ class _HomePageState extends State<HomePage>
                                     autofocus: true,
                                     decoration: InputDecoration(
                                       hintText: '输入句子...',
+                                      hintStyle: TextStyle(
+                                        color: Theme.of(context).brightness == Brightness.dark 
+                                            ? AppTheme.coolGray500 
+                                            : AppTheme.coolGray400,
+                                      ),
                                       border: InputBorder.none,
                                       counterText: '',
                                       contentPadding: EdgeInsets.symmetric(
@@ -2921,7 +2932,12 @@ class _HomePageState extends State<HomePage>
                                         vertical: 10,
                                       ),
                                     ),
-                                    style: TextStyle(fontSize: 16),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Theme.of(context).brightness == Brightness.dark 
+                                          ? AppTheme.darkPrimaryTextColor 
+                                          : AppTheme.coolGray700,
+                                    ),
                                   ),
                                 ),
                               ),
