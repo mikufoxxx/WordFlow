@@ -5,9 +5,6 @@ import '../models/word_learning_record.dart';
 /// 基于艾宾浩斯遗忘曲线和SuperMemo算法实现科学的单词复习推送
 /// 采用无限流设计，动态调整推送策略
 class SpacedRepetitionService {
-  /// 默认算法参数
-  static const double _defaultInitialInterval = 1.0;
-  static const double _defaultEaseFactor = 2.5;
   static const double _minEaseFactor = 1.3;
   static const double _maxEaseFactor = 5.0;
 

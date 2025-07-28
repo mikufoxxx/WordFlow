@@ -166,9 +166,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
 
   /// 构建学习状态概览
   Widget _buildLearningOverview() {
-    final totalSessions = widget.record.sessions.length;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // 统计4分类
     final forgotCount = widget.record.forgotCount;
     final hardCount = widget.record.hardCount;

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'word_learning_record.dart';
 
@@ -227,6 +226,7 @@ class EnhancedWordLearningRecord extends WordLearningRecord {
   final Map<LearningMode, int> modeStats;        // 各模式统计
   final List<String> tags;                       // 标签
 
+  // ignore: use_super_parameters
   const EnhancedWordLearningRecord({
     required String word,
     required String translation,

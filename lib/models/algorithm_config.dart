@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 /// 算法类型枚举
 enum AlgorithmType {

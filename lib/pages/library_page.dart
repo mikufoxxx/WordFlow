@@ -126,8 +126,7 @@ class _LibraryPageState extends State<LibraryPage>
   late AnimationController _fadeController;
   
   // 添加选中的词库索引
-  int? _selectedWordBookIndex;
-  
+
   @override
   void initState() {
     super.initState();
@@ -217,7 +216,6 @@ class _LibraryPageState extends State<LibraryPage>
           final selectedWordBook = await CacheService.getSelectedWordBook();
           if (selectedWordBook == book.name) {
             item.status = WordBookStatus.selected;
-            _selectedWordBookIndex = wordBooks.indexOf(book);
           }
           
           item.initializeAnimation(this);
@@ -337,7 +335,6 @@ class _LibraryPageState extends State<LibraryPage>
         
         // 设置当前词库为选中状态
         item.status = WordBookStatus.selected;
-        _selectedWordBookIndex = _allWordBookItems.indexOf(item);
       });
       
       // 保存选中的词库到缓存
@@ -352,19 +349,28 @@ class _LibraryPageState extends State<LibraryPage>
             children: [
               Icon(
                 Icons.check_circle_outline,
-                color: Colors.white,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   '词库《${item.wordBook.name}》已选择',
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(
+                    fontSize: 14, 
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black87
+                  ),
                 ),
               ),
             ],
           ),
-          backgroundColor: AppTheme.accentGreen,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
@@ -862,7 +868,6 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建统计栏
   Widget _buildStatsBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12), // 从20,0,20,16减少到16,0,16,12
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 从20,12减少到16,10
@@ -886,12 +891,12 @@ class _LibraryPageState extends State<LibraryPage>
               Container(
                 padding: const EdgeInsets.all(6), // 从8减少到6
                 decoration: BoxDecoration(
-                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray100),
+                    color: AppTheme.accentGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8), // 从10减少到8
                 ),
                 child: Icon(
                   Icons.library_books,
-                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
+                  color: AppTheme.accentGreen,
                   size: 16, // 从20减少到16
                 ),
               ),
@@ -987,7 +992,6 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 构建加载状态
   Widget _buildLoadingState() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1206,14 +1210,18 @@ class _LibraryPageState extends State<LibraryPage>
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 从10,4减少到8,3
                               decoration: BoxDecoration(
-                                color: AppTheme.coolGray100,
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.coolGray600
+                                    : AppTheme.cardColor,
                                 borderRadius: BorderRadius.circular(10), // 从12减少到10
                               ),
                               child: Text(
                                 '${item.wordBook.wordCount} 个单词',
                                 style: TextStyle(
                                   fontSize: 12, // 从13减少到12
-                                  color: AppTheme.coolGray600,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? AppTheme.darkPrimaryTextColor
+                                      : AppTheme.darkGray,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1530,14 +1538,18 @@ class _LibraryPageState extends State<LibraryPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: AppTheme.coolGray100,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.cardColor,
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
             '未下载',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: AppTheme.coolGray500,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkPrimaryTextColor
+                  : AppTheme.darkGray,
               fontWeight: FontWeight.w500,
             ),
           ),

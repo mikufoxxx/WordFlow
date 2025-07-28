@@ -26,8 +26,7 @@ class GitHubApiService {
   /// 获取词库列表
   /// 从Gitee仓库的词库.md文件解析词库信息，只获取词库名和翻译CSV链接
   static Future<List<WordBook>> getWordBooks() async {
-    print('🚀 开始获取词库数据...');
-    
+
     // 优先使用镜像源，然后Gitee源，最后GitHub源
     final urls = [
       // 镜像源 (最高优先级)
@@ -43,8 +42,7 @@ class GitHubApiService {
     
     for (String urlString in urls) {
       try {
-        print('📡 尝试从 $urlString 获取数据...');
-        
+
         final url = Uri.parse(urlString);
         final response = await http.get(
           url,
@@ -56,18 +54,14 @@ class GitHubApiService {
         ).timeout(_timeout);
         
         if (response.statusCode == 200) {
-          print('✅ 成功获取数据，状态码: ${response.statusCode}');
-          print('📊 数据大小: ${response.bodyBytes.length} bytes');
-          
+
           // 解析Markdown表格内容
           final content = utf8.decode(response.bodyBytes);
           final wordBooks = _parseMarkdownTable(content);
           
           if (wordBooks.isNotEmpty) {
-            print('🎉 成功解析 ${wordBooks.length} 个词库');
             return wordBooks;
           } else {
-            print('⚠️ 解析成功但未找到词库数据');
           }
         } else {
           print('❌ HTTP错误: ${response.statusCode} - ${response.reasonPhrase}');

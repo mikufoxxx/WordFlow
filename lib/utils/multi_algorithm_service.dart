@@ -237,7 +237,7 @@ class SuperMemoImplementation extends BaseAlgorithmImplementation {
       complexityScore: _calculateComplexityScore(sentence),
       grammarErrors: _parseGrammarErrors(result),
       usageErrors: _parseUsageErrors(result),
-      betterSentence: result?.betterSentences?.isNotEmpty == true ? result!.betterSentences.first : null,
+      betterSentence: result?.betterSentences.isNotEmpty == true ? result!.betterSentences.first : null,
       improvements: result?.suggestions ?? [],
       complexity: _determineComplexity(sentence),
     );
@@ -619,7 +619,7 @@ class AdaptiveImplementation extends BaseAlgorithmImplementation {
       complexityScore: _calculateEnhancedComplexityScore(sentence),
       grammarErrors: _parseEnhancedGrammarErrors(result),
       usageErrors: _parseEnhancedUsageErrors(result),
-      betterSentence: result?.betterSentences?.isNotEmpty == true ? result!.betterSentences.first : null,
+      betterSentence: result?.betterSentences.isNotEmpty == true ? result!.betterSentences.first : null,
       improvements: result?.suggestions ?? [],
       complexity: _determineEnhancedComplexity(sentence),
     );

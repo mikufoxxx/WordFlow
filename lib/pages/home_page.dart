@@ -54,7 +54,6 @@ class _HomePageState extends State<HomePage>
   static const String _timerPoolKey = 'home_page_timers';
   
   // 当前学习的单词数量（无限流模式）
-  int _studiedWordsCount = 0;
   int _todayStudiedCount = 0;
   int _totalStudiedCount = 0;
   
@@ -92,8 +91,6 @@ class _HomePageState extends State<HomePage>
   List<Animation<double>> _wordOpacityAnimations = [];
   List<Animation<double>> _translationSlideAnimations = [];
   List<Animation<double>> _translationOpacityAnimations = [];
-  List<Animation<double>> _meaningSlideAnimations = [];
-  List<Animation<double>> _meaningOpacityAnimations = [];
   List<Animation<double>> _exampleSlideAnimations = [];
   List<Animation<double>> _exampleOpacityAnimations = [];
   List<Animation<double>> _exampleTranslationSlideAnimations = [];
@@ -589,24 +586,8 @@ class _HomePageState extends State<HomePage>
       ),
     );
     
-    _meaningSlideAnimations = _meaningControllers.map((controller) =>
-      Tween<double>(begin: 10.0, end: 0.0).animate(
-        CurvedAnimation(
-          parent: controller, 
-          curve: Curves.easeOutQuart,
-        ),
-      ),
-    ).toList();
-    
-    _meaningOpacityAnimations = _meaningControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: controller, 
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    ).toList();
-    
+
+
     // 例句单词动画 - 改为单词级动画以优化性能
     final exampleWords = currentWord.example.trim().split(RegExp(r'\s+'));
     _exampleControllers = List.generate(
@@ -785,24 +766,8 @@ class _HomePageState extends State<HomePage>
       ),
     );
     
-    _meaningSlideAnimations = _meaningControllers.map((controller) =>
-      Tween<double>(begin: 10.0, end: 0.0).animate(
-        CurvedAnimation(
-          parent: controller, 
-          curve: Curves.easeOutQuart,
-        ),
-      ),
-    ).toList();
-    
-    _meaningOpacityAnimations = _meaningControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: controller, 
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    ).toList();
-    
+
+
     // 例句单词动画 - 改为单词级动画以优化性能
     final exampleWords = word.example.trim().split(RegExp(r'\s+'));
     _exampleControllers = List.generate(
@@ -1303,47 +1268,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 构建词库名称头部（废弃，被上面的方法替代）
-  Widget _buildWordBookHeader() {
-    if (_currentWordBookName == null) return SizedBox.shrink();
-    
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6), // 从16,8减少到14,6
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16), // 从20减少到16
-        border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.menu_book_rounded,
-            color: Theme.of(context).primaryColor,
-            size: 14, // 从16减少到14
-          ),
-          SizedBox(width: 5), // 从6减少到5
-          Text(
-            _currentWordBookName!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).primaryColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(width: 6), // 从8减少到6
-          Text(
-            '今日 $_todayStudiedCount | 总计 $_totalStudiedCount',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).primaryColor.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// 构建优雅按钮
   Widget _buildFluidDragBall() {
@@ -1900,11 +1824,7 @@ class _HomePageState extends State<HomePage>
       }
     }
     
-    /// 显示温柔的提醒（已废弃）
-    void _showGentleWarning(String message) {
-      // 不再显示提示
-    }
-    
+
       /// 跳过造句测试
   void _skipSentenceTest() {
     _sentenceInputController.clear(); // 清空输入框
@@ -2056,7 +1976,6 @@ class _HomePageState extends State<HomePage>
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
     
     setState(() {
-      _studiedWordsCount++;
       _showMeaning = false;
       _wordAnimationCompleted = false;
       _completedWordAnimations = 0;
@@ -2286,8 +2205,7 @@ class _HomePageState extends State<HomePage>
         
         final data = snapshot.data!;
         final phonetic = data['phonetic'] as String;
-        final hasAudio = data['hasAudio'] as bool;
-        
+
         // 如果没有音标，就不显示整个音标部分
         if (phonetic.isEmpty) {
           return SizedBox.shrink();
@@ -3455,8 +3373,7 @@ class _HomePageState extends State<HomePage>
   /// 构建错误说明
   Widget _buildErrorExplanation() {
     final hasErrors = _judgmentResult!.errors.isNotEmpty;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -3530,8 +3447,7 @@ class _HomePageState extends State<HomePage>
   /// 构建逐单词浮现的正确句子
   Widget _buildAnimatedBetterSentence() {
     final words = _betterSentenceText.trim().split(RegExp(r'\s+'));
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: double.infinity, // 使用Container而不是SizedBox，让高度自适应
       padding: const EdgeInsets.all(14),
@@ -3588,48 +3504,7 @@ class _HomePageState extends State<HomePage>
     );
   }
   
-  /// 判断正确句子中的字符是否为修改过的
-  bool _isCharModified(String char, int charIndex) {
-    final userWords = _userSentence.split(' ');
-    final correctWords = _judgmentResult!.betterSentences.first.split(' ');
-    
-    // 找到当前字符在正确句子中对应的单词
-    String currentWord = '';
-    int wordStartIndex = 0;
-    int wordIndex = 0;
-    
-    for (int i = 0; i < correctWords.length; i++) {
-      final word = correctWords[i];
-      final wordEndIndex = wordStartIndex + word.length;
-      
-      if (charIndex >= wordStartIndex && charIndex < wordEndIndex) {
-        currentWord = word;
-        wordIndex = i;
-        break;
-      }
-      
-      wordStartIndex = wordEndIndex + 1; // +1 for space
-    }
-    
-    if (currentWord.isEmpty) return false;
-    
-    // 新增的单词（正确句子更长）
-    if (wordIndex >= userWords.length) return true;
-    
-    final userWord = userWords[wordIndex];
-    final userWordClean = userWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
-    final correctWordClean = currentWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
-    
-    // 拼写不同
-    if (userWordClean != correctWordClean) return true;
-    
-    // 大小写不同
-    if (userWord != currentWord) return true;
-    
-    // 检查是否在语法修正的范围内
-    return _isWordInCorrectedGrammarRange(currentWord, wordIndex, userWords, correctWords);
-  }
-  
+
   /// 单词修改信息
   WordModificationInfo _getWordModificationInfo(String correctWord, int index) {
     final userWords = _userSentence.split(' ');
@@ -3757,12 +3632,7 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 判断正确句子中的单词是否为修改过的（已废弃，保留兼容性）
-  bool _isWordModified(String correctWord, int index) {
-    final info = _getWordModificationInfo(correctWord, index);
-    return info.isModified;
-  }
-  
+
   /// 检查单词是否在语法修正的范围内
   bool _isWordInCorrectedGrammarRange(String correctWord, int index, List<String> userWords, List<String> correctWords) {
     // 检查是否在"i am very like him" -> "I like him very much"的修正范围内

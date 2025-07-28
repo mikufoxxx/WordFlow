@@ -40,7 +40,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ 加载算法配置失败: $e');
       setState(() {
         _isLoading = false;
       });
@@ -139,6 +138,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: isSelected ? AppTheme.primaryGray.withOpacity(0.1) : Colors.transparent,
             border: Border.all(
               color: isSelected ? AppTheme.primaryGray : AppTheme.coolGray300,
@@ -506,6 +506,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 ),
                     const SizedBox(height: 2),
                     Text(
+                      // ignore: unnecessary_brace_in_string_interps
                       '范围: ${min.toStringAsFixed(min < 1 ? 1 : 0)}-${max.toStringAsFixed(max < 10 ? 1 : 0)}${unit}',
                       style: TextStyle(
                         fontSize: 11,
@@ -577,6 +578,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
+                // ignore: unnecessary_string_interpolations
                 '${min.toStringAsFixed(min < 1 ? 1 : 0)}',
                 style: TextStyle(
                   fontSize: 10,
@@ -586,6 +588,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 ),
               ),
               Text(
+                // ignore: unnecessary_brace_in_string_interps
                 '当前: ${value.toStringAsFixed(value < 1 ? 2 : value < 10 ? 1 : 0)}${unit}',
                 style: TextStyle(
                   fontSize: 10,
@@ -594,6 +597,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 ),
               ),
               Text(
+                // ignore: unnecessary_string_interpolations
                 '${max.toStringAsFixed(max < 10 ? 1 : 0)}',
                 style: TextStyle(
                   fontSize: 10,
@@ -740,12 +744,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkGray.withOpacity(0.3) 
+                    // ignore: deprecated_member_use
+                    ? AppTheme.darkGray.withOpacity(0.3)
                     : AppTheme.coolGray50,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.darkPrimaryGray.withOpacity(0.3) 
+                      // ignore: deprecated_member_use
+                      ? AppTheme.darkPrimaryGray.withOpacity(0.3)
                       : AppTheme.coolGray200,
                 ),
               ),
@@ -1051,7 +1057,38 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已应用$presetDisplayName')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '已应用$presetDisplayName',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -1077,7 +1114,38 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('已重置为默认配置')),
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '已重置为默认配置',
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black87
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.coolGray600
+                      : AppTheme.coolGray300,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
               );
             },
             child: const Text('确定'),
@@ -1095,11 +1163,73 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       
       Clipboard.setData(ClipboardData(text: configJson));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配置已复制到剪贴板')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '配置已复制到剪贴板',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('导出失败: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '导出失败: $e',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -1139,14 +1269,77 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   await manager.importConfig(controller.text);
                   
                   await _loadConfigs();
+                  // ignore: use_build_context_synchronously
                   Navigator.pop(context);
                   
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('配置导入成功')),
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '配置导入成功',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black87
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.coolGray600
+                          : AppTheme.coolGray300,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('导入失败: $e')),
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '导入失败: $e',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black87
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.coolGray600
+                          : AppTheme.coolGray300,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 }
               },
@@ -1169,7 +1362,38 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         final validation = manager.validateConfig(currentConfig);
         if (!validation.isValid) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('配置错误: ${validation.errors.join(', ')}')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '配置错误: ${validation.errors.join(', ')}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.black87
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.coolGray600
+                  : AppTheme.coolGray300,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
           );
           return;
         }
@@ -1182,13 +1406,75 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('设置已应用')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '设置已应用',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('应用失败: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '应用失败: $e',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }

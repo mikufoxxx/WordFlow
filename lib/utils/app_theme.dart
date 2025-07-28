@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'responsive_helper.dart';
 
 /// 应用主题配置类
 /// 性冷淡风格的简约灰白色调主题

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/detailed_learning_record.dart';
 import '../models/word_learning_record.dart';
@@ -8,7 +7,6 @@ import '../utils/algorithm_manager.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/cache_service.dart';
-import '../utils/chart_helper.dart';
 import '../widgets/custom_date_picker.dart';
 import 'word_detail_page.dart';
 
@@ -45,7 +43,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   
   // 日期导航状态
   DateTime _selectedDate = DateTime.now();
-  PageController _datePageController = PageController(initialPage: 1000); // 设置一个较大的初始页面以支持前后滑动
+  final PageController _datePageController = PageController(initialPage: 1000); // 设置一个较大的初始页面以支持前后滑动
   
   // 当前选中的词书
   String _currentWordBook = '';
@@ -101,8 +99,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           _statistics = stats;
         });
       }
-    } catch (e) {
-      print('❌ 加载数据失败: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -221,34 +217,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
-  /// 按日期分组学习记录
-  Map<String, List<EnhancedWordLearningRecord>> _groupRecordsByDate() {
-    final filteredRecords = _allRecords.where((record) {
-      if (_searchQuery.isNotEmpty) {
-        return record.word.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               record.translation.toLowerCase().contains(_searchQuery.toLowerCase());
-      }
-      return true;
-    }).toList();
-    
-    final Map<String, List<EnhancedWordLearningRecord>> groupedRecords = {};
-    
-    for (final record in filteredRecords) {
-      final dateKey = DateFormat('yyyy-MM-dd').format(record.lastLearningTime);
-      final displayDate = _getDateDisplayText(record.lastLearningTime);
-      
-      if (!groupedRecords.containsKey(displayDate)) {
-        groupedRecords[displayDate] = [];
-      }
-      groupedRecords[displayDate]!.add(record);
-    }
-    
-    // 按日期排序（最新的在前）
-    final sortedEntries = groupedRecords.entries.toList()
-      ..sort((a, b) => _getDateFromDisplayText(b.key).compareTo(_getDateFromDisplayText(a.key)));
-    
-    return Map.fromEntries(sortedEntries);
-  }
 
   /// 获取日期显示文本
   String _getDateDisplayText(DateTime date) {
@@ -265,37 +233,12 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     } else if (difference == 2) {
       return '前天';
     } else if (difference <= 7) {
-      return '${difference}天前';
+      return '$difference天前';
     } else {
       return DateFormat('yyyy年MM月dd日').format(date);
     }
   }
 
-  /// 从显示文本获取日期（用于排序）
-  DateTime _getDateFromDisplayText(String displayText) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
-    switch (displayText) {
-      case '今天':
-        return today;
-      case '昨天':
-        return today.subtract(const Duration(days: 1));
-      case '前天':
-        return today.subtract(const Duration(days: 2));
-      default:
-        if (displayText.contains('天前')) {
-          final days = int.parse(displayText.replaceAll('天前', ''));
-          return today.subtract(Duration(days: days));
-        }
-        // 对于具体日期，尝试解析
-        try {
-          return DateFormat('yyyy年MM月dd日').parse(displayText);
-        } catch (e) {
-          return DateTime(2000); // 默认返回一个很早的日期
-        }
-    }
-  }
 
   /// 构建日期导航
   Widget _buildDateNavigation() {
@@ -471,7 +414,6 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
 
   /// 构建增强的单词卡片
   Widget _buildEnhancedWordCard(EnhancedWordLearningRecord record) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       color: AppTheme.getCardColor(context),
       margin: const EdgeInsets.only(bottom: 8),
@@ -499,6 +441,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
                       color: record.difficulty.color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: record.difficulty.color),
@@ -624,6 +567,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -686,8 +630,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final masteredWords = _allRecords.where((r) => r.masteryPercentage >= 0.8).length;
     final studyingWords = _allRecords.where((r) => r.masteryPercentage >= 0.3 && r.masteryPercentage < 0.8).length;
     final newWords = _allRecords.where((r) => r.masteryPercentage < 0.3).length;
-    final masteryRate = totalWords > 0 ? (masteredWords / totalWords) : 0.0;
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -699,7 +642,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
+              // ignore: deprecated_member_use
               AppTheme.accentBlue.withOpacity(0.05),
+              // ignore: deprecated_member_use
               AppTheme.accentTeal.withOpacity(0.05),
             ],
             begin: Alignment.topLeft,
@@ -715,6 +660,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
                     color: AppTheme.accentBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -741,7 +687,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                         '总词书：$_currentWordBook',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.coolGray600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.mediumGray
+                              : AppTheme.coolGray500,
                         ),
                       ),
                     ],
@@ -807,6 +755,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -857,7 +806,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           children: [
             Row(
               children: [
-                Icon(Icons.donut_small_outlined, size: 20, color: AppTheme.coolGray600),
+                Icon(Icons.donut_small_outlined, size: 20, color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.mediumGray
+                    : AppTheme.coolGray500),
                 const SizedBox(width: 8),
                 Text(
                   '掌握情况分布',
@@ -912,7 +863,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           children: [
             Row(
               children: [
-                Icon(Icons.layers_outlined, size: 20, color: AppTheme.coolGray600),
+                Icon(Icons.layers_outlined, size: 20, color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.mediumGray
+                    : AppTheme.coolGray500),
                 const SizedBox(width: 8),
                 Text(
                   '记忆级别分布',
@@ -969,7 +922,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           children: [
             Row(
               children: [
-                Icon(Icons.trending_up_outlined, size: 20, color: AppTheme.coolGray600),
+                Icon(Icons.trending_up_outlined, size: 20, color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.mediumGray
+                    : AppTheme.coolGray500),
                 const SizedBox(width: 8),
                 Text(
                   '每日学习量',
@@ -1145,7 +1100,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                         '${date.month}/${date.day}',
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppTheme.coolGray600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.mediumGray
+                              : AppTheme.coolGray500,
                         ),
                       ),
                       
@@ -1155,7 +1112,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.coolGray700,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.mediumGray
+                              : AppTheme.coolGray500,
                         ),
                       ),
                       
@@ -1276,7 +1235,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           label,
           style: TextStyle(
             fontSize: 10,
-            color: AppTheme.coolGray600,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.mediumGray
+                : AppTheme.coolGray500,
           ),
         ),
       ],
@@ -1308,7 +1269,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           children: [
             Row(
               children: [
-                Icon(Icons.psychology_outlined, size: 20, color: AppTheme.coolGray600),
+                Icon(Icons.psychology_outlined, size: 20, color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.mediumGray
+                    : AppTheme.coolGray500),
                 const SizedBox(width: 8),
                 Text(
                   '学习表现统计',
@@ -1480,7 +1443,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.coolGray600,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.mediumGray
+                    : AppTheme.coolGray500,
               ),
             ),
           ),
@@ -1505,266 +1470,11 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
-  /// 构建图表部分
-  Widget _buildChartsSection() {
-    return Column(
-      children: [
-        // 难度分布饼图
-        _buildChartCard(
-          title: '难度分布',
-          icon: Icons.pie_chart,
-          chart: ChartHelper.buildDifficultyPieChart(_allRecords),
-          description: '认识/不认识单词分布',
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 记忆程度柱状图
-        _buildChartCard(
-          title: '记忆程度分布',
-          icon: Icons.bar_chart,
-          chart: ChartHelper.buildMemoryLevelChart(_allRecords),
-          description: '单词记忆程度统计',
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 学习成绩趋势图
-        _buildChartCard(
-          title: '学习成绩趋势',
-          icon: Icons.grade,
-          chart: ChartHelper.buildScoreTrendChart(_allRecords),
-          description: '学习成绩变化情况',
-        ),
-      ],
-    );
-  }
 
-  /// 构建图表卡片
-  Widget _buildChartCard({
-    required String title,
-    required IconData icon,
-    required Widget chart,
-    required String description,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark 
-                ? [
-                    AppTheme.darkCardColor,
-                    AppTheme.coolGray700,
-                  ]
-                : [
-                    AppTheme.cardColor,
-                    AppTheme.coolGray50,
-                  ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 20, color: AppTheme.accentBlue),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              chart,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  /// 构建记忆程度图表
-  Widget _buildMemoryLevelChart() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final levelCounts = <MemoryLevel, int>{};
-    for (final level in MemoryLevel.values) {
-      levelCounts[level] = _allRecords.where((r) => r.memoryLevel == level).length;
-    }
-    final total = _allRecords.length;
 
-    return Card(
-      color: AppTheme.getCardColor(context),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '记忆程度分布',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...levelCounts.entries.map((entry) {
-              final percentage = _allRecords.isEmpty ? 0.0 : entry.value / _allRecords.length;
-              return _buildProgressBar(entry.key.displayName, entry.value, percentage, entry.key.color);
-            }),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// 构建难度图表
-  Widget _buildDifficultyChart() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final difficultyCounts = <WordDifficulty, int>{};
-    for (final difficulty in WordDifficulty.values) {
-      difficultyCounts[difficulty] = _allRecords.where((r) => r.difficulty == difficulty).length;
-    }
 
-    return Card(
-      color: AppTheme.getCardColor(context),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '难度分布',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...difficultyCounts.entries.map((entry) {
-              final percentage = _allRecords.isEmpty ? 0.0 : entry.value / _allRecords.length;
-              return _buildProgressBar(entry.key.displayName, entry.value, percentage, entry.key.color);
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建学习模式统计
-  Widget _buildLearningModeStats() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final modeStats = <LearningMode, int>{};
-    for (final record in _allRecords) {
-      for (final entry in record.modeStats.entries) {
-        modeStats[entry.key] = (modeStats[entry.key] ?? 0) + entry.value;
-      }
-    }
-
-    return Card(
-      color: AppTheme.getCardColor(context),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '学习模式统计',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...modeStats.entries.map((entry) {
-              final total = modeStats.values.fold(0, (sum, count) => sum + count);
-              final percentage = total == 0 ? 0.0 : entry.value / total;
-              return _buildProgressBar(entry.key.displayName, entry.value, percentage, AppTheme.primaryGray);
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建算法统计
-  Widget _buildAlgorithmStats() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Card(
-      color: AppTheme.getCardColor(context),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '当前算法',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_statistics.isNotEmpty) ...[
-              Text(
-                '算法类型: ${_statistics['algorithmType'] ?? '未知'}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.coolGray600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '配置名称: ${_statistics['configName'] ?? '未知'}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.coolGray600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
   /// 构建空状态
   Widget _buildEmptyState([String message = '暂无数据']) {
@@ -1800,71 +1510,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
-  /// 构建详情统计项
-  Widget _buildDetailStatItem(String label, String value, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.coolGray600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 
 
 
 
 
-  /// 导出学习数据
-  void _exportLearningData() async {
-    try {
-      final csvData = await LearningDataService.instance.exportLearningDataToCsv(_currentWordBook);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('学习数据已导出: $csvData')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('导出失败: $e')),
-      );
-    }
-  }
 
-  /// 格式化时长
-  String _formatDuration(int seconds) {
-    if (seconds < 60) {
-      return '${seconds}秒';
-    } else if (seconds < 3600) {
-      return '${(seconds / 60).toStringAsFixed(1)}分钟';
-    } else {
-      return '${(seconds / 3600).toStringAsFixed(1)}小时';
-    }
-  }
 }

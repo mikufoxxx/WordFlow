@@ -91,7 +91,6 @@ class DeepSeekApiService {
       }
       
     } catch (e) {
-      print('DeepSeek API 调用失败: $e');
       return SentenceJudgmentResult(
         isCorrect: false,
         errorMessage: '网络请求失败，请检查网络连接',
@@ -186,7 +185,6 @@ class DeepSeekApiService {
       );
       
     } catch (e) {
-      print('解析判断结果失败: $e');
       return SentenceJudgmentResult(
         isCorrect: false,
         errorMessage: '解析结果失败',
@@ -231,7 +229,6 @@ class DeepSeekApiService {
       return response.statusCode == 200;
       
     } catch (e) {
-      print('API连接测试失败: $e');
       return false;
     }
   }

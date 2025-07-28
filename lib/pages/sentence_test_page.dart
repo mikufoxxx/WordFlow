@@ -504,7 +504,40 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: sentence));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已复制到剪贴板')),
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '已复制到剪贴板',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black87
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.darkCardColor
+                                    : AppTheme.cardColor,
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.all(16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
                             );
                           },
                           color: AppTheme.coolGray500,
@@ -561,7 +594,40 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
     final sentence = _sentenceController.text.trim();
     if (sentence.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入您的句子')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '请输入您的句子',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       return;
     }
@@ -592,7 +658,40 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('判断失败: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '判断失败: $e',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     } finally {
       setState(() {
@@ -600,4 +699,4 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
       });
     }
   }
-} 
+}

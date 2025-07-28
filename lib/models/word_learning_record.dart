@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import '../utils/algorithm_manager.dart';
-import '../utils/multi_algorithm_service.dart';
 import 'detailed_learning_record.dart';
-import 'algorithm_config.dart';
 import 'package:flutter/material.dart';
 /// 单词学习记录模型
 /// 存储单词的学习进度和记忆情况
@@ -138,7 +136,6 @@ class WordLearningRecord {
 
   /// 使用算法管理器计算复习间隔
   IntervalAndNextTime _calculateIntervalUsingAlgorithm(ReviewResult reviewResult, DateTime reviewTime) {
-    try {
       // 导入算法管理器
       final algorithmManager = AlgorithmManager.instance;
       final algorithmService = algorithmManager.currentService;
@@ -176,10 +173,7 @@ class WordLearningRecord {
         
         // 计算新的间隔和难度系数
         final intervalInDays = nextReviewTime.difference(reviewTime).inHours / 24.0;
-        
-        // 调试信息
-        print('🔧 算法计算: 算法类型=${algorithmManager.currentConfig?.type.displayName}, 间隔=${intervalInDays.toStringAsFixed(2)}天, 学习结果=${reviewResult.displayName}');
-        
+
         // 根据学习结果调整难度系数
         double newEaseFactor = easeFactor;
         switch (reviewResult) {
@@ -203,9 +197,6 @@ class WordLearningRecord {
           nextReviewTime: nextReviewTime,
         );
       }
-    } catch (e) {
-      print('⚠️ 算法计算失败，使用备用计算: $e');
-    }
     
     // 备用：使用原来的SuperMemo算法
     final fallbackResult = _calculateNewIntervalAndEase(reviewResult);
@@ -399,6 +390,7 @@ class WordLearningRecord {
 
 /// 记忆程度枚举
 enum MemoryLevel {
+  // ignore: constant_identifier_names
   first_time,    // 首次学习
   reviewing,     // 复习中
   strengthening, // 强化中

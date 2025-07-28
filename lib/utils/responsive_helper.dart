@@ -6,7 +6,6 @@ class ResponsiveHelper {
   // 断点定义
   static const double _mobileBreakpoint = 600;
   static const double _tabletBreakpoint = 1200;
-  static const double _desktopBreakpoint = 1920;
 
   /// 判断是否为手机设备
   static bool isMobile(BuildContext context) {

@@ -8,7 +8,6 @@ import '../utils/english_word_api_service.dart';
 import '../utils/deepseek_api_service.dart';
 import '../utils/settings_helper.dart';
 import '../utils/learning_data_service.dart';
-import '../utils/spaced_repetition_service.dart';
 import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
 import '../widgets/acrylic_app_bar.dart';
@@ -35,7 +34,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showApiKey = false;
   
   // 学习算法设置
-  SpacedRepetitionConfig? _algorithmConfig;
 
   @override
   void initState() {
@@ -69,9 +67,37 @@ class _SettingsPageState extends State<SettingsPage> {
         
         // 显示提示信息
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('API Key无效，已自动切换到快速学习模式'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.warning_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'API Key无效，已自动切换到快速学习模式',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -150,9 +176,37 @@ class _SettingsPageState extends State<SettingsPage> {
                         } : (LearningMode? value) {
                           // API Key无效时，显示提示但不执行任何操作
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('请先配置有效的DeepSeek API Key'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    Icons.warning_outlined,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '请先配置有效的DeepSeek API Key',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.white
+                                              : Colors.black87
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                  ? AppTheme.coolGray600
+                                  : AppTheme.coolGray300,
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.all(16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         },
@@ -275,9 +329,37 @@ class _SettingsPageState extends State<SettingsPage> {
                       subtitle: '切换词书时自动继承学习记录',
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('智能同步已自动开启，切换词书时会自动继承相同单词的学习进度'),
-                            duration: Duration(seconds: 3),
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '智能同步已自动开启，切换词书时会自动继承相同单词的学习进度',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black87
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.coolGray600
+                                : AppTheme.coolGray300,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.all(16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       },
@@ -310,10 +392,41 @@ class _SettingsPageState extends State<SettingsPage> {
                     _buildCompactListTile(
                       leading: const Icon(Icons.feedback_outlined),
                       title: '意见反馈',
-                      subtitle: '帮助我们改进应用',
+                      subtitle: '请前往 Github 提 issue',
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('反馈功能开发中...')),
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(
+                                  Icons.catching_pokemon_outlined,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '这是一个彩蛋...',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black87
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.coolGray600
+                                : AppTheme.coolGray300,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.all(16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
                         );
                       },
                     ),
@@ -464,98 +577,8 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// 构建滑块设置项
-  Widget _buildSliderTile({
-    required String title,
-    required String subtitle,
-    required double value,
-    required double min,
-    required double max,
-    required int divisions,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            onChanged: onChanged,
-            activeColor: Theme.of(context).primaryColor,
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// 构建信息展示项
-  Widget _buildInfoTile(String title, String description) {
-    return ListTile(
-      leading: Icon(
-        Icons.info_outline, 
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? AppTheme.mediumGray 
-            : Colors.grey,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkAccentGreen 
-              : AppTheme.darkGray,
-        ),
-      ),
-      subtitle: Text(
-        description,
-        style: TextStyle(
-          fontSize: 14, 
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.mediumGray 
-              : Colors.grey,
-        ),
-      ),
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-    );
-  }
-  
+
+
   /// 构建API Key设置项
   Widget _buildApiKeyTile() {
     return Padding(
@@ -741,8 +764,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final learningMode = await SettingsHelper.getLearningMode();
     
     // 加载算法配置
-    final algorithmConfig = await LearningDataService.instance.getAlgorithmConfig();
-    
+
     if (mounted) {
       final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
       
@@ -766,15 +788,42 @@ class _SettingsPageState extends State<SettingsPage> {
         _isApiKeyValid = isApiKeyValid;
         
         // 加载算法配置
-        _algorithmConfig = algorithmConfig;
       });
       
       // 如果自动切换了学习模式，显示提示信息
       if (!isApiKeyValid && learningMode == LearningMode.deepLearning) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('检测到无效的API Key，已自动切换到快速学习模式'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '检测到无效的API Key，已自动切换到快速学习模式',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -798,9 +847,37 @@ class _SettingsPageState extends State<SettingsPage> {
         await SettingsHelper.setLearningMode(LearningMode.quickMemory);
         
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('API Key无效，无法使用深入学习模式'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'API Key无效，无法使用深入学习模式',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
@@ -849,11 +926,73 @@ class _SettingsPageState extends State<SettingsPage> {
       await LearningDataService.instance.clearLearningData();
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('学习进度已重置')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.refresh_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '学习进度已重置',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('重置失败: ${e.toString()}')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '重置失败: ${e.toString()}',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -893,7 +1032,38 @@ class _SettingsPageState extends State<SettingsPage> {
   void _testApiConnection() async {
     if (!_isApiKeyValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先输入有效的API Key')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '请先输入有效的API Key',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       return;
     }
@@ -920,16 +1090,72 @@ class _SettingsPageState extends State<SettingsPage> {
       
       if (isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ API连接成功！'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.gpp_good_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'API连接成功！',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ API连接失败，请检查API Key是否正确'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'API连接失败，请检查API Key是否正确',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -937,8 +1163,36 @@ class _SettingsPageState extends State<SettingsPage> {
       Navigator.pop(context); // 关闭加载对话框
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ 测试失败: $e'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '测试失败: $e',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -955,23 +1209,107 @@ class _SettingsPageState extends State<SettingsPage> {
         _saveSettings();
         
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ API Key已粘贴'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '✅ API Key已粘贴',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ 剪贴板为空'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '❌ 剪贴板为空',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ 粘贴失败: $e'),
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '❌ 粘贴失败: $e',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -1034,7 +1372,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final selectedWordBook = await CacheService.getSelectedWordBook();
       if (selectedWordBook == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请先选择一个词书')),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.warning_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '请先选择一个词书',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
         return;
       }
@@ -1091,7 +1460,38 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       Navigator.of(context).pop(); // 关闭加载对话框
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('导出失败: ${e.toString()}')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '导出失败: ${e.toString()}',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -1103,7 +1503,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final selectedFile = await FileHelper.selectImportFile();
       if (selectedFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('未选择文件')),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.warning_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '未选择文件',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
         return;
       }
@@ -1143,7 +1574,38 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       Navigator.of(context).pop(); // 关闭加载对话框
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('读取文件失败: ${e.toString()}')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '读取文件失败: ${e.toString()}',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -1189,7 +1651,38 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _performImport(String csvData) async {
     if (csvData.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入有效的CSV数据')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '请输入有效的CSV数据',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       return;
     }
@@ -1198,7 +1691,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final selectedWordBook = await CacheService.getSelectedWordBook();
       if (selectedWordBook == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请先选择一个词书')),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.warning_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '请先选择一个词书',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
         return;
       }
@@ -1207,124 +1731,152 @@ class _SettingsPageState extends State<SettingsPage> {
       
       if (result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message)),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    result.message,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    result.message,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('导入失败: ${e.toString()}')),
-      );
-    }
-  }
-
-  /// 显示同步对话框
-  void _showSyncDialog() async {
-    final wordBooks = await CacheService.getCachedWordBooks();
-    final currentWordBook = await CacheService.getSelectedWordBook();
-    
-    if (wordBooks.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('需要至少两个词书才能进行同步')),
-      );
-      return;
-    }
-
-    String? fromWordBook;
-    String? toWordBook;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('词书数据同步'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+        SnackBar(
+          content: Row(
             children: [
-              const Text('将学习数据从一个词书同步到另一个词书'),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '从词书',
-                  border: OutlineInputBorder(),
-                ),
-                value: fromWordBook,
-                onChanged: (value) {
-                  setState(() {
-                    fromWordBook = value;
-                  });
-                },
-                items: wordBooks.map((book) => DropdownMenuItem(
-                  value: book.name,
-                  child: Text(book.name),
-                )).toList(),
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '到词书',
-                  border: OutlineInputBorder(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '导入失败: ${e.toString()}',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
                 ),
-                value: toWordBook,
-                onChanged: (value) {
-                  setState(() {
-                    toWordBook = value;
-                  });
-                },
-                items: wordBooks.map((book) => DropdownMenuItem(
-                  value: book.name,
-                  child: Text(book.name),
-                )).toList(),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: fromWordBook != null && toWordBook != null && fromWordBook != toWordBook
-                  ? () async {
-                      Navigator.of(context).pop();
-                      await _performSync(fromWordBook!, toWordBook!);
-                    }
-                  : null,
-              child: const Text('同步'),
-            ),
-          ],
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
         ),
-      ),
-    );
-  }
-
-  /// 执行同步
-  Future<void> _performSync(String fromWordBook, String toWordBook) async {
-    try {
-      await LearningDataService.instance.syncWordBookData(fromWordBook, toWordBook);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已将 $fromWordBook 的数据同步到 $toWordBook')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('同步失败: ${e.toString()}')),
       );
     }
   }
+
+
 
   /// 打开单词回溯页面
   void _openWordReviewPage() async {
     final selectedWordBook = await CacheService.getSelectedWordBook();
     if (selectedWordBook == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先选择一个词书')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '请先选择一个词书',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       return;
     }

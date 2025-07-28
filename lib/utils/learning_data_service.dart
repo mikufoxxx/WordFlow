@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/word_learning_record.dart';
-import '../models/word_book.dart';
 import 'spaced_repetition_service.dart';
 
 /// 学习数据管理服务

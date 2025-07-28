@@ -144,6 +144,7 @@ class ResponsiveButton extends StatelessWidget {
   final IconData? icon;
   final bool isOutlined;
 
+  // ignore: use_super_parameters
   const ResponsiveButton({
     Key? key,
     required this.text,
@@ -224,6 +225,7 @@ class ResponsiveGrid extends StatelessWidget {
   final double spacing;
   final double runSpacing;
 
+  // ignore: use_super_parameters
   const ResponsiveGrid({
     Key? key,
     required this.children,
@@ -256,6 +258,7 @@ class ResponsiveCardList extends StatelessWidget {
   final EdgeInsets? padding;
   final double spacing;
 
+  // ignore: use_super_parameters
   const ResponsiveCardList({
     Key? key,
     required this.children,

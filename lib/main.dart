@@ -31,7 +31,6 @@ void main() async {
 
 /// 验证学习模式和API Key的兼容性
 Future<void> _validateLearningModeAndApiKey() async {
-  try {
     final learningMode = await SettingsHelper.getLearningMode();
     if (learningMode == LearningMode.deepLearning) {
       final apiKey = await DeepSeekApiService.getApiKey();
@@ -40,12 +39,8 @@ Future<void> _validateLearningModeAndApiKey() async {
       if (!isApiKeyValid) {
         // API Key无效，自动切换到快速学习模式
         await SettingsHelper.setLearningMode(LearningMode.quickMemory);
-        print('⚠️ API Key无效，已自动切换到快速学习模式');
       }
     }
-  } catch (e) {
-    print('❌ 验证学习模式失败: $e');
-  }
 }
 
 /// WordFlow应用的主入口类
@@ -68,7 +63,6 @@ class _WordFlowAppState extends State<WordFlowApp> {
 
   /// 初始化所有服务
   Future<void> _initServices() async {
-    try {
       // 加载主题偏好
       _loadThemePreference();
       
@@ -77,11 +71,7 @@ class _WordFlowAppState extends State<WordFlowApp> {
       
       // 初始化算法管理器
       await AlgorithmManager.instance.initialize();
-      
-      print('✅ 所有服务初始化完成');
-    } catch (e) {
-      print('❌ 服务初始化失败: $e');
-    }
+
   }
 
   /// 加载主题偏好设置
@@ -159,6 +149,7 @@ class _WordFlowAppState extends State<WordFlowApp> {
 class ThemeProvider extends InheritedWidget {
   final VoidCallback toggleTheme;
 
+  // ignore: use_super_parameters
   const ThemeProvider({
     super.key,
     required this.toggleTheme,

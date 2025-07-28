@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/algorithm_config.dart';
 import '../models/detailed_learning_record.dart';
-import '../models/word_learning_record.dart';
 import 'multi_algorithm_service.dart';
 
 /// 算法管理器

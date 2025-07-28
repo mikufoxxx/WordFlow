@@ -28,15 +28,12 @@ class EnglishWordApiService {
         if (jsonData['code'] == 200 && jsonData['data'] != null) {
           return WordDetailResponse.fromJson(jsonData['data']);
         } else {
-          print('API返回错误: ${jsonData['msg']}');
           return null;
         }
       } else {
-        print('HTTP错误: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('获取单词详情时发生错误: $e');
       return null;
     }
   }
