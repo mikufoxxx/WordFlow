@@ -540,9 +540,10 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句字符动画 - 始终使用字符级动画
+    // 例句单词动画 - 改为单词级动画以优化性能
+    final exampleWords = currentWord.example.trim().split(RegExp(r'\s+'));
     _exampleControllers = List.generate(
-      currentWord.example.length,
+      exampleWords.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -567,7 +568,7 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句翻译字符动画 - 始终使用字符级动画
+    // 例句翻译字符动画 - 中文保持字符级动画
     _exampleTranslationControllers = List.generate(
       currentWord.exampleTranslation.length,
       (index) => AnimationController(
@@ -735,9 +736,10 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句字符动画
+    // 例句单词动画 - 改为单词级动画以优化性能
+    final exampleWords = word.example.trim().split(RegExp(r'\s+'));
     _exampleControllers = List.generate(
-      word.example.length,
+      exampleWords.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 400),
         vsync: this,
@@ -1449,7 +1451,7 @@ class _HomePageState extends State<HomePage>
         poolKey: _timerPoolKey,
         duration: const Duration(milliseconds: 300),
         callback: () {
-        _startCharacterAnimation(_exampleControllers, 35);
+        _startCharacterAnimation(_exampleControllers, 120); // 增加延迟，因为现在是单词级动画
         },
       );
       
@@ -1768,7 +1770,7 @@ class _HomePageState extends State<HomePage>
       _continueOrNext();
     }
     
-      /// 初始化逐字母浮现动画
+      /// 初始化逐单词浮现动画
   void _initializeBetterSentenceAnimation() {
     if (_judgmentResult?.betterSentences.isEmpty ?? true) return;
     
@@ -1779,9 +1781,10 @@ class _HomePageState extends State<HomePage>
     final betterSentence = _judgmentResult!.betterSentences.first;
     _betterSentenceText = betterSentence;
     
-    // 为每个字符创建动画控制器
+    // 按单词分割并为每个单词创建动画控制器
+    final words = _betterSentenceText.trim().split(RegExp(r'\s+'));
     _betterSentenceControllers = List.generate(
-      _betterSentenceText.length,
+      words.length,
       (index) => AnimationController(
         duration: const Duration(milliseconds: 300),
         vsync: this,
@@ -1813,9 +1816,9 @@ class _HomePageState extends State<HomePage>
     );
   }
   
-  /// 开始逐字母浮现动画
+  /// 开始逐单词浮现动画
   void _startBetterSentenceAnimation() {
-    // 为最后一个字符添加完成监听器
+    // 为最后一个单词添加完成监听器
     if (_betterSentenceControllers.isNotEmpty) {
       final lastController = _betterSentenceControllers.last;
       lastController.addStatusListener((status) {
@@ -1830,7 +1833,7 @@ class _HomePageState extends State<HomePage>
     for (int i = 0; i < _betterSentenceControllers.length; i++) {
       PerformanceOptimizer.createTimer(
         poolKey: _timerPoolKey,
-        duration: Duration(milliseconds: i * 50), // 每个字符延迟50ms
+        duration: Duration(milliseconds: i * 150), // 每个单词延迟150ms
         callback: () {
           if (mounted && i < _betterSentenceControllers.length) {
             _betterSentenceControllers[i].forward();
@@ -1840,7 +1843,7 @@ class _HomePageState extends State<HomePage>
     }
   }
   
-  /// 清理逐字母浮现动画控制器
+  /// 清理逐单词浮现动画控制器
   void _disposeBetterSentenceControllers() {
     for (var controller in _betterSentenceControllers) {
       controller.dispose();
@@ -2245,7 +2248,7 @@ class _HomePageState extends State<HomePage>
                             // 例句
                             Container(
                               constraints: const BoxConstraints(minHeight: 30),
-                              child: _buildAnimatedTextForMeaning(
+                              child: _buildWordLevelAnimatedText(
                                 '"${word.example}"',
                                 _exampleSlideAnimations,
                                 _exampleOpacityAnimations,
@@ -2343,7 +2346,82 @@ class _HomePageState extends State<HomePage>
     return textPainter.size.width;
   }
 
-  /// 构建字符独立动画的文本（用于释义和例句）
+  /// 构建单词级动画的文本（用于英文例句）
+  Widget _buildWordLevelAnimatedText(
+    String text,
+    List<Animation<double>> slideAnimations,
+    List<Animation<double>> opacityAnimations,
+    TextStyle style,
+  ) {
+    if (slideAnimations.isEmpty || opacityAnimations.isEmpty) {
+      return Center(
+        child: Text(
+          text,
+          style: style,
+          textAlign: TextAlign.center,
+          maxLines: null,
+          overflow: TextOverflow.visible,
+        ),
+      );
+    }
+    
+    // 分割单词（去掉引号）
+    final cleanText = text.replaceAll('"', '');
+    final words = cleanText.trim().split(RegExp(r'\s+'));
+    
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.80,
+        ),
+        child: _buildWordAnimatedWrap(words, slideAnimations, opacityAnimations, style),
+      ),
+    );
+  }
+  
+  /// 构建单词动画的Wrap布局
+  Widget _buildWordAnimatedWrap(
+    List<String> words,
+    List<Animation<double>> slideAnimations,
+    List<Animation<double>> opacityAnimations,
+    TextStyle style,
+  ) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 4.0, // 单词之间的水平间距
+      runSpacing: 2.0, // 行之间的垂直间距
+      children: [
+        // 开始引号
+        Text('"', style: style),
+        ...List.generate(words.length, (index) {
+          if (index >= slideAnimations.length || index >= opacityAnimations.length) {
+            return Text(words[index], style: style);
+          }
+          
+          return AnimatedBuilder(
+            animation: Listenable.merge([slideAnimations[index], opacityAnimations[index]]),
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, slideAnimations[index].value),
+                child: Opacity(
+                  opacity: opacityAnimations[index].value,
+                  child: Text(
+                    words[index],
+                    style: style,
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+        // 结束引号
+        Text('"', style: style),
+      ],
+    );
+  }
+
+  /// 构建字符独立动画的文本（用于释义和例句翻译）
   Widget _buildAnimatedTextForMeaning(
     String text,
     List<Animation<double>> slideAnimations,
@@ -3132,8 +3210,10 @@ class _HomePageState extends State<HomePage>
     );
   }
   
-  /// 构建逐字母浮现的正确句子
+  /// 构建逐单词浮现的正确句子
   Widget _buildAnimatedBetterSentence() {
+    final words = _betterSentenceText.trim().split(RegExp(r'\s+'));
+    
     return Container(
       width: double.infinity, // 使用Container而不是SizedBox，让高度自适应
       padding: const EdgeInsets.all(14),
@@ -3144,13 +3224,16 @@ class _HomePageState extends State<HomePage>
       ),
       child: Wrap(
         alignment: WrapAlignment.start,
-        children: List.generate(_betterSentenceText.length, (index) {
-          final char = _betterSentenceText[index];
-          final isModified = _isCharModified(char, index);
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 6.0, // 单词之间的水平间距
+        runSpacing: 4.0, // 行之间的垂直间距
+        children: List.generate(words.length, (index) {
+          final word = words[index];
+          final isModified = _isWordModified(word, index);
           
           if (index >= _betterSentenceAnimations.length) {
             return Text(
-              char,
+              word,
               style: TextStyle(
                 fontSize: 15,
                 color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
@@ -3165,17 +3248,17 @@ class _HomePageState extends State<HomePage>
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(0, 8 * (1 - _betterSentenceAnimations[index].value)),
-                child: Opacity(
-                  opacity: _betterSentenceAnimations[index].value,
-                  child: Text(
-                    char,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
-                      fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
-                      height: 1.5,
+                                  child: Opacity(
+                    opacity: _betterSentenceAnimations[index].value,
+                    child: Text(
+                      word,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isModified ? AppTheme.accentGreen : AppTheme.coolGray700,
+                        fontWeight: isModified ? FontWeight.w600 : FontWeight.w500,
+                        height: 1.5,
+                      ),
                     ),
-                  ),
                 ),
               );
             },
