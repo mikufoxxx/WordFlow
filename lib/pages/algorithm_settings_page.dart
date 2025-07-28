@@ -524,10 +524,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 height: 36,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkCardColor : AppTheme.coolGray50,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray50),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isDark ? AppTheme.coolGray600 : AppTheme.coolGray300,
+                    color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray300),
                   ),
                 ),
                 child: Row(
@@ -607,7 +607,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: AppTheme.primaryGray,
-              inactiveTrackColor: isDark ? AppTheme.coolGray600 : AppTheme.coolGray200,
+              inactiveTrackColor: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray200),
               thumbColor: AppTheme.primaryGray,
               trackHeight: 3,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
@@ -684,9 +684,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkAccentGreen 
-              : AppTheme.coolGray700,
+          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
         ),
       ),
     );

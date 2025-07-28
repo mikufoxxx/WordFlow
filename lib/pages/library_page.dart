@@ -586,9 +586,7 @@ class _LibraryPageState extends State<LibraryPage>
     return Container(
       margin: EdgeInsets.only(bottom: 10), // 从12减少到10
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? AppTheme.darkCardColor 
-            : AppTheme.cardColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
         border: item.status == WordBookStatus.selected 
             ? Border.all(color: AppTheme.accentGreen, width: 2)
@@ -622,9 +620,7 @@ class _LibraryPageState extends State<LibraryPage>
           style: TextStyle(
             fontSize: 15, // 从16减少到15
             fontWeight: FontWeight.w600,
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? const Color(0xFFDCEFEA)
-                : AppTheme.primaryTextColor,
+            color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryTextColor),
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -812,7 +808,7 @@ class _LibraryPageState extends State<LibraryPage>
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 6), // 从20,8,20,8减少到16,6,16,6
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12), // 从16减少到12
         boxShadow: [
           BoxShadow(
@@ -858,7 +854,7 @@ class _LibraryPageState extends State<LibraryPage>
           ),
         style: TextStyle(
           fontSize: 14, // 从16减少到14
-          color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.darkGray,
+          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.darkGray),
         ),
       ),
     );
@@ -871,7 +867,7 @@ class _LibraryPageState extends State<LibraryPage>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12), // 从20,0,20,16减少到16,0,16,12
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 从20,12减少到16,10
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12), // 从16减少到12
         boxShadow: [
           BoxShadow(
@@ -890,12 +886,12 @@ class _LibraryPageState extends State<LibraryPage>
               Container(
                 padding: const EdgeInsets.all(6), // 从8减少到6
                 decoration: BoxDecoration(
-                  color: isDark ? AppTheme.coolGray600 : AppTheme.coolGray100,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray100),
                   borderRadius: BorderRadius.circular(8), // 从10减少到8
                 ),
                 child: Icon(
                   Icons.library_books,
-                  color: isDark ? AppTheme.coolGray400 : AppTheme.coolGray500,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                   size: 16, // 从20减少到16
                 ),
               ),
@@ -904,7 +900,7 @@ class _LibraryPageState extends State<LibraryPage>
                 '总计: ${_allWordBookItems.length}',
             style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray600,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
                   fontWeight: FontWeight.w500,
             ),
           ),
@@ -931,7 +927,7 @@ class _LibraryPageState extends State<LibraryPage>
                 '已下载: ${_allWordBookItems.where((item) => item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected).length}',
               style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray600,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
                   fontWeight: FontWeight.w500,
               ),
               ),
@@ -970,7 +966,7 @@ class _LibraryPageState extends State<LibraryPage>
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? AppTheme.coolGray400 : AppTheme.primaryGray
+                AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray)
               ),
             ),
           ),
@@ -1003,7 +999,7 @@ class _LibraryPageState extends State<LibraryPage>
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? AppTheme.coolGray400 : AppTheme.primaryGray
+                AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray)
               ),
             ),
           ),
@@ -1011,7 +1007,7 @@ class _LibraryPageState extends State<LibraryPage>
           Text(
             '词书正在赶来的路上...',
             style: TextStyle(
-              color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.primaryGray,
+              color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -1197,9 +1193,7 @@ class _LibraryPageState extends State<LibraryPage>
                             style: TextStyle(
                               fontSize: 16, // 从18减少到16
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).brightness == Brightness.dark 
-                                  ? const Color(0xFFDCEFEA) 
-                                  : AppTheme.coolGray800,
+                              color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
                               height: 1.2,
                             ),
                             maxLines: 2,

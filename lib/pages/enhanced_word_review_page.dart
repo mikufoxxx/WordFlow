@@ -155,15 +155,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkPrimaryGray 
-              : AppTheme.primaryGray,
-          unselectedLabelColor: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.mediumGray 
-              : AppTheme.coolGray500,
-          indicatorColor: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkPrimaryGray 
-              : AppTheme.primaryGray,
+          labelColor: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryGray),
+          unselectedLabelColor: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
+          indicatorColor: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryGray),
           indicatorWeight: 3,
           tabs: const [
             Tab(text: '单词列表'),
@@ -333,7 +327,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                     Icon(
                       Icons.calendar_today_outlined,
                       size: 16,
-                      color: isDark ? AppTheme.coolGray500 : AppTheme.coolGray600,
+                      color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -341,7 +335,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                        color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                       ),
                     ),
                   ],
@@ -390,7 +384,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 Icon(
                   Icons.event_note_outlined,
                   size: 16,
-                  color: isDark ? AppTheme.coolGray500 : AppTheme.coolGray600,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -398,7 +392,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                    color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                   ),
                 ),
               ],
@@ -479,7 +473,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   Widget _buildEnhancedWordCard(EnhancedWordLearningRecord record) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
-      color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+      color: AppTheme.getCardColor(context),
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: () => _showWordDetails(record),
@@ -498,7 +492,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFFDCEFEA) : AppTheme.coolGray700,
+                        color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                       ),
                     ),
                   ),
@@ -528,7 +522,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 record.translation,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? const Color(0xFFDCEFEA) : AppTheme.coolGray600,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
                 ),
               ),
               
@@ -561,7 +555,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                       '简单:${record.easyCount} 良好:${record.goodCount} 困难:${record.hardCount} 忘记:${record.forgotCount}',
                       style: TextStyle(
                         fontSize: 10,
-                        color: isDark ? AppTheme.coolGray500 : AppTheme.coolGray400,
+                        color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray400),
                       ),
                     ),
                   ],
@@ -574,7 +568,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isDark ? AppTheme.coolGray700.withOpacity(0.3) : AppTheme.coolGray50,
+                    color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray50),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -582,14 +576,14 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                       Icon(
                         record.lastSession!.learningMode.icon,
                         size: 16,
-                        color: isDark ? AppTheme.coolGray400 : AppTheme.coolGray500,
+                        color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         record.lastSession!.learningMode.displayName,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppTheme.coolGray400 : AppTheme.coolGray500,
+                          color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -611,7 +605,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                         DateFormat('MM/dd HH:mm').format(record.lastSession!.sessionTime),
                         style: TextStyle(
                           fontSize: 10,
-                          color: isDark ? AppTheme.coolGray500 : AppTheme.coolGray400,
+                          color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray400),
                         ),
                       ),
                     ],
@@ -740,7 +734,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.coolGray800,
+                          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
                         ),
                       ),
                       Text(
@@ -825,7 +819,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: AppTheme.getPrimaryTitleColor(context, lightColor: color),
             ),
           ),
           const SizedBox(height: 2),
@@ -833,7 +827,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             label,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.coolGray600,
+              color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
             ),
             textAlign: TextAlign.center,
           ),
@@ -870,7 +864,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                   ),
                 ),
               ],
@@ -925,7 +919,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                   ),
                 ),
               ],
@@ -982,7 +976,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                   ),
                 ),
               ],
@@ -1321,7 +1315,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.coolGray700,
+                    color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
                   ),
                 ),
               ],
@@ -1438,7 +1432,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: AppTheme.getPrimaryTitleColor(context, lightColor: color),
             ),
           ),
           const SizedBox(height: 2),
@@ -1446,7 +1440,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             label,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.coolGray600,
+              color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1599,7 +1593,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray800,
+                            color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1607,7 +1601,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                           description,
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? AppTheme.darkSecondaryTextColor : AppTheme.coolGray500,
+                            color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                           ),
                         ),
                       ],
@@ -1634,7 +1628,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final total = _allRecords.length;
 
     return Card(
-      color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+      color: AppTheme.getCardColor(context),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1645,7 +1639,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
               ),
             ),
             const SizedBox(height: 16),
@@ -1668,7 +1662,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     }
 
     return Card(
-      color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+      color: AppTheme.getCardColor(context),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1679,7 +1673,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
               ),
             ),
             const SizedBox(height: 16),
@@ -1704,7 +1698,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     }
 
     return Card(
-      color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+      color: AppTheme.getCardColor(context),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1715,7 +1709,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
               ),
             ),
             const SizedBox(height: 16),
@@ -1734,7 +1728,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   Widget _buildAlgorithmStats() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
-      color: isDark ? AppTheme.darkCardColor : AppTheme.cardColor,
+      color: AppTheme.getCardColor(context),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1745,7 +1739,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppTheme.darkPrimaryTextColor : AppTheme.coolGray700,
+                color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray700),
               ),
             ),
             const SizedBox(height: 16),

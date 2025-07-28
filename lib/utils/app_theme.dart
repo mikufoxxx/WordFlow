@@ -61,6 +61,50 @@ class AppTheme {
   static const Color darkAccentTeal = Color(0xFF60B4B2);      // 青色调
   static const Color darkAccentPurple = Color(0xFF60B4B2);    // 青色调
 
+  /// 便捷的颜色获取方法 - 根据主题自动选择合适的颜色
+  
+  /// 获取主标题颜色（重要内容）
+  /// 浅色模式：使用原有颜色，深色模式：#DCEFEA
+  static Color getPrimaryTitleColor(BuildContext context, {Color? lightColor}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0xFFDCEFEA) : (lightColor ?? primaryGray);
+  }
+  
+  /// 获取副标题颜色（次要内容、标签）
+  /// 浅色模式：使用原有颜色，深色模式：#A5D5C8
+  static Color getSecondaryTitleColor(BuildContext context, {Color? lightColor}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0xFFA5D5C8) : (lightColor ?? coolGray600);
+  }
+  
+  /// 获取主要文本颜色（单词名称、定义等重要文本）
+  static Color getPrimaryTextColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0xFFDCEFEA) : primaryTextColor;
+  }
+  
+  /// 获取次要文本颜色（标签、说明文字等）
+  static Color getSecondaryTextColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? const Color(0xFFA5D5C8) : secondaryTextColor;
+  }
+  
+  /// 获取图标颜色（配合文本使用）
+  static Color getIconColor(BuildContext context, {bool isSecondary = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isSecondary) {
+      return isDark ? const Color(0xFFA5D5C8) : coolGray500;
+    } else {
+      return isDark ? const Color(0xFFDCEFEA) : coolGray600;
+    }
+  }
+
+  /// 获取卡片背景颜色
+  static Color getCardColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? darkCardColor : cardColor;
+  }
+
   /// 配置浅色模式的系统UI
   static void setLightSystemUIOverlay() {
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

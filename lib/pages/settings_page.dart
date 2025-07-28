@@ -335,9 +335,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkPrimaryTextColor 
-              : AppTheme.primaryTextColor,
+          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryTextColor),
         ),
       ),
     );
