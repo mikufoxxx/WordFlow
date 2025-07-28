@@ -18,6 +18,7 @@ enum ModificationType {
   none,      // 无修改
   grammar,   // 语法修改
   idiomatic, // 地道性改进
+  simplicity, // 简单性改进（句子过于简单）
 }
 
 /// 单词修改信息
@@ -3485,6 +3486,11 @@ class _HomePageState extends State<HomePage>
       return WordModificationInfo(isModified: true, modificationType: ModificationType.grammar);
     }
     
+    // 检查是否是简单性改进
+    if (_isWordInSimplicityImprovement(correctWord, index)) {
+      return WordModificationInfo(isModified: true, modificationType: ModificationType.simplicity);
+    }
+    
     // 检查是否是地道性修改
     if (_isWordInIdiomaticImprovement(correctWord, index)) {
       return WordModificationInfo(isModified: true, modificationType: ModificationType.idiomatic);
@@ -3496,6 +3502,44 @@ class _HomePageState extends State<HomePage>
     }
     
     return WordModificationInfo(isModified: false, modificationType: ModificationType.none);
+  }
+  
+  /// 检查是否是简单性改进（基于错误类型判断）
+  bool _isWordInSimplicityImprovement(String correctWord, int index) {
+    // 检查是否有简单性相关的错误
+    final hasSimplicityErrors = _judgmentResult!.errors.any((error) => 
+      error.type.toLowerCase().contains('简单') || 
+      error.type.toLowerCase().contains('简陋') ||
+      error.type.toLowerCase().contains('basic') ||
+      error.type.toLowerCase().contains('simple') ||
+      error.description.contains('过于简单') ||
+      error.description.contains('太简单') ||
+      error.description.contains('可以更丰富') ||
+      error.description.contains('表达更丰富') ||
+      error.description.contains('更复杂') ||
+      error.description.contains('更详细') ||
+      error.description.contains('更具体')
+    );
+    
+    if (!hasSimplicityErrors) return false;
+    
+    // 如果有简单性错误，且参考句子比用户句子更长或用词更丰富
+    final userWords = _userSentence.split(' ');
+    final correctWords = _judgmentResult!.betterSentences.first.split(' ');
+    
+    // 如果参考句子更长，说明是扩展内容
+    if (correctWords.length > userWords.length) {
+      return index >= userWords.length; // 新增的单词都标记为简单性改进
+    }
+    
+    // 如果长度相同，检查是否有词汇替换（更丰富的表达）
+    if (userWords.length == correctWords.length && index < userWords.length) {
+      final userWord = userWords[index].toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+      final correctWordClean = correctWord.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
+      return userWord != correctWordClean;
+    }
+    
+    return false;
   }
   
   /// 检查是否是地道性改进（基于错误类型判断）
@@ -3531,9 +3575,11 @@ class _HomePageState extends State<HomePage>
     
     switch (info.modificationType) {
       case ModificationType.grammar:
-        return AppTheme.accentGreen;
+        return AppTheme.accentGreen; // 绿色表示语法修改
       case ModificationType.idiomatic:
-        return Colors.orange.shade600; // 黄橙色表示地道性改进
+        return Colors.orange.shade600; // 橙色表示地道性改进
+      case ModificationType.simplicity:
+        return Colors.amber.shade600; // 黄色表示简单性改进
       case ModificationType.none:
         return AppTheme.coolGray700;
     }
