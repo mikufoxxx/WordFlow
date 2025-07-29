@@ -145,7 +145,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   
   /// 启动轮播图定时器
   void _startCarouselTimer() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) { // 增加轮播间隔
       if (_currentPage == 1) { // 只在第二页时自动轮播
         _nextCarouselItem();
       }
@@ -158,8 +158,8 @@ class _OnboardingPageState extends State<OnboardingPage>
       final nextIndex = (_carouselIndex + 1) % _learningSteps.length;
       _carouselController.animateToPage(
         nextIndex,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 800), // 增加动画时长
+        curve: Curves.easeInOutQuart, // 使用更柔和的贝塞尔曲线
       );
     }
   }
@@ -322,146 +322,217 @@ class _OnboardingPageState extends State<OnboardingPage>
   /// 构建学习流程轮播图 - 增强视差动效
   Widget _buildLearningCarousel() {
     return SizedBox(
-      height: 260, // 增加高度以容纳视差效果
+      height: 280, // 进一步增加高度以容纳更丰富的视差效果
       child: PageView.builder(
-        controller: _carouselController,
-        onPageChanged: (index) {
-          setState(() {
-            _carouselIndex = index;
-          });
-        },
-        itemCount: _learningSteps.length,
-        itemBuilder: (context, index) {
+          controller: _carouselController,
+          onPageChanged: (index) {
+            setState(() {
+              _carouselIndex = index;
+            });
+          },
+          itemCount: _learningSteps.length,
+          physics: const BouncingScrollPhysics(), // 添加弹性滚动效果
+          itemBuilder: (context, index) {
           final step = _learningSteps[index];
           return AnimatedBuilder(
             animation: _carouselController,
             builder: (context, child) {
               double value = 0.0;
+              double normalizedValue = 0.0;
               if (_carouselController.position.haveDimensions) {
                 value = index.toDouble() - (_carouselController.page ?? 0);
-                value = (value * 0.038).clamp(-1, 1);
+                normalizedValue = value.clamp(-1.0, 1.0);
+                value = (value * 0.7).clamp(-1, 1); // 进一步增强3D效果
               }
+              
+              // 计算多层视差参数
+              final absValue = normalizedValue.abs();
+              final parallaxIntensity = (1 - absValue).clamp(0.0, 1.0);
+              final scaleEffect = 0.85 + (parallaxIntensity * 0.15);
+              final rotationEffect = normalizedValue * 0.25; // 进一步增强旋转效果
               
               return Transform(
                 alignment: Alignment.center,
                 transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.001)
-                  ..rotateY(value),
+                  ..setEntry(3, 2, 0.0008) // 增强透视效果
+                  ..rotateY(rotationEffect)
+                  ..rotateX(normalizedValue * 0.08) // 增强X轴旋转效果
+                  ..scale(scaleEffect),
                 child: Container(
                   margin: EdgeInsets.symmetric(
-                    horizontal: 16 + (value.abs() * 8), // 动态边距
-                    vertical: value.abs() * 4, // 垂直视差
+                    horizontal: 12 + (absValue * 12), // 更动态的边距
+                    vertical: absValue * 6, // 增强垂直视差
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGray.withOpacity(0.08 + (1 - value.abs()) * 0.02),
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppTheme.primaryGray.withOpacity(0.06 + (parallaxIntensity * 0.04)),
+                    borderRadius: BorderRadius.circular(24 - (absValue * 4)), // 动态圆角
                     border: Border.all(
-                      color: AppTheme.primaryGray.withOpacity(0.2 + (1 - value.abs()) * 0.1),
-                      width: 1.5,
+                      color: AppTheme.primaryGray.withOpacity(0.15 + (parallaxIntensity * 0.15)),
+                      width: 1.0 + (parallaxIntensity * 0.8), // 动态边框宽度
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryGray.withOpacity(0.1 * (1 - value.abs())),
-                        blurRadius: 20 * (1 - value.abs()),
-                        offset: Offset(0, 8 * (1 - value.abs())),
+                        color: AppTheme.primaryGray.withOpacity(0.08 * parallaxIntensity),
+                        blurRadius: 24 * parallaxIntensity,
+                        offset: Offset(normalizedValue * 4, 10 * parallaxIntensity), // 动态阴影偏移
+                      ),
+                      // 添加第二层阴影增强深度
+                      BoxShadow(
+                        color: AppTheme.primaryGray.withOpacity(0.04 * parallaxIntensity),
+                        blurRadius: 40 * parallaxIntensity,
+                        offset: Offset(normalizedValue * 8, 20 * parallaxIntensity),
                       ),
                     ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // 步骤图标 - 添加视差动效
+                      // 步骤图标 - 超强视差动效
                       Transform.translate(
-                        offset: Offset(0, -value * 8), // 图标反向移动
+                        offset: Offset(
+                          normalizedValue * -20, // 增强水平视差移动
+                          normalizedValue * -25, // 增强垂直反向移动
+                        ),
                         child: Transform.scale(
-                          scale: 1.0 - (value.abs() * 0.1), // 缩放效果
+                          scale: 0.85 + (parallaxIntensity * 0.3), // 更明显的缩放效果
+                          child: Transform.rotate(
+                            angle: normalizedValue * 0.2, // 增强旋转效果
+                            child: Container(
+                              width: 70 + (parallaxIntensity * 10), // 稍微缩小的尺寸
+                              height: 70 + (parallaxIntensity * 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryGray.withOpacity(0.1 + (parallaxIntensity * 0.12)),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryGray.withOpacity(0.2 * parallaxIntensity),
+                                    blurRadius: 20 * parallaxIntensity,
+                                    offset: Offset(normalizedValue * 5, 8 * parallaxIntensity),
+                                  ),
+                                  // 增强内阴影效果
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.15 * parallaxIntensity),
+                                    blurRadius: 12 * parallaxIntensity,
+                                    offset: Offset(-normalizedValue * 3, -4 * parallaxIntensity),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                step.icon,
+                                size: 35 + (parallaxIntensity * 5), // 稍微缩小的图标大小
+                                color: AppTheme.primaryGray.withOpacity(0.7 + (parallaxIntensity * 0.3)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 20 - (absValue * 6)), // 更动态的间距
+                      
+                      // 步骤编号 - 超强浮动效果
+                      Transform.translate(
+                        offset: Offset(
+                          normalizedValue * 15, // 增强水平浮动
+                          normalizedValue * 12, // 增强垂直浮动
+                        ),
+                        child: Transform.scale(
+                          scale: 0.9 + (parallaxIntensity * 0.2), // 更明显的缩放效果
                           child: Container(
-                            width: 72,
-                            height: 72,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16 + (parallaxIntensity * 4),
+                              vertical: 8 + (parallaxIntensity * 2),
+                            ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryGray.withOpacity(0.15 + (1 - value.abs()) * 0.05),
-                              shape: BoxShape.circle,
+                              color: AppTheme.primaryGray.withOpacity(0.88 + (parallaxIntensity * 0.12)),
+                              borderRadius: BorderRadius.circular(22 - (absValue * 3)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryGray.withOpacity(0.2 * (1 - value.abs())),
-                                  blurRadius: 12 * (1 - value.abs()),
-                                  offset: Offset(0, 4 * (1 - value.abs())),
+                                  color: AppTheme.primaryGray.withOpacity(0.35 * parallaxIntensity),
+                                  blurRadius: 16 * parallaxIntensity,
+                                  offset: Offset(normalizedValue * 4, 6 * parallaxIntensity),
+                                ),
+                                // 增强高光效果
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.3 * parallaxIntensity),
+                                  blurRadius: 8 * parallaxIntensity,
+                                  offset: Offset(-normalizedValue * 2, -3 * parallaxIntensity),
                                 ),
                               ],
                             ),
-                            child: Icon(
-                              step.icon,
-                              size: 36,
-                              color: AppTheme.primaryGray.withOpacity(0.8 + (1 - value.abs()) * 0.2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      SizedBox(height: 18 - (value.abs() * 4)), // 动态间距
-                      
-                      // 步骤编号 - 添加浮动效果
-                      Transform.translate(
-                        offset: Offset(0, value * 4), // 编号正向移动
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryGray.withOpacity(0.9 + (1 - value.abs()) * 0.1),
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryGray.withOpacity(0.3 * (1 - value.abs())),
-                                blurRadius: 8 * (1 - value.abs()),
-                                offset: Offset(0, 2 * (1 - value.abs())),
+                            child: Text(
+                              '第 ${index + 1} 步',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9 + (parallaxIntensity * 0.1)),
+                                fontSize: 12 + (parallaxIntensity * 1.5), // 稍微缩小的字体大小
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8 + (parallaxIntensity * 0.4),
                               ),
-                            ],
-                          ),
-                          child: Text(
-                            '第 ${index + 1} 步',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9 + (1 - value.abs()) * 0.1),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                       ),
                       
-                      SizedBox(height: 16 - (value.abs() * 2)), // 动态间距
+                      SizedBox(height: 16 - (absValue * 4)), // 更动态的间距
                       
-                      // 步骤标题 - 添加淡入淡出效果
+                      // 步骤标题 - 超强移动效果
                       Transform.translate(
-                        offset: Offset(0, value * 6), // 标题移动
-                        child: Opacity(
-                          opacity: 1.0 - (value.abs() * 0.3), // 透明度变化
-                          child: Text(
-                            step.title,
-                            style: TextStyle(
-                              fontSize: 19 - (value.abs() * 1), // 动态字体大小
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryGray.withOpacity(0.9 + (1 - value.abs()) * 0.1),
-                              letterSpacing: 0.8,
+                        offset: Offset(
+                          normalizedValue * 15, // 增强水平移动
+                          normalizedValue * 12, // 增强垂直移动
+                        ),
+                        child: Transform.scale(
+                          scale: 0.9 + (parallaxIntensity * 0.2), // 更明显的缩放效果
+                          child: Opacity(
+                            opacity: 0.6 + (parallaxIntensity * 0.4), // 更强的透明度变化
+                            child: Text(
+                              step.title,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 17 + (parallaxIntensity * 2.5), // 稍微缩小的字体大小
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.primaryGray.withOpacity(0.8 + (parallaxIntensity * 0.2)),
+                                letterSpacing: 0.8 + (parallaxIntensity * 0.5),
+                                shadows: [
+                                  Shadow(
+                                    color: AppTheme.primaryGray.withOpacity(0.15 * parallaxIntensity),
+                                    offset: Offset(normalizedValue * 2, 2 * parallaxIntensity),
+                                    blurRadius: 4 * parallaxIntensity,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                       
-                      SizedBox(height: 8 - (value.abs() * 2)), // 动态间距
+                      SizedBox(height: 10 - (absValue * 3)), // 更动态的间距
                       
-                      // 步骤描述 - 添加优雅的浮动效果
+                      // 步骤描述 - 超强浮动效果
                       Transform.translate(
-                        offset: Offset(0, value * 10), // 描述文字移动更多
-                        child: Opacity(
-                          opacity: 1.0 - (value.abs() * 0.4), // 更明显的透明度变化
-                          child: Text(
-                            step.description,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14 - (value.abs() * 0.5), // 动态字体大小
-                              color: AppTheme.coolGray600.withOpacity(0.8 + (1 - value.abs()) * 0.2),
-                              height: 1.4,
-                              letterSpacing: 0.3,
+                        offset: Offset(
+                          normalizedValue * 20, // 进一步增强水平移动
+                          normalizedValue * 16, // 进一步增强垂直移动
+                        ),
+                        child: Transform.scale(
+                          scale: 0.88 + (parallaxIntensity * 0.24), // 更强的缩放效果
+                          child: Opacity(
+                            opacity: 0.5 + (parallaxIntensity * 0.5), // 最强的透明度变化
+                            child: Text(
+                              step.description,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13 + (parallaxIntensity * 1.5), // 稍微缩小的字体大小
+                                color: AppTheme.coolGray600.withOpacity(0.6 + (parallaxIntensity * 0.4)),
+                                height: 1.2 + (parallaxIntensity * 0.3),
+                                letterSpacing: 0.3 + (parallaxIntensity * 0.4),
+                                shadows: [
+                                  Shadow(
+                                    color: AppTheme.coolGray600.withOpacity(0.08 * parallaxIntensity),
+                                    offset: Offset(normalizedValue * 1, 1 * parallaxIntensity),
+                                    blurRadius: 2 * parallaxIntensity,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -791,16 +862,66 @@ class _OnboardingPageState extends State<OnboardingPage>
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ API Key已粘贴'),
-            backgroundColor: AppTheme.primaryGray,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'API Key已粘贴',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.primaryGray,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('❌ 剪贴板为空'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '剪贴板为空',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.red.shade700
+                : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -808,8 +929,33 @@ class _OnboardingPageState extends State<OnboardingPage>
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ 粘贴失败: $e'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '粘贴失败: $e',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.red.shade700
+              : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );

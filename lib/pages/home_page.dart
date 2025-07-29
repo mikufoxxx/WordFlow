@@ -282,21 +282,27 @@ class _HomePageState extends State<HomePage>
   Future<void> _playWordPronunciation() async {
     if (_currentWord == null) return;
     
-    final pronunciationType = await SettingsHelper.getPronunciationType();
-    final audioUrl = _currentWord!.getValidAudioUrl(pronunciationType);
-    
-    if (audioUrl != null && audioUrl.isNotEmpty) {
+    try {
+      final pronunciationType = await SettingsHelper.getPronunciationType();
+      final audioUrl = _currentWord!.getValidAudioUrl(pronunciationType);
+      
+      if (audioUrl != null && audioUrl.isNotEmpty) {
+        // 确保音频播放器处于可用状态
         await _audioPlayer.stop();
         await _audioPlayer.play(UrlSource(audioUrl));
+      }
+    } catch (e) {
+      // 发音播放失败时静默处理，不影响用户体验
+      debugPrint('发音播放失败: $e');
     }
   }
 
-  /// 播放设置页面音效（优化版本）
-  void _playSettingSound() async {
+  /// 播放记住音效（优化版本）
+  void _playRememberSound() async {
       // 为每次播放创建独立的音频播放器实例
       final player = AudioPlayer();
       await player.setVolume(1);
-      await player.play(AssetSource('sound/settingpage.mp3'));
+      await player.play(AssetSource('sound/remember.mp3'));
       
       // 播放完成后释放资源
       player.onPlayerComplete.listen((_) {
@@ -304,17 +310,43 @@ class _HomePageState extends State<HomePage>
       });
   }
 
-  /// 播放词库选择音效（优化版本）
-  void _playBookPageSound() async {
+  /// 播放忘记音效（优化版本）
+  void _playForgotSound() async {
+    // 为每次播放创建独立的音频播放器实例
+    final player = AudioPlayer();
+    await player.setVolume(1);
+    await player.play(AssetSource('sound/forgot.mp3'));
+
+    // 播放完成后释放资源
+    player.onPlayerComplete.listen((_) {
+      player.dispose();
+    });
+  }
+
+  /// 播放点击音效（优化版本）
+  void _playTapSound() async {
       // 为每次播放创建独立的音频播放器实例
       final player = AudioPlayer();
       await player.setVolume(1);
-      await player.play(AssetSource('sound/bookpage.mp3'));
+      await player.play(AssetSource('sound/tapin.mp3'));
       
       // 播放完成后释放资源
       player.onPlayerComplete.listen((_) {
         player.dispose();
       });
+  }
+
+  /// 播放句子结果音效（优化版本）
+  void _playResultSound() async {
+    // 为每次播放创建独立的音频播放器实例
+    final player = AudioPlayer();
+    await player.setVolume(1);
+    await player.play(AssetSource('sound/showdetail.mp3'));
+
+    // 播放完成后释放资源
+    player.onPlayerComplete.listen((_) {
+      player.dispose();
+    });
   }
 
   /// 初始化主要动画控制器 - 使用性能优化器
@@ -901,7 +933,7 @@ class _HomePageState extends State<HomePage>
               icon: const Icon(Icons.library_books_outlined),
                   iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
               onPressed: () async {
-                _playBookPageSound();
+                _playTapSound();
                 await Navigator.pushNamed(context, '/library');
                 // 从词库页面返回时，检查是否需要重新加载词库数据
                 await _checkAndReloadWordBook();
@@ -931,7 +963,7 @@ class _HomePageState extends State<HomePage>
                 icon: const Icon(Icons.settings_outlined),
                     iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
                 onPressed: () {
-                  _playSettingSound();
+                  _playTapSound();
                   Navigator.pushNamed(context, '/settings');
                 },
                 color: Theme.of(context).primaryColor,
@@ -1298,7 +1330,7 @@ class _HomePageState extends State<HomePage>
                           child: _buildCompactButton(
                             onPressed: _undoLastAction,
                             icon: Icons.undo_rounded,
-                            label: '撤回上一个',
+                            label: '回溯上个词',
                             color: Theme.of(context).brightness == Brightness.dark 
                                 ? AppTheme.darkAccentOrange.withOpacity(0.2)
                                 : AppTheme.accentOrange.withOpacity(0.15),
@@ -1318,7 +1350,7 @@ class _HomePageState extends State<HomePage>
                           // 不认识按钮
                           Expanded(
                             child: _buildElegantButton(
-                              onPressed: _markAsUnknown,
+                              onPressed: () {_playForgotSound(); _markAsUnknown();},
                               icon: Icons.close_rounded,
                               label: '不认识',
                               color: Theme.of(context).brightness == Brightness.dark 
@@ -1338,7 +1370,7 @@ class _HomePageState extends State<HomePage>
                           // 认识按钮
                           Expanded(
                             child: _buildElegantButton(
-                              onPressed: _markAsKnown,
+                              onPressed: () {_playRememberSound(); _markAsKnown();},
                               icon: Icons.check_rounded,
                               label: '认识',
                               color: Theme.of(context).brightness == Brightness.dark 
@@ -1552,6 +1584,8 @@ class _HomePageState extends State<HomePage>
     // 只在展开释义时重置动画，收起时不需要重置
     if (_showMeaning) {
       _resetMeaningCharacterAnimations();
+      // 在展开释义时检查并播放自动发音
+      _checkAndPlayAutoPronunciation();
     }
     
     _startMeaningAnimation();
@@ -1664,9 +1698,39 @@ class _HomePageState extends State<HomePage>
     // 显示撤回提示
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已撤回到上一个单词'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '已回溯到上一个单词',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -3033,7 +3097,7 @@ class _HomePageState extends State<HomePage>
                           child: SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isJudging ? null : _submitSentence,
+                              onPressed: _isJudging ? null : () {_playTapSound();_submitSentence;},
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.accentGreen,
                                 foregroundColor: Colors.white,
@@ -3081,7 +3145,7 @@ class _HomePageState extends State<HomePage>
                         return Opacity(
                           opacity: _isJudging ? _skipButtonFadeAnimation.value : 1.0,
                           child: TextButton(
-                            onPressed: _isJudging ? null : _skipSentenceTest,
+                            onPressed: _isJudging ? null : () {_playTapSound();_skipSentenceTest;},
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                               shape: RoundedRectangleBorder(
