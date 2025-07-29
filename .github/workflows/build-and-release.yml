@@ -38,6 +38,38 @@ jobs:
         VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # 获取最新的标签
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        # 如果存在CHANGELOG.md文件，尝试提取对应版本的更新内容
+        if [ -f "CHANGELOG.md" ]; then
+          # 提取当前版本的更新内容
+          RELEASE_NOTES=$(awk '/^## \[?v?${{ steps.version.outputs.version }}\]?/{flag=1; next} /^## /{flag=0} flag' CHANGELOG.md || echo "")
+        fi
+        
+        # 如果没有CHANGELOG.md或者没有找到对应版本，使用Git提交信息
+        if [ -z "$RELEASE_NOTES" ]; then
+          if [ -n "$LATEST_TAG" ]; then
+            # 获取自上个标签以来的提交信息
+            RELEASE_NOTES=$(git log $LATEST_TAG..HEAD --pretty=format:"- %s" --no-merges | head -20)
+          else
+            # 如果没有之前的标签，获取最近10个提交
+            RELEASE_NOTES=$(git log --pretty=format:"- %s" --no-merges -10)
+          fi
+        fi
+        
+        # 如果还是没有内容，使用默认信息
+        if [ -z "$RELEASE_NOTES" ]; then
+          RELEASE_NOTES="- 版本更新\n- 性能优化\n- Bug修复"
+        fi
+        
+        # 将换行符转换为\n以便在GitHub Actions中使用
+        RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed ':a;N;$!ba;s/\n/\\n/g')
+        echo "notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
+        
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -50,9 +82,7 @@ jobs:
           ## WordFlow v${{ steps.version.outputs.version }}
           
           ### 更新内容
-          - 自动构建发布
-          - 性能优化
-          - Bug修复
+          ${{ steps.release_notes.outputs.notes }}
           
           ### 下载
           - [Android APK](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/app-release.apk)
