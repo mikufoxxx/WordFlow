@@ -864,14 +864,20 @@ class _HomePageState extends State<HomePage>
           ? AppTheme.darkBackgroundColor 
           : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(
-          'WordFlow',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkPrimaryTextColor 
-                : AppTheme.primaryTextColor,
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          switchInCurve: Curves.easeOutQuart,
+          switchOutCurve: Curves.easeInQuart,
+          child: Text(
+            (_isTestingMode || _isSentenceSubmitted) ? _currentWord?.word ?? 'WordFlow' : 'WordFlow',
+            key: ValueKey((_isTestingMode || _isSentenceSubmitted) ? _currentWord?.word : 'WordFlow'),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkPrimaryTextColor 
+                  : AppTheme.primaryTextColor,
+            ),
           ),
         ),
         leading: (!_isTestingMode && !_isSentenceSubmitted) ? Padding(
@@ -1273,83 +1279,107 @@ class _HomePageState extends State<HomePage>
           child: Opacity(
             opacity: _buttonsOpacityAnimation.value,
             child: IgnorePointer(
-              ignoring: !_wordAnimationCompleted || _buttonsController.status == AnimationStatus.dismissed,
-                              child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 撤回按钮
-                      if (_previousWord != null)
-                        Container(
-                          margin: EdgeInsets.only(bottom: 12),
-                          child: _buildCompactButton(
-                            onPressed: _undoLastAction,
-                            icon: Icons.undo_rounded,
-                            label: '回溯上个词',
-                            color: Theme.of(context).brightness == Brightness.dark 
-                                ? AppTheme.darkAccentOrange.withOpacity(0.2)
-                                : AppTheme.accentOrange.withOpacity(0.15),
-                            textColor: Theme.of(context).brightness == Brightness.dark 
-                                ? AppTheme.darkAccentOrange
-                                : AppTheme.accentOrange.withOpacity(0.8),
-                            iconColor: Theme.of(context).brightness == Brightness.dark 
-                                ? AppTheme.darkAccentOrange.withOpacity(0.9)
-                                : AppTheme.accentOrange,
+              ignoring: !_wordAnimationCompleted ||
+                  _buttonsController.status == AnimationStatus.dismissed,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 撤回按钮
+                    if (_previousWord != null)
+                      Container(
+                        margin: EdgeInsets.only(bottom: 12),
+                        child: _buildCompactButton(
+                          onPressed: _undoLastAction,
+                          icon: Icons.undo_rounded,
+                          label: '回溯上个词',
+                          color: Theme
+                              .of(context)
+                              .brightness == Brightness.dark
+                              ? AppTheme.darkAccentOrange.withOpacity(0.2)
+                              : AppTheme.accentOrange.withOpacity(0.15),
+                          textColor: Theme
+                              .of(context)
+                              .brightness == Brightness.dark
+                              ? AppTheme.darkAccentOrange
+                              : AppTheme.accentOrange.withOpacity(0.8),
+                          iconColor: Theme
+                              .of(context)
+                              .brightness == Brightness.dark
+                              ? AppTheme.darkAccentOrange.withOpacity(0.9)
+                              : AppTheme.accentOrange,
+                        ),
+                      ),
+
+                    // 主要按钮行
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 不认识按钮
+                        Expanded(
+                          child: _buildElegantButton(
+                            onPressed: () {
+                              SoundService.playForgotSound();
+                              _markAsUnknown();
+                            },
+                            icon: Icons.close_rounded,
+                            label: '不认识',
+                            color: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentRed.withOpacity(0.2)
+                                : AppTheme.accentRed.withOpacity(0.15),
+                            textColor: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentRed
+                                : AppTheme.accentRed.withOpacity(0.8),
+                            iconColor: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentRed.withOpacity(0.9)
+                                : AppTheme.accentRed,
                           ),
                         ),
-                      
-                      // 主要按钮行
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // 不认识按钮
-                          Expanded(
-                            child: _buildElegantButton(
-                              onPressed: () {SoundService.playForgotSound(); _markAsUnknown();},
-                              icon: Icons.close_rounded,
-                              label: '不认识',
-                              color: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentRed.withOpacity(0.2)
-                                  : AppTheme.accentRed.withOpacity(0.15),
-                              textColor: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentRed
-                                  : AppTheme.accentRed.withOpacity(0.8),
-                              iconColor: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentRed.withOpacity(0.9)
-                                  : AppTheme.accentRed,
-                            ),
+
+                        SizedBox(width: 32),
+
+                        // 认识按钮
+                        Expanded(
+                          child: _buildElegantButton(
+                            onPressed: () {
+                              SoundService.playRememberSound();
+                              _markAsKnown();
+                            },
+                            icon: Icons.check_rounded,
+                            label: '认识',
+                            color: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentGreen.withOpacity(0.2)
+                                : AppTheme.accentGreen.withOpacity(0.15),
+                            textColor: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentGreen
+                                : AppTheme.accentGreen.withOpacity(0.8),
+                            iconColor: Theme
+                                .of(context)
+                                .brightness == Brightness.dark
+                                ? AppTheme.darkAccentGreen.withOpacity(0.9)
+                                : AppTheme.accentGreen,
                           ),
-                          
-                          SizedBox(width: 32),
-                          
-                          // 认识按钮
-                          Expanded(
-                            child: _buildElegantButton(
-                              onPressed: () {SoundService.playRememberSound(); _markAsKnown();},
-                              icon: Icons.check_rounded,
-                              label: '认识',
-                              color: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentGreen.withOpacity(0.2)
-                                  : AppTheme.accentGreen.withOpacity(0.15),
-                              textColor: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentGreen
-                                  : AppTheme.accentGreen.withOpacity(0.8),
-                              iconColor: Theme.of(context).brightness == Brightness.dark 
-                                  ? AppTheme.darkAccentGreen.withOpacity(0.9)
-                                  : AppTheme.accentGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         );
-      },
-    );
+      });
   }
 
   /// 构建优雅按钮
@@ -2138,71 +2168,15 @@ class _HomePageState extends State<HomePage>
       builder: (context, child) {
         return Transform.translate(
             offset: Offset(0, 25 * (1 - _slideController.value)),
-          child: FadeTransition(
-            opacity: _fadeController,
-            child: _isTestingMode 
-                ? // 测试模式：只显示单词，无背景框
-                Stack(
-                  children: [
-                    // 单词本体（测试模式下应用移动动画）
-                    AnimatedBuilder(
-                      animation: _wordMoveController,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0, _wordMoveAnimation.value),
-                          child: Transform.scale(
-                            scale: _wordScaleAnimation.value,
-                            child: Container(
-                              constraints: const BoxConstraints(minHeight: 60),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // 单词文本
-                                  Flexible(
-                                    child: _buildAnimatedText(
-                                      word.word,
-                                      _wordSlideAnimations,
-                                      _wordOpacityAnimations,
-                                      Theme.of(context).textTheme.headlineLarge!.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.5,
-                                        fontSize: 34,
-                                      ),
-                                    ),
-                                  ),
-                                  
-                                  // 发音按钮（造句模式下隐藏）
-                                  SizedBox.shrink(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    
-                    // 输入框和结果显示区域 - 整体向上移动
-                    Transform.translate(
-                      offset: const Offset(0, -30), // 整体向上移动30px
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 预留单词原始位置的空间，考虑到单词会向上移动30px
-                          const SizedBox(height: 30),
-                          
-                          // 单词与输入框的间距（增加到50px，让布局更舒适）
-                          const SizedBox(height: 50),
-                          
-                          // 输入框和结果显示区域（位置一致）
-                          _buildInputAndResultArea(),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-                : // 正常模式：显示完整的单词卡片
-                Container(
+          child: _isTestingMode 
+              ? // 测试模式：输入框整体居中显示
+               Center(
+                 child: _buildInputAndResultArea(),
+               )
+              : // 正常模式：显示单词
+               FadeTransition(
+                 opacity: _fadeController,
+                 child: Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark 
                           ? AppTheme.darkCardColor 
