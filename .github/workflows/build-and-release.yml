@@ -1,4 +1,16 @@
-name: Build and Release APK
+name: Build and Release
+
+permissions:
+  contents: write
+  actions: read
+  checks: write
+  deployments: write
+  issues: write
+  packages: write
+  pull-requests: write
+  repository-projects: write
+  security-events: write
+  statuses: write
 
 on:
   push:
