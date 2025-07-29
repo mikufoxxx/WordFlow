@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters, curly_braces_in_flow_control_structures
+
 import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 import '../models/word_learning_record.dart';
@@ -666,8 +668,9 @@ class AdaptiveImplementation extends BaseAlgorithmImplementation {
     final wordCount = sentence.split(' ').length;
     
     // 基于长度
-    if (wordCount < 5) score = 3;
-    else if (wordCount < 10) score = 5;
+    if (wordCount < 5) {
+      score = 3;
+    } else if (wordCount < 10) score = 5;
     else if (wordCount < 15) score = 7;
     else score = 9;
     

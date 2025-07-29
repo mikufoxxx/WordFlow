@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -270,7 +272,6 @@ class PerformanceMonitor extends StatefulWidget {
 }
 
 class _PerformanceMonitorState extends State<PerformanceMonitor> {
-  int _buildCount = 0;
   DateTime? _lastBuildTime;
   
   @override
@@ -278,12 +279,10 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
     final now = DateTime.now();
     
     if (widget.enableLogging) {
-      _buildCount++;
-      
+
       if (_lastBuildTime != null) {
         final timeSinceLastBuild = now.difference(_lastBuildTime!);
         if (timeSinceLastBuild.inMilliseconds > 16) { // 超过一帧的时间
-          print('⚠️ ${widget.label}: 构建间隔 ${timeSinceLastBuild.inMilliseconds}ms (第${_buildCount}次构建)');
         }
       }
       

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/word_book.dart';
@@ -109,7 +111,7 @@ class _LibraryPageState extends State<LibraryPage>
   // 分页控制
   static const int _pageSize = 20;
   int _currentPage = 0;
-  List<WordBookItem> _displayedItems = [];
+  final List<WordBookItem> _displayedItems = [];
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
   
@@ -184,10 +186,8 @@ class _LibraryPageState extends State<LibraryPage>
       List<WordBook> wordBooks;
       
       if (cachedWordBooks.isNotEmpty) {
-        print('📦 从缓存加载词库数据');
         wordBooks = cachedWordBooks;
       } else {
-        print('🌐 从网络加载词库数据');
         wordBooks = await GitHubApiService.getWordBooks();
         // 缓存词库列表
         await CacheService.cacheWordBooks(wordBooks);
@@ -427,17 +427,14 @@ class _LibraryPageState extends State<LibraryPage>
     });
     
     try {
-      print('📚 开始下载词库: ${item.wordBook.name}');
-      
+
       // 首先检查缓存
       final cachedWordData = await CacheService.getCachedWordData(item.wordBook.name);
       List<WordData> wordData;
       
       if (cachedWordData != null) {
-        print('📦 从缓存加载词库数据');
         wordData = cachedWordData;
       } else {
-        print('🌐 从网络下载词库数据');
         wordData = await GitHubApiService.getWordData(item.wordBook.translationUrl);
         // 缓存下载的数据
         await CacheService.cacheWordData(item.wordBook.name, wordData);
@@ -449,15 +446,13 @@ class _LibraryPageState extends State<LibraryPage>
         item.updateWordCount(wordData.length);
       });
       
-      print('✅ 词库下载完成: ${wordData.length} 个单词');
-      
+
     } catch (e) {
       setState(() {
         item.status = WordBookStatus.error;
         item.errorMessage = e.toString();
       });
       
-      print('❌ 词库下载失败: $e');
     }
   }
 

@@ -58,9 +58,9 @@ class _AnimatedTextWidget extends StatefulWidget {
 class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
     with TickerProviderStateMixin {
   
-  List<AnimationController> _characterControllers = [];
-  List<Animation<double>> _characterOpacityAnimations = [];
-  List<Animation<Offset>> _characterSlideAnimations = [];
+  final List<AnimationController> _characterControllers = [];
+  final List<Animation<double>> _characterOpacityAnimations = [];
+  final List<Animation<Offset>> _characterSlideAnimations = [];
   Timer? _animationTimer;
   bool _isDisposed = false;
   

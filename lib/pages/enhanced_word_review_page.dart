@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, duplicate_ignore, unnecessary_to_list_in_spreads
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/detailed_learning_record.dart';
@@ -1235,7 +1237,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final hardHeight = (data.hardCount / total) * barHeight;
     final forgotHeight = (data.forgotCount / total) * barHeight;
     
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: barHeight,
       child: Column(

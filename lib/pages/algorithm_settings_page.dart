@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, duplicate_ignore, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/algorithm_config.dart';

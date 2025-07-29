@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
@@ -161,19 +163,12 @@ class _HomePageState extends State<HomePage>
 
   /// 初始化算法管理器
   Future<void> _initializeAlgorithmManager() async {
-    try {
       await AlgorithmManager.instance.initialize();
-      print('✅ 算法管理器初始化成功');
-    } catch (e) {
-      print('❌ 算法管理器初始化失败: $e');
-    }
   }
 
   /// 更新学习统计
   Future<void> _updateLearningStats() async {
     if (_currentWordBookName == null) return;
-    
-    try {
       final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
       final today = DateTime.now();
       final todayStart = DateTime(today.year, today.month, today.day);
@@ -189,9 +184,6 @@ class _HomePageState extends State<HomePage>
         _todayStudiedCount = todayRecords.length;
         _totalStudiedCount = records.length;
       });
-    } catch (e) {
-      print('❌ 更新学习统计失败: $e');
-    }
   }
 
   /// 检查并重新加载词库（仅在词库发生变化时）
@@ -208,7 +200,6 @@ class _HomePageState extends State<HomePage>
       // 词库发生了变化，重新加载
       await _loadWordsFromSelectedWordBook();
     } catch (e) {
-      print('检查词库变化失败: $e');
       // 如果检查失败，安全起见还是重新加载
       await _loadWordsFromSelectedWordBook();
     }
@@ -295,18 +286,13 @@ class _HomePageState extends State<HomePage>
     final audioUrl = _currentWord!.getValidAudioUrl(pronunciationType);
     
     if (audioUrl != null && audioUrl.isNotEmpty) {
-      try {
         await _audioPlayer.stop();
         await _audioPlayer.play(UrlSource(audioUrl));
-      } catch (e) {
-        print('播放发音失败: $e');
-      }
     }
   }
 
   /// 播放设置页面音效（优化版本）
   void _playSettingSound() async {
-    try {
       // 为每次播放创建独立的音频播放器实例
       final player = AudioPlayer();
       await player.setVolume(1);
@@ -316,14 +302,10 @@ class _HomePageState extends State<HomePage>
       player.onPlayerComplete.listen((_) {
         player.dispose();
       });
-    } catch (e) {
-      print('播放音效失败: $e');
-    }
   }
 
   /// 播放词库选择音效（优化版本）
   void _playBookPageSound() async {
-    try {
       // 为每次播放创建独立的音频播放器实例
       final player = AudioPlayer();
       await player.setVolume(1);
@@ -333,9 +315,6 @@ class _HomePageState extends State<HomePage>
       player.onPlayerComplete.listen((_) {
         player.dispose();
       });
-    } catch (e) {
-      print('播放音效失败: $e');
-    }
   }
 
   /// 初始化主要动画控制器 - 使用性能优化器
@@ -1696,8 +1675,7 @@ class _HomePageState extends State<HomePage>
   /// 保存学习记录
   Future<void> _saveLearningRecord(ReviewResult result) async {
     if (_currentWord == null || _currentWordBookName == null) return;
-    
-    try {
+
       // 获取当前单词的学习记录
       final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
       final existingRecord = records.where((r) => r.word == _currentWord!.word).firstOrNull;
@@ -1732,11 +1710,7 @@ class _HomePageState extends State<HomePage>
       
       // 更新学习统计
       await _updateLearningStats();
-      
-      print('✅ 保存学习记录: ${_currentWord!.word} - ${result.displayName}');
-    } catch (e) {
-      print('❌ 保存学习记录失败: $e');
-    }
+
   }
 
   /// 开始造句测试
@@ -3817,8 +3791,8 @@ class ExtendedWordData {
       }
       
       // 获取例句 - 增加数据验证
-      String example = _generateExample(wordData.word); // 默认使用生成的例句
-      String exampleTranslation = _generateExampleTranslation(wordData.word);
+      String example = "";
+      String exampleTranslation = "";
       
       if (apiResponse.sentences.isNotEmpty) {
         final firstSentence = apiResponse.sentences.first;
@@ -3829,6 +3803,13 @@ class ExtendedWordData {
           example = sContent;
           exampleTranslation = sCn;
         }
+      }
+      
+      // 如果没有获取到例句，使用AI生成
+      if (example.isEmpty || exampleTranslation.isEmpty) {
+        final aiExample = await _generateAIExample(wordData.word, mainTranslation);
+        example = aiExample.example;
+        exampleTranslation = aiExample.exampleTranslation;
       }
       
               return ExtendedWordData(
@@ -3844,30 +3825,41 @@ class ExtendedWordData {
         );
     } else {
       // API调用失败，使用基础数据，不提供音标
-    return ExtendedWordData(
-      word: wordData.word,
-      pronunciation: "", // 不再使用这个字段
-      translation: wordData.translation,
-      example: _generateExample(wordData.word),
-      exampleTranslation: _generateExampleTranslation(wordData.word),
-      ukPhone: null, // API失败时不提供音标
-      usPhone: null, // API失败时不提供音标
-      ukSpeech: null, // API失败时不提供音频
-      usSpeech: null, // API失败时不提供音频
-    );
+      // 使用AI生成例句
+      final aiExample = await _generateAIExample(wordData.word, wordData.translation);
+      
+      return ExtendedWordData(
+        word: wordData.word,
+        pronunciation: "", // 不再使用这个字段
+        translation: wordData.translation,
+        example: aiExample.example,
+        exampleTranslation: aiExample.exampleTranslation,
+        ukPhone: null, // API失败时不提供音标
+        usPhone: null, // API失败时不提供音标
+        ukSpeech: null, // API失败时不提供音频
+        usSpeech: null, // API失败时不提供音频
+      );
     }
   }
 
 
 
-  static String _generateExample(String word) {
-    // 生成示例句子
-    return "This is an example sentence with the word '$word'.";
-  }
-
-  static String _generateExampleTranslation(String word) {
-    // 生成例句翻译
-    return "这是一个包含单词'$word'的例句。";
+  /// 使用AI生成例句
+  static Future<ExampleSentenceResult> _generateAIExample(String word, String translation) async {
+    final result = await DeepSeekApiService.generateExampleSentence(
+      word: word,
+      translation: translation,
+    );
+    
+    if (result != null) {
+      return result;
+    }
+    
+    // 如果AI生成失败，返回默认例句
+    return ExampleSentenceResult(
+      example: "This is an example sentence with the word '$word'.",
+      exampleTranslation: "这是一个包含单词'$word'的例句。",
+    );
   }
   
   /// 获取当前发音类型的音频URL

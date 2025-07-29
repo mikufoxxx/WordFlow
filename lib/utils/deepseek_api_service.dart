@@ -193,6 +193,141 @@ class DeepSeekApiService {
     }
   }
   
+  /// 生成例句和翻译
+  /// 
+  /// [word] 目标单词
+  /// [translation] 单词的中文释义
+  /// 返回 [ExampleSentenceResult] 包含生成的例句和翻译
+  static Future<ExampleSentenceResult?> generateExampleSentence({
+    required String word,
+    required String translation,
+  }) async {
+    try {
+      final apiKey = await getApiKey();
+      if (apiKey == null || apiKey.isEmpty) {
+        return ExampleSentenceResult(
+          example: "This is an example sentence with the word '$word'.",
+          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          errorMessage: '请先在设置中配置DeepSeek API密钥',
+        );
+      }
+      
+      final prompt = _buildExamplePrompt(word, translation);
+      
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+        'User-Agent': 'WordFlow/1.0',
+      };
+      
+      final body = jsonEncode({
+        'model': 'deepseek-chat',
+        'messages': [
+          {
+            'role': 'system',
+            'content': '你是一个专业的英语教师，负责为学生生成简洁明了的例句。请严格按照JSON格式返回结果。',
+          },
+          {
+            'role': 'user',
+            'content': prompt,
+          },
+        ],
+        'temperature': 0.7,
+        'max_tokens': 300,
+        'stream': false,
+      });
+      
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: headers,
+        body: body,
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData['choices'] != null && jsonData['choices'].isNotEmpty) {
+          final content = jsonData['choices'][0]['message']['content'];
+          return _parseExampleResult(content, word);
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        return ExampleSentenceResult(
+          example: "This is an example sentence with the word '$word'.",
+          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          errorMessage: '请求失败：${errorData['error']['message'] ?? '未知错误'}',
+        );
+      }
+      
+    } catch (e) {
+      return ExampleSentenceResult(
+        example: "This is an example sentence with the word '$word'.",
+        exampleTranslation: "这是一个包含单词'$word'的例句。",
+        errorMessage: '网络请求失败，请检查网络连接',
+      );
+    }
+    
+    return ExampleSentenceResult(
+      example: "This is an example sentence with the word '$word'.",
+      exampleTranslation: "这是一个包含单词'$word'的例句。",
+    );
+  }
+
+  /// 构建例句生成提示词
+  static String _buildExamplePrompt(String word, String translation) {
+    return '''
+请为以下英语单词生成一个简洁明了的例句：
+
+目标单词：$word
+单词释义：$translation
+
+要求：
+1. 例句要简短（不超过15个单词）
+2. 语法正确，表达自然
+3. 能够清楚体现单词的含义和用法
+4. 适合英语学习者理解
+5. 使用常见词汇，避免过于复杂的表达
+
+请严格按照以下JSON格式返回结果：
+{
+  "example": "包含目标单词的英文例句",
+  "translation": "例句的中文翻译"
+}
+''';
+  }
+
+  /// 解析例句生成结果
+  static ExampleSentenceResult _parseExampleResult(String content, String word) {
+    try {
+      // 尝试提取JSON部分
+      final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(content);
+      if (jsonMatch == null) {
+        return ExampleSentenceResult(
+          example: "This is an example sentence with the word '$word'.",
+          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          errorMessage: '解析响应失败',
+        );
+      }
+      
+      final jsonStr = jsonMatch.group(0)!;
+      final jsonData = jsonDecode(jsonStr);
+      
+      final example = jsonData['example'] ?? "This is an example sentence with the word '$word'.";
+      final translation = jsonData['translation'] ?? "这是一个包含单词'$word'的例句。";
+      
+      return ExampleSentenceResult(
+        example: example,
+        exampleTranslation: translation,
+      );
+      
+    } catch (e) {
+      return ExampleSentenceResult(
+        example: "This is an example sentence with the word '$word'.",
+        exampleTranslation: "这是一个包含单词'$word'的例句。",
+        errorMessage: '解析结果失败',
+      );
+    }
+  }
+
   /// 测试API连接
   static Future<bool> testApiConnection() async {
     try {
@@ -264,4 +399,17 @@ class SentenceError {
     required this.description,
     required this.position,
   });
-} 
+}
+
+/// 例句生成结果
+class ExampleSentenceResult {
+  final String example;
+  final String exampleTranslation;
+  final String? errorMessage;
+  
+  ExampleSentenceResult({
+    required this.example,
+    required this.exampleTranslation,
+    this.errorMessage,
+  });
+}

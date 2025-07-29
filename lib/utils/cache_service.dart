@@ -32,16 +32,12 @@ class CacheService {
     final prefs = await SharedPreferences.getInstance();
     final wordBooksString = prefs.getString(_wordBooksKey);
     if (wordBooksString != null) {
-      try {
         final wordBooksJson = jsonDecode(wordBooksString) as List;
         final wordBooks = wordBooksJson.map((json) => WordBook.fromJson(json)).toList();
         
         // 存入内存缓存
         MemoryCache.set(_wordBooksKey, wordBooks);
         return wordBooks;
-      } catch (e) {
-        print('❌ 解析缓存的词库数据失败: $e');
-      }
     }
     return [];
   }
@@ -66,15 +62,11 @@ class CacheService {
     final key = _wordDataPrefix + wordBookName.hashCode.toString();
     final wordDataString = prefs.getString(key);
     if (wordDataString != null) {
-      try {
         final wordDataJson = jsonDecode(wordDataString) as List;
         return wordDataJson.map((json) => WordData(
           word: json['word'],
           translation: json['translation'],
         )).toList();
-      } catch (e) {
-        print('❌ 解析缓存的单词数据失败: $e');
-      }
     }
     return null;
   }

@@ -47,7 +47,6 @@ class AlgorithmManager {
       _currentService = MultiAlgorithmService(config: _currentConfig!);
       
       await _saveCurrentAlgorithm();
-      print('✅ 切换到 ${type.displayName} 算法');
     } else {
       throw ArgumentError('未找到算法配置: $type');
     }
@@ -64,14 +63,12 @@ class AlgorithmManager {
     }
     
     await _saveConfigs();
-    print('✅ 更新 ${config.type.displayName} 算法配置');
   }
 
   /// 重置算法配置
   Future<void> resetConfig(AlgorithmType type) async {
     final defaultConfig = type.defaultConfig;
     await updateConfig(defaultConfig);
-    print('✅ 重置 ${type.displayName} 算法配置');
   }
 
   /// 获取指定算法配置
@@ -114,7 +111,6 @@ class AlgorithmManager {
       }
       
       await updateConfig(config);
-      print('✅ 导入 ${config.type.displayName} 算法配置');
     } catch (e) {
       throw ArgumentError('导入配置失败: $e');
     }
@@ -192,7 +188,6 @@ class AlgorithmManager {
           _configs[type] = config;
         }
       } catch (e) {
-        print('❌ 加载算法配置失败: $e');
         _initializeDefaultConfigs();
       }
     } else {

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1806,7 +1808,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '已通过${modeText}模式导入到公共单词本：${result.message}',
+                    '已通过$modeText模式导入到公共单词本：${result.message}',
                     style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -64,26 +66,19 @@ class GitHubApiService {
           } else {
           }
         } else {
-          print('❌ HTTP错误: ${response.statusCode} - ${response.reasonPhrase}');
         }
         
-      } on SocketException catch (e) {
-        print('🌐 网络连接错误: $e');
-        print('   可能原因: 网络连接不稳定、代理设置或防火墙阻挡');
+      } on SocketException {
         continue; // 尝试下一个URL
-      } on HttpException catch (e) {
-        print('🔗 HTTP异常: $e');
+      } on HttpException {
         continue;
-      } on FormatException catch (e) {
-        print('📝 URL格式错误: $e');
+      } on FormatException {
         continue;
       } catch (e) {
-        print('💥 未知错误: $e');
         continue;
       }
     }
     
-    print('🔄 所有在线源均失败，使用本地默认数据...');
     return _getExpandedDefaultWordBooks();
   }
   
@@ -92,20 +87,17 @@ class GitHubApiService {
     final List<WordBook> wordBooks = [];
     final lines = content.split('\n');
     
-    print('📖 开始解析Markdown表格，共 ${lines.length} 行');
-    
+
     // 找到表格开始的位置（包含"词库名"的行）
     int tableStartIndex = -1;
     for (int i = 0; i < lines.length; i++) {
       if (lines[i].contains('词库名') && lines[i].contains('单词和翻译')) {
         tableStartIndex = i + 2; // 跳过表头和分隔符行
-        print('🎯 找到表格开始位置: 第 ${i + 1} 行');
         break;
       }
     }
     
     if (tableStartIndex == -1) {
-      print('❌ 未找到表格标题行');
       return [];
     }
     
@@ -126,12 +118,10 @@ class GitHubApiService {
           validRows++;
         }
       } catch (e) {
-        print('⚠️ 解析第 ${i + 1} 行时出错: $e');
         continue;
       }
     }
     
-    print('✅ 成功解析 $validRows 行有效数据');
     return wordBooks;
   }
   
@@ -201,16 +191,14 @@ class GitHubApiService {
   /// 下载CSV文件并解析为WordData列表
   /// 优先使用镜像源，然后尝试其他源
   static Future<List<WordData>> getWordData(String csvUrl) async {
-    print('📚 开始获取单词数据: $csvUrl');
-    
+
     // 构建多个尝试的URL，优先使用镜像源
     final urlsToTry = _buildUrlsToTry(csvUrl);
     
     // 尝试每个URL
     for (final urlInfo in urlsToTry) {
       try {
-        print('🔗 尝试URL: ${urlInfo['url']} (${urlInfo['source']})');
-        
+
         final response = await http.get(
           Uri.parse(urlInfo['url']!),
           headers: {
@@ -223,22 +211,17 @@ class GitHubApiService {
         if (response.statusCode == 200) {
           final content = utf8.decode(response.bodyBytes);
           final words = _parseCsvContent(content);
-          print('✅ 成功获取 ${words.length} 个单词 (来源: ${urlInfo['source']})');
           return words;
         } else {
-          print('❌ HTTP错误 ${response.statusCode}: ${urlInfo['url']}');
         }
         
-      } on SocketException catch (e) {
-        print('🌐 网络连接错误: $e (${urlInfo['source']})');
+      } on SocketException {
         continue;
       } catch (e) {
-        print('💥 获取失败: $e (${urlInfo['source']})');
         continue;
       }
     }
     
-    print('🔄 所有URL都失败，使用默认数据');
     return _getDefaultWordData();
   }
   
@@ -354,7 +337,6 @@ class GitHubApiService {
           }
         }
       } catch (e) {
-        print('⚠️ 解析CSV行时出错: $line, 错误: $e');
         continue;
       }
     }
@@ -477,7 +459,6 @@ class GitHubApiService {
       ).timeout(const Duration(seconds: 5));
       
       if (mirrorResponse.statusCode == 200) {
-        print('✅ 镜像源连接正常');
         return true;
       }
       
@@ -488,7 +469,6 @@ class GitHubApiService {
       ).timeout(const Duration(seconds: 5));
       
       if (giteeResponse.statusCode == 200) {
-        print('✅ Gitee连接正常');
         return true;
       }
       
@@ -500,7 +480,6 @@ class GitHubApiService {
       
       return githubResponse.statusCode == 200;
     } catch (e) {
-      print('🔍 网络诊断失败: $e');
       return false;
     }
   }

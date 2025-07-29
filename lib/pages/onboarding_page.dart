@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lordicon/lordicon.dart';
@@ -318,7 +320,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   
   /// 构建学习流程轮播图 - 不使用动画
   Widget _buildLearningCarousel() {
-    return Container(
+    return SizedBox(
       height: 240, // 从280减少到240
       child: PageView.builder(
         controller: _carouselController,

@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters, duplicate_ignore, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/app_theme.dart';

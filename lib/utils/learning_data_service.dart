@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,7 +27,7 @@ class LearningDataService {
   SpacedRepetitionService? _spacedRepetitionService;
   
   /// 缓存的学习记录
-  Map<String, List<WordLearningRecord>> _cachedRecords = {};
+  final Map<String, List<WordLearningRecord>> _cachedRecords = {};
   
   /// 全局单词记录（用于词书间同步）
   Map<String, WordLearningRecord> _globalWordRecords = {};
@@ -148,17 +150,13 @@ class LearningDataService {
 
   /// 自动同步词书数据（切换词书时调用）
   Future<void> autoSyncWordBook(String targetWordBook) async {
-    try {
       // 检查智能同步是否开启
       final smartSyncEnabled = await SettingsHelper.getSmartSyncEnabled();
       if (!smartSyncEnabled) {
-        print('🔄 智能同步已关闭，跳过自动同步');
         return;
       }
       
-      print('🔄 开始智能同步到词书: $targetWordBook');
-      print('📊 全局记录数量: ${_globalWordRecords.length}');
-      
+
       // 获取目标词书现有的学习记录
       final targetRecords = await getWordBookRecords(targetWordBook);
       final targetWordsMap = {for (final record in targetRecords) record.word: record};
@@ -167,9 +165,7 @@ class LearningDataService {
       final targetWordData = await CacheService.getCachedWordData(targetWordBook);
       final targetAvailableWords = targetWordData?.map((w) => w.word).toSet() ?? <String>{};
       
-      print('📝 目标词书现有记录数量: ${targetRecords.length}');
-      print('📚 目标词书可用单词数量: ${targetAvailableWords.length}');
-      
+
       bool hasUpdates = false;
       int checkedWords = 0;
       int syncedWords = 0;
@@ -183,30 +179,23 @@ class LearningDataService {
         if (targetAvailableWords.contains(word)) {
           checkedWords++;
           
-          print('🔍 检查单词: $word');
-          print('   全局记录: ${globalRecord.memoryLevel.displayName} (学习${globalRecord.learningCount}次)');
-          
+
           // 检查目标词书中是否已有这个单词的学习记录
           if (targetWordsMap.containsKey(word)) {
             final targetRecord = targetWordsMap[word]!;
-            print('   目标记录: ${targetRecord.memoryLevel.displayName} (学习${targetRecord.learningCount}次)');
-            
+
             // 如果目标记录需要更新，则同步数据
             if (_shouldInheritData(globalRecord, targetRecord)) {
-              print('   ✅ 同步学习数据');
               final syncedRecord = _inheritLearningData(globalRecord, targetRecord, targetWordBook);
               targetWordsMap[word] = syncedRecord;
               hasUpdates = true;
               syncedWords++;
             } else {
-              print('   ❌ 无需同步');
             }
           } else {
             // 目标词书中没有这个单词的学习记录，但单词存在于词书中
             // 创建新的学习记录，继承全局记录的数据
-            print('   目标记录: 无记录');
-            print('   ✅ 创建新记录并同步数据');
-            
+
             // 获取目标词书中这个单词的翻译
             final targetWordInfo = targetWordData?.firstWhere(
               (w) => w.word == word,
@@ -240,42 +229,32 @@ class LearningDataService {
         }
       }
       
-      print('🔍 检查了 $checkedWords 个单词');
-      print('📈 同步了 $syncedWords 个单词的数据');
-      
+
       if (hasUpdates) {
         // 更新缓存和存储
         _cachedRecords[targetWordBook] = targetWordsMap.values.toList();
         await _saveWordBookRecords(targetWordBook, _cachedRecords[targetWordBook]!);
         
-        print('✅ 智能同步完成：同步了 $syncedWords 个单词的学习数据');
       } else {
-        print('ℹ️ 没有需要同步的数据');
       }
-    } catch (e) {
-      print('❌ 智能同步失败: $e');
-    }
   }
 
   /// 判断是否应该继承全局数据
   bool _shouldInheritData(WordLearningRecord globalRecord, WordLearningRecord targetRecord) {
     // 如果全局记录的记忆程度更高，则继承
     if (globalRecord.memoryLevel.index > targetRecord.memoryLevel.index) {
-      print('     → 全局记录记忆程度更高 (${globalRecord.memoryLevel.index} > ${targetRecord.memoryLevel.index})');
       return true;
     }
     
     // 如果记忆程度相同，但学习次数更多，则继承
     if (globalRecord.memoryLevel == targetRecord.memoryLevel && 
         globalRecord.learningCount > targetRecord.learningCount) {
-      print('     → 记忆程度相同但全局学习次数更多 (${globalRecord.learningCount} > ${targetRecord.learningCount})');
       return true;
     }
     
     // 如果目标记录是新单词，但全局记录有学习历史，则继承
     if (targetRecord.memoryLevel == MemoryLevel.first_time && 
         globalRecord.learningCount > 1) {
-      print('     → 目标是新单词但全局有学习历史 (全局学习${globalRecord.learningCount}次)');
       return true;
     }
     
@@ -283,11 +262,9 @@ class LearningDataService {
     if (targetRecord.memoryLevel == MemoryLevel.first_time && 
         globalRecord.memoryLevel == MemoryLevel.first_time &&
         globalRecord.learningCount > targetRecord.learningCount) {
-      print('     → 都是新单词但全局学习次数更多 (${globalRecord.learningCount} > ${targetRecord.learningCount})');
       return true;
     }
     
-    print('     → 无需继承');
     return false;
   }
 
@@ -643,14 +620,10 @@ class LearningDataService {
     final recordsString = prefs.getString(key);
     
     if (recordsString != null) {
-      try {
         final recordsJson = jsonDecode(recordsString) as List;
         return recordsJson
             .map((json) => WordLearningRecord.fromJson(json))
             .toList();
-      } catch (e) {
-        print('❌ 加载学习记录失败: $e');
-      }
     }
     
     return [];
@@ -670,7 +643,6 @@ class LearningDataService {
     final configString = prefs.getString(_algorithmConfigKey);
     
     if (configString != null) {
-      try {
         final configJson = jsonDecode(configString) as Map<String, dynamic>;
         _loadedAlgorithmConfig = SpacedRepetitionConfig(
           minInterval: configJson['minInterval'] ?? 1.0,
@@ -680,9 +652,6 @@ class LearningDataService {
           easyIntervalMultiplier: configJson['easyIntervalMultiplier'] ?? 1.3,
           difficultyAdjustment: configJson['difficultyAdjustment'] ?? 1.0,
         );
-      } catch (e) {
-        print('❌ 加载算法配置失败: $e');
-      }
     }
     
     _loadedAlgorithmConfig ??= SpacedRepetitionConfig.defaultConfig();
@@ -694,14 +663,10 @@ class LearningDataService {
     final recordsString = prefs.getString(_globalWordRecordsKey);
     
     if (recordsString != null) {
-      try {
         final recordsJson = jsonDecode(recordsString) as Map<String, dynamic>;
         _globalWordRecords = recordsJson.map((key, value) => 
           MapEntry(key, WordLearningRecord.fromJson(value))
         );
-      } catch (e) {
-        print('❌ 加载全局单词记录失败: $e');
-      }
     }
   }
 
