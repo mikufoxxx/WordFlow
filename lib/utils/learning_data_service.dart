@@ -114,7 +114,19 @@ class LearningDataService {
     return spacedRepetitionService.generateLearningStats(records);
   }
 
-
+  /// 删除单词学习记录
+  Future<void> removeWordLearningRecord(String word, String wordBookName) async {
+    // 更新缓存
+    final records = await getWordBookRecords(wordBookName);
+    records.removeWhere((r) => r.word == word);
+    
+    // 从全局记录中删除
+    _globalWordRecords.remove(word);
+    
+    // 保存到存储
+    await _saveWordBookRecords(wordBookName, records);
+    await _saveGlobalWordRecords();
+  }
 
   /// 词书间数据同步
   Future<void> syncWordBookData(String fromWordBook, String toWordBook) async {

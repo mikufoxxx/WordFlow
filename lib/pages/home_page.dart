@@ -1600,10 +1600,13 @@ class _HomePageState extends State<HomePage>
   }
 
   /// 撤回上一个单词
-  void _undoLastAction() {
+  void _undoLastAction() async {
     if (_previousWord == null) return;
     
     if (!_wordAnimationCompleted) return;
+    
+    // 撤回学习记录（传入要撤回的单词）
+    await _undoLearningRecord(_previousWord!.word);
     
     // 重置动画状态
     _fadeController.reset();
@@ -1687,6 +1690,92 @@ class _HomePageState extends State<HomePage>
           duration: const Duration(seconds: 2),
         ),
       );
+    }
+  }
+
+  /// 撤回学习记录
+  Future<void> _undoLearningRecord(String wordToUndo) async {
+    if (_currentWordBookName == null) return;
+
+    try {
+      // 获取指定单词的学习记录
+      final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
+      final existingRecord = records.where((r) => r.word == wordToUndo).firstOrNull;
+      
+      if (existingRecord != null && existingRecord.reviewHistory.isNotEmpty) {
+        // 创建新的复习历史列表，删除最后一条记录
+        final newReviewHistory = List<ReviewRecord>.from(existingRecord.reviewHistory);
+        newReviewHistory.removeLast();
+        
+        if (newReviewHistory.isEmpty) {
+          // 如果没有复习历史了，删除整个记录
+          await LearningDataService.instance.removeWordLearningRecord(wordToUndo, _currentWordBookName!);
+        } else {
+          // 恢复到上一个状态
+          final previousReview = newReviewHistory.last;
+          
+          // 重新计算统计数据
+          int newCorrectCount = 0;
+          int newIncorrectCount = 0;
+          for (final review in newReviewHistory) {
+            if (review.reviewResult.isCorrect) {
+              newCorrectCount++;
+            } else {
+              newIncorrectCount++;
+            }
+          }
+          
+          // 重新计算记忆级别
+          MemoryLevel recalculatedMemoryLevel = MemoryLevel.first_time;
+          for (final review in newReviewHistory) {
+            switch (review.reviewResult) {
+              case ReviewResult.forgot:
+                recalculatedMemoryLevel = MemoryLevel.first_time;
+                break;
+              case ReviewResult.hard:
+                recalculatedMemoryLevel = recalculatedMemoryLevel.index > 0 
+                    ? MemoryLevel.values[recalculatedMemoryLevel.index - 1] 
+                    : MemoryLevel.first_time;
+                break;
+              case ReviewResult.good:
+                recalculatedMemoryLevel = recalculatedMemoryLevel.index < MemoryLevel.values.length - 1 
+                    ? MemoryLevel.values[recalculatedMemoryLevel.index + 1] 
+                    : MemoryLevel.mastered;
+                break;
+              case ReviewResult.easy:
+                recalculatedMemoryLevel = recalculatedMemoryLevel.index < MemoryLevel.values.length - 2
+                    ? MemoryLevel.values[recalculatedMemoryLevel.index + 2]
+                    : MemoryLevel.mastered;
+                break;
+            }
+          }
+          
+          // 创建新的记录实例来覆盖现有记录
+          final updatedRecord = WordLearningRecord(
+            word: existingRecord.word,
+            translation: existingRecord.translation,
+            wordBookName: existingRecord.wordBookName,
+            firstLearningTime: existingRecord.firstLearningTime,
+            lastLearningTime: previousReview.reviewTime,
+            nextReviewTime: previousReview.reviewTime.add(Duration(days: previousReview.reviewInterval.round())),
+            memoryLevel: recalculatedMemoryLevel,
+            learningCount: newReviewHistory.length,
+            correctCount: newCorrectCount,
+            incorrectCount: newIncorrectCount,
+            reviewInterval: previousReview.reviewInterval,
+            easeFactor: existingRecord.easeFactor,
+            reviewHistory: newReviewHistory,
+          );
+          
+          // 保存更新后的记录
+          await LearningDataService.instance.saveWordLearningRecord(updatedRecord);
+        }
+        
+        // 更新学习统计
+        await _updateLearningStats();
+      }
+    } catch (e) {
+      print('撤回学习记录失败: $e');
     }
   }
 

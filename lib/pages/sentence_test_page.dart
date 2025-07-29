@@ -72,9 +72,11 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                 maxWidth: ResponsiveHelper.getMaxContentWidth(context),
               ),
               child: SingleChildScrollView(
-                padding: ResponsiveHelper.getResponsivePadding(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Container(
+                  padding: ResponsiveHelper.getResponsivePadding(context),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildWordCard(),
                     const SizedBox(height: 24),
@@ -89,6 +91,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     ],
                     const SizedBox(height: 24),
                   ],
+                ),
                 ),
               ),
             ),
