@@ -9,6 +9,7 @@ import '../utils/algorithm_manager.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/cache_service.dart';
+import '../utils/sound_service.dart';
 import '../widgets/custom_date_picker.dart';
 import 'word_detail_page.dart';
 
@@ -137,26 +138,20 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 ? AppTheme.darkPrimaryGray 
                 : AppTheme.primaryGray,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            SoundService.playTapOffSound();
+            Navigator.pop(context);
+          },
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.refresh, 
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkPrimaryGray 
-                  : AppTheme.primaryGray,
-            ),
-            onPressed: _loadData,
-            tooltip: '刷新数据',
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryGray),
           unselectedLabelColor: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
           indicatorColor: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryGray),
           indicatorWeight: 3,
+          onTap: (index) {
+            SoundService.playTapSound();
+          },
           tabs: const [
             Tab(text: '单词列表'),
             Tab(text: '学习统计'),
@@ -251,7 +246,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
         children: [
           // 上一天按钮
           IconButton(
-            onPressed: () => _changeDate(-1),
+            onPressed: () {
+              SoundService.playTapSound();
+              _changeDate(-1);
+            },
             icon: const Icon(Icons.chevron_left),
             iconSize: 24,
           ),
@@ -259,7 +257,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           // 日期显示和选择
           Expanded(
             child: GestureDetector(
-              onTap: _showDatePicker,
+              onTap: () {
+                SoundService.playTapSound();
+                _showDatePicker();
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
@@ -291,7 +292,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           
           // 下一天按钮
           IconButton(
-            onPressed: _canGoToNextDay() ? () => _changeDate(1) : null,
+            onPressed: _canGoToNextDay() ? () {
+              SoundService.playTapSound();
+              _changeDate(1);
+            } : null,
             icon: const Icon(Icons.chevron_right),
             iconSize: 24,
           ),
@@ -433,7 +437,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ],
         ),
          child: InkWell(
-           onTap: () => _showWordDetails(record),
+           onTap: () {
+             SoundService.playTapSound();
+             _showWordDetails(record);
+           },
            borderRadius: BorderRadius.circular(8),
            child: Padding(
           padding: const EdgeInsets.all(16),

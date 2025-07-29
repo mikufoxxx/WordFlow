@@ -12,6 +12,7 @@ import '../utils/settings_helper.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
+import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 import '../main.dart';
 
@@ -123,6 +124,13 @@ class _SettingsPageState extends State<SettingsPage> {
               : AppTheme.backgroundColor,
           appBar: AcrylicAppBar(
             title: '设置',
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                SoundService.playTapOffSound();
+                Navigator.pop(context);
+              },
+            ),
           ),
           body: Center(
             child: ConstrainedBox(
@@ -563,7 +571,10 @@ class _SettingsPageState extends State<SettingsPage> {
               : AppTheme.coolGray500,
         ),
       ),
-      onTap: onTap,
+      onTap: () {
+        SoundService.playTapSound();
+        onTap();
+      },
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
@@ -594,7 +605,14 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       value: value,
-      onChanged: onChanged,
+      onChanged: (bool newValue) {
+        if (newValue) {
+          SoundService.playSwitchOnSound();
+        } else {
+          SoundService.playSwitchOffSound();
+        }
+        onChanged(newValue);
+      },
       inactiveThumbColor: Theme.of(context).brightness == Brightness.dark
           ? AppTheme.darkPrimaryGray
           : AppTheme.darkAccentGreen,
@@ -639,7 +657,12 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       value: value,
       groupValue: groupValue,
-      onChanged: onChanged,
+      onChanged: (T? newValue) {
+        if (newValue != null) {
+          SoundService.playChooseButtonSound();
+        }
+        onChanged(newValue);
+      },
       activeColor: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkPrimaryGray 
           : AppTheme.primaryGray,
@@ -977,24 +1000,41 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 显示重置对话框
   void _showResetDialog() {
     showDialog(
+      
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: const Text('重置学习进度'),
         content: const Text('确定要清除所有学习记录吗？此操作不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.getSecondaryTextColor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('取消'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _resetProgress();
             },
-            child: Text(
-              '确定',
-              style: TextStyle(color: Colors.red.shade600),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                  ? AppTheme.darkAccentRed 
+                  : AppTheme.accentRed,
+              foregroundColor: Colors.white,
+              elevation: 0.5,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
+            child: const Text('确定'),
           ),
         ],
       ),
@@ -1123,8 +1163,9 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        content: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircularProgressIndicator(),
@@ -1372,6 +1413,7 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: const Text('如何获取DeepSeek API Key'),
         content: const SingleChildScrollView(
           child: Column(
@@ -1406,8 +1448,16 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('知道了'),
           ),
         ],
@@ -1424,7 +1474,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final selectedDirectory = await FileHelper.selectExportDirectory();
       if (selectedDirectory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('未选择导出位置')),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.warning_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '未选择导出位置',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.coolGray600
+                : AppTheme.coolGray300,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
         return;
       }
@@ -1433,8 +1514,9 @@ class _SettingsPageState extends State<SettingsPage> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+          content: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircularProgressIndicator(),
@@ -1459,14 +1541,42 @@ class _SettingsPageState extends State<SettingsPage> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('公共单词本数据已导出到:\n$filePath'),
-          duration: const Duration(seconds: 8),
           action: SnackBarAction(
             label: '复制路径',
             onPressed: () {
               Clipboard.setData(ClipboardData(text: filePath));
             },
           ),
+          content: Row(
+            children: [
+              Icon(
+                Icons.catching_pokemon_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '公共单词本数据已导出到:\n$filePath',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
@@ -1555,8 +1665,9 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+          content: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
               CircularProgressIndicator(),
@@ -1630,6 +1741,7 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: const Text('确认导入'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1654,13 +1766,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.update, size: 16, color: Colors.blue),
+                      Icon(Icons.update, size: 16, color: AppTheme.darkGray),
                       const SizedBox(width: 8),
                       Text(
                         '数据更新',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: AppTheme.darkGray,
                         ),
                       ),
                     ],
@@ -1692,13 +1804,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.refresh, size: 16, color: Colors.orange),
+                      Icon(Icons.refresh, size: 16, color: AppTheme.accentGreen),
                       const SizedBox(width: 8),
                       Text(
                         '全部覆盖',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.orange,
+                          color: AppTheme.accentGreen,
                         ),
                       ),
                     ],
@@ -1719,32 +1831,50 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _performImport(csvData, ImportMode.update);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+          Row(children: [
+            Expanded(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.getSecondaryTextColor(context),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('取消'),
+              ),
             ),
-            child: const Text('数据更新'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _performImport(csvData, ImportMode.overwrite);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+            SizedBox(width: 8,),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _performImport(csvData, ImportMode.update);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.darkGray,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                ),
+                child: const Text('数据更新'),
+              ),
             ),
-            child: const Text('全部覆盖'),
-          ),
+            SizedBox(width: 8,),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _performImport(csvData, ImportMode.overwrite);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                ),
+                child: const Text('全部覆盖'),
+              ),
+            ),],)
         ],
       ),
     );

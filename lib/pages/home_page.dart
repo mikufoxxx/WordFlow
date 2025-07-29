@@ -15,6 +15,7 @@ import '../utils/deepseek_api_service.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/algorithm_manager.dart';
 import '../utils/app_theme.dart';
+import '../utils/sound_service.dart';
 
 /// 修改类型枚举
 enum ModificationType {
@@ -54,6 +55,7 @@ class _HomePageState extends State<HomePage>
   // 性能优化：使用池化的key
   static const String _animationPoolKey = 'home_page_animations';
   static const String _timerPoolKey = 'home_page_timers';
+  static const String _audioTimerPoolKey = 'home_page_audio_timers'; // 独立的音频定时器池
   
   // 当前学习的单词数量（无限流模式）
   int _todayStudiedCount = 0;
@@ -280,13 +282,13 @@ class _HomePageState extends State<HomePage>
 
   /// 播放单词发音
   Future<void> _playWordPronunciation() async {
-    if (_currentWord == null) return;
+    if (_currentWord == null || !mounted) return;
     
     try {
       final pronunciationType = await SettingsHelper.getPronunciationType();
       final audioUrl = _currentWord!.getValidAudioUrl(pronunciationType);
       
-      if (audioUrl != null && audioUrl.isNotEmpty) {
+      if (audioUrl != null && audioUrl.isNotEmpty && mounted) {
         // 确保音频播放器处于可用状态
         await _audioPlayer.stop();
         await _audioPlayer.play(UrlSource(audioUrl));
@@ -297,57 +299,7 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 播放记住音效（优化版本）
-  void _playRememberSound() async {
-      // 为每次播放创建独立的音频播放器实例
-      final player = AudioPlayer();
-      await player.setVolume(1);
-      await player.play(AssetSource('sound/remember.mp3'));
-      
-      // 播放完成后释放资源
-      player.onPlayerComplete.listen((_) {
-        player.dispose();
-      });
-  }
 
-  /// 播放忘记音效（优化版本）
-  void _playForgotSound() async {
-    // 为每次播放创建独立的音频播放器实例
-    final player = AudioPlayer();
-    await player.setVolume(1);
-    await player.play(AssetSource('sound/forgot.mp3'));
-
-    // 播放完成后释放资源
-    player.onPlayerComplete.listen((_) {
-      player.dispose();
-    });
-  }
-
-  /// 播放点击音效（优化版本）
-  void _playTapSound() async {
-      // 为每次播放创建独立的音频播放器实例
-      final player = AudioPlayer();
-      await player.setVolume(1);
-      await player.play(AssetSource('sound/tapin.mp3'));
-      
-      // 播放完成后释放资源
-      player.onPlayerComplete.listen((_) {
-        player.dispose();
-      });
-  }
-
-  /// 播放句子结果音效（优化版本）
-  void _playResultSound() async {
-    // 为每次播放创建独立的音频播放器实例
-    final player = AudioPlayer();
-    await player.setVolume(1);
-    await player.play(AssetSource('sound/showdetail.mp3'));
-
-    // 播放完成后释放资源
-    player.onPlayerComplete.listen((_) {
-      player.dispose();
-    });
-  }
 
   /// 初始化主要动画控制器 - 使用性能优化器
   void _initializeMainAnimations() {
@@ -681,13 +633,16 @@ class _HomePageState extends State<HomePage>
   /// 检查并播放自动发音
   void _checkAndPlayAutoPronunciation() async {
     final autoPlay = await SettingsHelper.getAutoPlayPronunciation();
-    if (autoPlay) {
+    if (autoPlay && mounted) {
       // 延迟一点时间再播放，让动画完成
+      // 使用独立的音频定时器池，确保播放不受其他操作影响
       PerformanceOptimizer.createTimer(
-        poolKey: _timerPoolKey,
+        poolKey: _audioTimerPoolKey,
         duration: const Duration(milliseconds: 500),
         callback: () {
-          _playWordPronunciation();
+          if (mounted) {
+            _playWordPronunciation();
+          }
         },
       );
     }
@@ -933,7 +888,7 @@ class _HomePageState extends State<HomePage>
               icon: const Icon(Icons.library_books_outlined),
                   iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
               onPressed: () async {
-                _playTapSound();
+                SoundService.playTapSound();
                 await Navigator.pushNamed(context, '/library');
                 // 从词库页面返回时，检查是否需要重新加载词库数据
                 await _checkAndReloadWordBook();
@@ -963,7 +918,7 @@ class _HomePageState extends State<HomePage>
                 icon: const Icon(Icons.settings_outlined),
                     iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
                 onPressed: () {
-                  _playTapSound();
+                  SoundService.playTapSound();
                   Navigator.pushNamed(context, '/settings');
                 },
                 color: Theme.of(context).primaryColor,
@@ -1103,6 +1058,7 @@ class _HomePageState extends State<HomePage>
         }
       },
       child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
         padding: ResponsiveHelper.getResponsivePadding(context),
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -1350,7 +1306,7 @@ class _HomePageState extends State<HomePage>
                           // 不认识按钮
                           Expanded(
                             child: _buildElegantButton(
-                              onPressed: () {_playForgotSound(); _markAsUnknown();},
+                              onPressed: () {SoundService.playForgotSound(); _markAsUnknown();},
                               icon: Icons.close_rounded,
                               label: '不认识',
                               color: Theme.of(context).brightness == Brightness.dark 
@@ -1370,7 +1326,7 @@ class _HomePageState extends State<HomePage>
                           // 认识按钮
                           Expanded(
                             child: _buildElegantButton(
-                              onPressed: () {_playRememberSound(); _markAsKnown();},
+                              onPressed: () {SoundService.playRememberSound(); _markAsKnown();},
                               icon: Icons.check_rounded,
                               label: '认识',
                               color: Theme.of(context).brightness == Brightness.dark 
@@ -1584,8 +1540,6 @@ class _HomePageState extends State<HomePage>
     // 只在展开释义时重置动画，收起时不需要重置
     if (_showMeaning) {
       _resetMeaningCharacterAnimations();
-      // 在展开释义时检查并播放自动发音
-      _checkAndPlayAutoPronunciation();
     }
     
     _startMeaningAnimation();
@@ -1863,7 +1817,7 @@ class _HomePageState extends State<HomePage>
             if (mounted) {
               _resultAreaController.forward();
               // 播放句子结果音效
-              _playResultSound();
+              SoundService.playResultSound();
             }
           },
         );
@@ -3099,7 +3053,7 @@ class _HomePageState extends State<HomePage>
                           child: SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isJudging ? null : () {_playTapSound(); _submitSentence();},
+                              onPressed: _isJudging ? null : () {SoundService.playTapSound(); _submitSentence();},
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.accentGreen,
                                 foregroundColor: Colors.white,
@@ -3147,7 +3101,7 @@ class _HomePageState extends State<HomePage>
                         return Opacity(
                           opacity: _isJudging ? _skipButtonFadeAnimation.value : 1.0,
                           child: TextButton(
-                            onPressed: _isJudging ? null : () {_playTapSound(); _skipSentenceTest();},
+                            onPressed: _isJudging ? null : () {SoundService.playTapSound(); _skipSentenceTest();},
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                               shape: RoundedRectangleBorder(
@@ -3254,7 +3208,7 @@ class _HomePageState extends State<HomePage>
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _continueOrNext,
+        onPressed: () {SoundService.playTapSound();_continueOrNext();},
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.accentGreen,
           foregroundColor: Colors.white,
@@ -3797,6 +3751,7 @@ class _HomePageState extends State<HomePage>
     
     // 使用性能优化器清理资源
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
+    PerformanceOptimizer.cancelTimers(_audioTimerPoolKey);
     PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
     
     _disposeCharacterControllers();

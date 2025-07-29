@@ -6,6 +6,7 @@ import '../models/word_learning_record.dart';
 import '../models/detailed_learning_record.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/sound_service.dart';
 
 /// 单词详情页面
 /// 显示单词的完整学习历史和时间轴
@@ -49,7 +50,10 @@ class _WordDetailPageState extends State<WordDetailPage> {
                 ? AppTheme.darkPrimaryGray 
                 : AppTheme.primaryGray,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            SoundService.playTapOffSound();
+            Navigator.pop(context);
+          },
         ),
       ),
       body: SingleChildScrollView(

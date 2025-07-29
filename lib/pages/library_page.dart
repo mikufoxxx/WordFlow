@@ -9,6 +9,7 @@ import '../utils/learning_data_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
+import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 
 /// 词库状态枚举
@@ -445,6 +446,9 @@ class _LibraryPageState extends State<LibraryPage>
         item.status = WordBookStatus.downloaded;
         item.updateWordCount(wordData.length);
       });
+
+      // 播放下载成功音效
+      SoundService.playDownloadSuccessSound();
       
 
     } catch (e) {
@@ -670,6 +674,7 @@ class _LibraryPageState extends State<LibraryPage>
               )
             : GestureDetector(
                 onTap: () {
+                  SoundService.playChooseBookSound();
                   Navigator.pop(context);
                   _selectWordBook(item);
                 },
@@ -753,7 +758,10 @@ class _LibraryPageState extends State<LibraryPage>
         child: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
           iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          SoundService.playTapOffSound();
+          Navigator.pop(context);
+        },
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(
             minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
@@ -773,7 +781,10 @@ class _LibraryPageState extends State<LibraryPage>
                 color: AppTheme.primaryGray,
                   size: ResponsiveHelper.getResponsiveIconSize(context, 26),
               ),
-              onPressed: _showDownloadedBooks,
+              onPressed: () {
+                SoundService.playTapSound();
+                _showDownloadedBooks();
+              },
               tooltip: '查看我的词书收藏',
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(
@@ -1319,7 +1330,10 @@ class _LibraryPageState extends State<LibraryPage>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => _selectWordBook(item),
+              onTap: () {
+                SoundService.playTapSound();
+                _selectWordBook(item);
+              },
               borderRadius: BorderRadius.circular(12),
               child: Center(
                 child: Row(
@@ -1411,7 +1425,10 @@ class _LibraryPageState extends State<LibraryPage>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => _selectWordBook(item),
+              onTap: () {
+                SoundService.playChooseBookSound();
+                _selectWordBook(item);
+              },
               borderRadius: BorderRadius.circular(12), // 从16减少到12
               child: Center(
                 child: Row(

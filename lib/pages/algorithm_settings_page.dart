@@ -6,6 +6,7 @@ import '../models/algorithm_config.dart';
 import '../utils/algorithm_manager.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 
 /// 算法设置页面
@@ -58,7 +59,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         title: '算法设置',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            SoundService.playTapOffSound();
+            Navigator.pop(context);
+          },
         ),
       ),
       body: _isLoading
@@ -771,7 +775,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ),
           Switch(
             value: value,
-            onChanged: onChanged,
+            onChanged: (bool newValue) {
+              if (newValue) {
+                    SoundService.playSwitchOnSound();
+                  } else {
+                    SoundService.playSwitchOffSound();
+                  }
+              onChanged(newValue);
+            },
             activeColor: Theme.of(context).brightness == Brightness.dark 
                 ? AppTheme.darkPrimaryGray 
                 : AppTheme.primaryGray,
@@ -896,7 +907,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _applyPreset('conservative'),
+                    onPressed: () {
+                      SoundService.playTapSound();
+                      _applyPreset('conservative');
+                    },
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: Theme.of(context).brightness == Brightness.dark 
@@ -916,7 +930,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _applyPreset('balanced'),
+                    onPressed: () {
+                      SoundService.playTapSound();
+                      _applyPreset('balanced');
+                    },
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: Theme.of(context).brightness == Brightness.dark 
@@ -936,7 +953,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _applyPreset('aggressive'),
+                    onPressed: () {
+                      SoundService.playTapSound();
+                      _applyPreset('aggressive');
+                    },
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: Theme.of(context).brightness == Brightness.dark 
@@ -998,7 +1018,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: _resetToDefaults,
+                onPressed: () {
+                  SoundService.playTapSound();
+                  _resetToDefaults();
+                },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -1018,7 +1041,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
-                onPressed: _exportConfig,
+                onPressed: () {
+                  SoundService.playTapSound();
+                  _exportConfig();
+                },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -1038,7 +1064,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
-                onPressed: _importConfig,
+                onPressed: () {
+                   SoundService.playTapSound();
+                   _importConfig();
+                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -1061,7 +1090,10 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _applyChanges,
+            onPressed: () {
+               SoundService.playTapSound();
+               _applyChanges();
+             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).brightness == Brightness.dark 
                   ? AppTheme.darkPrimaryGray 
@@ -1080,6 +1112,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
 
   /// 选择算法
   void _selectAlgorithm(AlgorithmType type) {
+    SoundService.playChooseButtonSound();
     setState(() {
       _selectedAlgorithm = type;
     });
@@ -1223,14 +1256,22 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: const Text('重置配置'),
         content: const Text('确定要重置为默认配置吗？这将清除所有自定义设置。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.getSecondaryTextColor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('取消'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               setState(() {
                 _configs[_selectedAlgorithm] = _selectedAlgorithm.defaultConfig;
@@ -1257,8 +1298,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                   ]),
                   backgroundColor: Theme.of(context).brightness == Brightness.dark
                       ? AppTheme.coolGray600
                       : AppTheme.coolGray300,
@@ -1271,6 +1311,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 ),
               );
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('确定'),
           ),
         ],
@@ -1417,16 +1465,16 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                '取消',
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppTheme.darkSecondaryTextColor
-                      : AppTheme.secondaryTextColor,
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.getSecondaryTextColor(context),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              child: const Text('取消'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 try {
                   final manager = AlgorithmManager.instance;
@@ -1511,14 +1559,15 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   );
                 }
               },
-              child: Text(
-                '导入',
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppTheme.darkPrimaryTextColor
-                      : AppTheme.primaryTextColor,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGray,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              child: const Text('导入'),
             ),
           ],
         );
