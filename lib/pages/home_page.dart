@@ -1862,6 +1862,8 @@ class _HomePageState extends State<HomePage>
           callback: () {
             if (mounted) {
               _resultAreaController.forward();
+              // 播放句子结果音效
+              _playResultSound();
             }
           },
         );
@@ -3097,7 +3099,7 @@ class _HomePageState extends State<HomePage>
                           child: SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isJudging ? null : () {_playTapSound();_submitSentence;},
+                              onPressed: _isJudging ? null : () {_playTapSound(); _submitSentence();},
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.accentGreen,
                                 foregroundColor: Colors.white,
@@ -3145,7 +3147,7 @@ class _HomePageState extends State<HomePage>
                         return Opacity(
                           opacity: _isJudging ? _skipButtonFadeAnimation.value : 1.0,
                           child: TextButton(
-                            onPressed: _isJudging ? null : () {_playTapSound();_skipSentenceTest;},
+                            onPressed: _isJudging ? null : () {_playTapSound(); _skipSentenceTest();},
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                               shape: RoundedRectangleBorder(
