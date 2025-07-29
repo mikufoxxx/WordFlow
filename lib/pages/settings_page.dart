@@ -14,6 +14,7 @@ import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
 import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
+import '../utils/performance_optimizer.dart';
 import '../main.dart';
 
 /// 导入模式枚举
@@ -87,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: OptimizedText(
                     'API Key无效，已自动切换到快速学习模式',
                     style: TextStyle(
                         fontSize: 14,
@@ -504,7 +505,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 6, bottom: 6, top: 6),
-      child: Text(
+      child: OptimizedText(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
@@ -588,7 +589,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required ValueChanged<bool> onChanged,
   }) {
     return SwitchListTile(
-      title: Text(
+      title: OptimizedText(
         title,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
@@ -596,7 +597,7 @@ class _SettingsPageState extends State<SettingsPage> {
               : AppTheme.darkGray,
         ),
       ),
-      subtitle: Text(
+      subtitle: OptimizedText(
         subtitle,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
@@ -639,7 +640,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required ValueChanged<T?> onChanged,
   }) {
     return RadioListTile<T>(
-      title: Text(
+      title: OptimizedText(
         title,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
@@ -647,7 +648,7 @@ class _SettingsPageState extends State<SettingsPage> {
               : AppTheme.darkGray,
         ),
       ),
-      subtitle: Text(
+      subtitle: OptimizedText(
         subtitle,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark 
@@ -688,7 +689,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: Theme.of(context).primaryColor,
               ),
               const SizedBox(width: 8),
-              Text(
+              OptimizedText(
                 'DeepSeek API Key',
                 style: TextStyle(
                   fontSize: 16,
@@ -715,7 +716,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ],
                   ),
-                  child: Text(
+                  child: OptimizedText(
                     '已配置',
                     style: TextStyle(
                       fontSize: 12,
@@ -792,7 +793,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (_) => _saveSettings(),
           ),
           const SizedBox(height: 6),
-          Text(
+          OptimizedText(
             '用于AI造句判断功能，请在DeepSeek官网获取API Key',
             style: TextStyle(
               fontSize: 12,
@@ -813,7 +814,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ? AppTheme.darkPrimaryGray 
                       : AppTheme.primaryGray,
                 ),
-                label: Text(
+                label: OptimizedText(
                   '测试连接',
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -837,7 +838,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ? AppTheme.darkPrimaryGray 
                       : AppTheme.primaryGray,
                 ),
-                label: Text(
+                label: OptimizedText(
                   '获取帮助',
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../utils/app_theme.dart';
+import '../utils/performance_optimizer.dart';
 
 /// 亚克力风格的AppBar
 /// 具有毛玻璃模糊效果，适配浅色和深色主题
@@ -72,7 +73,7 @@ class AcrylicAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
           child: AppBar(
-            title: Text(title),
+            title: OptimizedText(title),
             actions: actions,
             leading: leading,
             automaticallyImplyLeading: automaticallyImplyLeading,
@@ -98,4 +99,4 @@ class AcrylicAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(
     kToolbarHeight + (bottom?.preferredSize.height ?? 0.0)
   );
-} 
+}

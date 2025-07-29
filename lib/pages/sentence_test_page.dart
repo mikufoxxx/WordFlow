@@ -6,6 +6,7 @@ import '../models/word_book.dart';
 import '../utils/deepseek_api_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
+import '../utils/performance_optimizer.dart';
 
 /// 造句测试页面
 /// 用户需要用给定的单词造句，AI会判断句子的正确性
@@ -44,7 +45,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ? AppTheme.darkBackgroundColor 
               : AppTheme.backgroundColor,
           appBar: AppBar(
-            title: Text(
+            title: OptimizedText(
               '造句测试',
               style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark 
@@ -118,7 +119,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   size: 24,
                 ),
                 const SizedBox(width: 12),
-                Text(
+                OptimizedText(
                   '目标单词',
                   style: TextStyle(
                     fontSize: 16,
@@ -129,7 +130,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            OptimizedText(
               widget.wordData.word,
               style: TextStyle(
                 fontSize: 32,
@@ -138,7 +139,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            OptimizedText(
               widget.wordData.translation,
               style: TextStyle(
                 fontSize: 18,
@@ -168,7 +169,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
+                OptimizedText(
                   '造句要求',
                   style: TextStyle(
                     fontSize: 14,
@@ -179,7 +180,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
+            OptimizedText(
               '• 请用上面的单词造一个英语句子\n• 语法正确，用法恰当\n• 句子意思清晰，符合英语表达习惯',
               style: TextStyle(
                 fontSize: 13,
@@ -198,7 +199,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        OptimizedText(
           '您的造句',
           style: TextStyle(
             fontSize: 16,
@@ -260,7 +261,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : Text(
+            : OptimizedText(
                 _hasSubmitted ? '重新测试' : '提交判断',
                 style: const TextStyle(
                   fontSize: 16,
@@ -308,7 +309,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                       size: 24,
                     ),
                     const SizedBox(width: 12),
-                    Text(
+                    OptimizedText(
                       result.isCorrect ? '句子正确！' : '需要改进',
                       style: TextStyle(
                         fontSize: 18,
@@ -336,7 +337,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                                   : AppTheme.accentOrange),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
+                        child: OptimizedText(
                           '${result.score}分',
                           style: const TextStyle(
                             color: Colors.white,
@@ -350,7 +351,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                 ),
                 if (result.errorMessage != null) ...[
                   const SizedBox(height: 12),
-                  Text(
+                  OptimizedText(
                     result.errorMessage!,
                     style: TextStyle(
                       fontSize: 14,
@@ -383,7 +384,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      OptimizedText(
                         '发现问题',
                         style: TextStyle(
                           fontSize: 14,
@@ -396,7 +397,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   const SizedBox(height: 8),
                   ...result.errors.map((error) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
+                    child: OptimizedText(
                       '• ${error.type}: ${error.description}',
                       style: TextStyle(
                         fontSize: 13,
@@ -428,7 +429,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      OptimizedText(
                         '修改建议',
                         style: TextStyle(
                           fontSize: 14,
@@ -441,7 +442,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   const SizedBox(height: 8),
                   ...result.suggestions.map((suggestion) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
+                    child: OptimizedText(
                       '• $suggestion',
                       style: TextStyle(
                         fontSize: 13,
@@ -473,7 +474,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      OptimizedText(
                         '参考句子',
                         style: TextStyle(
                           fontSize: 14,
@@ -495,7 +496,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child: OptimizedText(
                             sentence,
                             style: TextStyle(
                               fontSize: 14,
@@ -521,7 +522,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
-                                      child: Text(
+                                      child: OptimizedText(
                                         '已复制到剪贴板',
                                         style: TextStyle(
                                             fontSize: 14,
@@ -570,7 +571,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('返回'),
+                child: const OptimizedText('返回'),
               ),
             ),
             const SizedBox(width: 16),
@@ -585,7 +586,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('下一个单词'),
+                child: const OptimizedText('下一个单词'),
               ),
             ),
           ],
@@ -611,7 +612,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: OptimizedText(
                   '请输入您的句子',
                   style: TextStyle(
                       fontSize: 14,
@@ -675,7 +676,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: OptimizedText(
                   '判断失败: $e',
                   style: TextStyle(
                       fontSize: 14,

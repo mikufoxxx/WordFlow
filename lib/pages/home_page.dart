@@ -1004,7 +1004,7 @@ class _HomePageState extends State<HomePage>
                 color: Theme.of(context).iconTheme.color?.withOpacity(0.5),
               ),
               SizedBox(height: 12), // 从16减少到12
-              Text(
+              OptimizedText(
                 _errorMessage!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).brightness == Brightness.dark 
@@ -1045,7 +1045,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             SizedBox(height: 12),
-            Text(
+            OptimizedText(
               '新单词马上就来...',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
@@ -1156,7 +1156,7 @@ class _HomePageState extends State<HomePage>
               ),
               SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
               Flexible(
-                child: Text(
+                child: OptimizedText(
                   _currentWordBookName!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -1207,7 +1207,7 @@ class _HomePageState extends State<HomePage>
                     size: ResponsiveHelper.getResponsiveIconSize(context, 12),
                   ),
                   SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
-                  Text(
+                  OptimizedText(
                     '今日单词 $_todayStudiedCount',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).brightness == Brightness.dark 
@@ -1250,7 +1250,7 @@ class _HomePageState extends State<HomePage>
                     size: ResponsiveHelper.getResponsiveIconSize(context, 12),
                   ),
                   SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
-                  Text(
+                  OptimizedText(
                     '总计单词 $_totalStudiedCount',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).brightness == Brightness.dark 
@@ -1426,7 +1426,7 @@ class _HomePageState extends State<HomePage>
                   color: iconColor,
                 ),
                 SizedBox(width: 10),
-                Text(
+                OptimizedText(
                   label,
                   style: TextStyle(
                     fontSize: 16,
@@ -1486,7 +1486,7 @@ class _HomePageState extends State<HomePage>
                   color: iconColor,
                 ),
                 SizedBox(width: 6),
-                Text(
+                OptimizedText(
                   label,
                   style: TextStyle(
                     fontSize: 12,
@@ -2330,7 +2330,7 @@ class _HomePageState extends State<HomePage>
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
+              child: OptimizedText(
                 phonetic,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).primaryColor,
@@ -2468,42 +2468,46 @@ class _HomePageState extends State<HomePage>
     TextStyle style,
   ) {
     // 所有文本都使用字符级动画
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          children: List.generate(text.length, (index) {
-            if (text[index] == ' ') {
-              return SizedBox(
-                width: style.fontSize! * 0.3,
-                height: style.fontSize! * 1.2,
-              );
-            }
-            
-            if (index >= slideAnimations.length || index >= opacityAnimations.length) {
-              return Text(
-                text[index],
-                style: style,
-              );
-            }
-            
-            return AnimatedBuilder(
-              animation: Listenable.merge([slideAnimations[index], opacityAnimations[index]]),
-              builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, slideAnimations[index].value),
-                  child: Opacity(
-                    opacity: opacityAnimations[index].value,
-                    child: Text(
-                      text[index],
-                      style: style,
-                    ),
-                  ),
+    return RepaintBoundary(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            children: List.generate(text.length, (index) {
+              if (text[index] == ' ') {
+                return SizedBox(
+                  width: style.fontSize! * 0.3,
+                  height: style.fontSize! * 1.2,
                 );
-              },
-            );
-          }),
+              }
+              
+              if (index >= slideAnimations.length || index >= opacityAnimations.length) {
+                return Text(
+                  text[index],
+                  style: style,
+                );
+              }
+              
+              return RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([slideAnimations[index], opacityAnimations[index]]),
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(0, slideAnimations[index].value),
+                      child: Opacity(
+                        opacity: opacityAnimations[index].value,
+                        child: Text(
+                          text[index],
+                          style: style,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -2529,7 +2533,7 @@ class _HomePageState extends State<HomePage>
   ) {
     if (slideAnimations.isEmpty || opacityAnimations.isEmpty) {
       return Center(
-        child: Text(
+        child: OptimizedText(
           text,
           style: style,
           textAlign: TextAlign.center,
@@ -2821,39 +2825,41 @@ class _HomePageState extends State<HomePage>
 
   /// 构建动画提示文字
   Widget _buildAnimatedHintText() {
-    return AnimatedBuilder(
-      animation: _buttonsController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _buttonsSlideAnimation.value),
-          child: Opacity(
-            opacity: _buttonsOpacityAnimation.value,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              child: Text(
-                _isTestingMode 
-                    ? (_showSentenceInput 
-                        ? ''
-                        : '正在准备造句测试...')
-                    : (_wordAnimationCompleted 
-                        ? ''
-                        : '单词即将登场...'),
-                key: ValueKey('${_wordAnimationCompleted}_${_isTestingMode}_breath'),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).brightness == Brightness.dark 
-                      ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.6)
-                      : Colors.grey.shade400,
-                  height: 1.4,
-                  fontSize: 13,
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _buttonsController,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, _buttonsSlideAnimation.value),
+            child: Opacity(
+              opacity: _buttonsOpacityAnimation.value,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                child: Text(
+                  _isTestingMode 
+                      ? (_showSentenceInput 
+                          ? ''
+                          : '正在准备造句测试...')
+                      : (_wordAnimationCompleted 
+                          ? ''
+                          : '单词即将登场...'),
+                  key: ValueKey('${_wordAnimationCompleted}_${_isTestingMode}_breath'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Theme.of(context).textTheme.bodyMedium!.color!.withOpacity(0.6)
+                        : Colors.grey.shade400,
+                    height: 1.4,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

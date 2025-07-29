@@ -7,6 +7,7 @@ import '../models/detailed_learning_record.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/sound_service.dart';
+import '../utils/performance_optimizer.dart';
 
 /// 单词详情页面
 /// 显示单词的完整学习历史和时间轴
@@ -30,7 +31,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
           ? AppTheme.darkBackgroundColor 
           : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(
+        title: OptimizedText(
           widget.record.word,
           style: TextStyle(
             color: Theme.of(context).brightness == Brightness.dark 
@@ -114,7 +115,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      OptimizedText(
                         widget.record.word,
                         style: TextStyle(
                           fontSize: 32,
@@ -123,7 +124,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      OptimizedText(
                         widget.record.translation,
                         style: TextStyle(
                           fontSize: 18,
@@ -144,7 +145,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                       width: 1,
                     ),
                   ),
-                  child: Text(
+                  child: OptimizedText(
                     widget.record.memoryLevel.displayName,
                     style: TextStyle(
                       fontSize: 12,
@@ -168,7 +169,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                     color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  OptimizedText(
                     '来自词书：${widget.record.wordBookName}',
                     style: TextStyle(
                       fontSize: 14,
@@ -218,7 +219,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            OptimizedText(
               '学习概览',
               style: TextStyle(
                 fontSize: 18,
@@ -332,7 +333,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                OptimizedText(
                   '掌握程度',
                   style: TextStyle(
                     fontSize: 14,
@@ -348,7 +349,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                   minHeight: 8,
                 ),
                 const SizedBox(height: 4),
-                Text(
+                OptimizedText(
                   '${(widget.record.masteryPercentage * 100).toStringAsFixed(1)}%',
                   style: TextStyle(
                     fontSize: 12,
@@ -378,7 +379,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 4),
-              Text(
+              OptimizedText(
                 value,
                 style: TextStyle(
                   fontSize: 18,
@@ -389,7 +390,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
+          OptimizedText(
             label,
             style: TextStyle(
               fontSize: 12,
@@ -421,7 +422,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                 color: AppTheme.coolGray400,
               ),
               const SizedBox(height: 16),
-              Text(
+              OptimizedText(
                 '暂无学习记录',
                 style: TextStyle(
                   fontSize: 16,
@@ -463,7 +464,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            OptimizedText(
               '学习时间轴',
               style: TextStyle(
                 fontSize: 18,
@@ -529,7 +530,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 时间
-                Text(
+                OptimizedText(
                   DateFormat('yyyy-MM-dd HH:mm').format(review.reviewTime),
                   style: TextStyle(
                     fontSize: 12,
@@ -548,7 +549,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                       color: color,
                     ),
                     const SizedBox(width: 6),
-                    Text(
+                    OptimizedText(
                       review.reviewResult.displayName,
                       style: TextStyle(
                         fontSize: 14,
@@ -557,7 +558,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                       ),
                     ),
                     const Spacer(),
-                    Text(
+                    OptimizedText(
                       '复习间隔: ${review.reviewInterval.toStringAsFixed(1)}天',
                       style: TextStyle(
                         fontSize: 11,
@@ -607,29 +608,29 @@ class _WordDetailPageState extends State<WordDetailPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('掌握程度计算说明'),
+        title: const OptimizedText('掌握程度计算说明'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('掌握程度基于你的学习表现综合计算：'),
+            OptimizedText('掌握程度基于你的学习表现综合计算：'),
             SizedBox(height: 12),
-            Text('📊 基础分数（70%权重）：'),
-            Text('  • 简单：3分'),
-            Text('  • 良好：2分'),
-            Text('  • 困难：1分'),
-            Text('  • 忘记：0分'),
+            OptimizedText('📊 基础分数（70%权重）：'),
+            OptimizedText('  • 简单：3分'),
+            OptimizedText('  • 良好：2分'),
+            OptimizedText('  • 困难：1分'),
+            OptimizedText('  • 忘记：0分'),
             SizedBox(height: 8),
-            Text('🎯 记忆级别奖励（每级+5%）'),
-            Text('⚡ 连续3次以上正确额外+15%'),
+            OptimizedText('🎯 记忆级别奖励（每级+5%）'),
+            OptimizedText('⚡ 连续3次以上正确额外+15%'),
             SizedBox(height: 12),
-            Text('掌握程度会随着学习表现实时更新，帮助你了解单词的熟练程度。'),
+            OptimizedText('掌握程度会随着学习表现实时更新，帮助你了解单词的熟练程度。'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('了解'),
+            child: const OptimizedText('了解'),
           ),
         ],
       ),

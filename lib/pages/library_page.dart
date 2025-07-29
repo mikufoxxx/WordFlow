@@ -520,7 +520,7 @@ class _LibraryPageState extends State<LibraryPage>
                       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 从8减少到6
                   child: Row(
                     children: [
-                      Text(
+                      OptimizedText(
                         '我的词书收藏',
                         style: TextStyle(
                               fontSize: 18, // 从20减少到18
@@ -531,7 +531,7 @@ class _LibraryPageState extends State<LibraryPage>
                         ),
                       ),
                       Spacer(),
-                      Text(
+                      OptimizedText(
                         '${downloadedBooks.length} 个',
                         style: TextStyle(
                               fontSize: 14, // 从16减少到14
@@ -635,7 +635,7 @@ class _LibraryPageState extends State<LibraryPage>
             size: 22, // 从24减少到22
           ),
         ),
-        title: Text(
+        title: OptimizedText(
           item.wordBook.name,
           style: TextStyle(
             fontSize: 15, // 从16减少到15
@@ -645,7 +645,7 @@ class _LibraryPageState extends State<LibraryPage>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
+        subtitle: OptimizedText(
           '${item.wordBook.wordCount} 个单词',
           style: TextStyle(
             fontSize: 13, // 从14减少到13
@@ -806,7 +806,7 @@ class _LibraryPageState extends State<LibraryPage>
                       minWidth: 14, // 从16减少到14
                       minHeight: 14, // 从16减少到14
                   ),
-                  child: Text(
+                  child: OptimizedText(
                     '$downloadedCount',
                     style: TextStyle(
                       color: Colors.white,
@@ -930,7 +930,7 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-          Text(
+          OptimizedText(
                 '总计: ${_allWordBookItems.length}',
             style: TextStyle(
                   fontSize: 13, // 从14减少到13
@@ -957,7 +957,7 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-            Text(
+            OptimizedText(
                 '已下载: ${_allWordBookItems.where((item) => item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected).length}',
               style: TextStyle(
                   fontSize: 13, // 从14减少到13
@@ -1005,7 +1005,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          OptimizedText(
             '正在寻找词书...',
             style: TextStyle(
               color: isDark 
@@ -1037,7 +1037,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          OptimizedText(
             '词书正在赶来的路上...',
             style: TextStyle(
               color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray),
@@ -1046,7 +1046,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          OptimizedText(
             '稍等一下，好词汇马上就来',
             style: TextStyle(
               color: AppTheme.primaryGray.withOpacity(0.7),
@@ -1073,7 +1073,7 @@ class _LibraryPageState extends State<LibraryPage>
               color: AppTheme.primaryGray,
             ),
             const SizedBox(height: 16),
-            Text(
+            OptimizedText(
               _errorMessage!,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -1095,7 +1095,7 @@ class _LibraryPageState extends State<LibraryPage>
                   vertical: 12,
                 ),
               ),
-              child: const Text('重新试试'),
+              child: const OptimizedText('重新试试'),
             ),
           ],
         ),
@@ -1115,7 +1115,7 @@ class _LibraryPageState extends State<LibraryPage>
             color: AppTheme.primaryGray,
           ),
           SizedBox(height: 16),
-          Text(
+          OptimizedText(
             '未找到匹配的词库',
             style: TextStyle(
               color: AppTheme.primaryGray,
@@ -1223,7 +1223,7 @@ class _LibraryPageState extends State<LibraryPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 词库名称
-                          Text(
+                          OptimizedText(
                             item.wordBook.name,
                             style: TextStyle(
                               fontSize: 16, // 从18减少到16
@@ -1244,7 +1244,7 @@ class _LibraryPageState extends State<LibraryPage>
                                 color: AppTheme.accentGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10), // 从12减少到10
                               ),
-                              child: Text(
+                              child: OptimizedText(
                                 '${item.wordBook.wordCount} 个单词',
                                 style: TextStyle(
                                   fontSize: 12, // 从13减少到12
@@ -1345,7 +1345,7 @@ class _LibraryPageState extends State<LibraryPage>
                       size: 18,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    const OptimizedText(
                       '收集词书',
                       style: TextStyle(
                         color: Colors.white,
@@ -1392,7 +1392,7 @@ class _LibraryPageState extends State<LibraryPage>
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
+                OptimizedText(
                   '收集中...',
                   style: TextStyle(
                     color: Colors.white,
@@ -1440,7 +1440,7 @@ class _LibraryPageState extends State<LibraryPage>
                       size: 18,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    const OptimizedText(
                       '选择词书',
                       style: TextStyle(
                         color: Colors.white,
@@ -1487,7 +1487,7 @@ class _LibraryPageState extends State<LibraryPage>
                   size: 18,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                const OptimizedText(
                   '使用中',
                   style: TextStyle(
                     color: Colors.white,
@@ -1541,7 +1541,7 @@ class _LibraryPageState extends State<LibraryPage>
                       size: 18,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    const OptimizedText(
                       '重试下载',
                       style: TextStyle(
                         color: Colors.white,
@@ -1570,7 +1570,7 @@ class _LibraryPageState extends State<LibraryPage>
                 : AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
-          child: Text(
+          child: OptimizedText(
             '未下载',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
@@ -1591,7 +1591,7 @@ class _LibraryPageState extends State<LibraryPage>
                 : AppTheme.accentYellow).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
-          child: Text(
+          child: OptimizedText(
             '收集中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
@@ -1610,7 +1610,7 @@ class _LibraryPageState extends State<LibraryPage>
             color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
-          child: Text(
+          child: OptimizedText(
             '已下载',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
@@ -1629,7 +1629,7 @@ class _LibraryPageState extends State<LibraryPage>
             color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
-          child: Text(
+          child: OptimizedText(
             '使用中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
@@ -1650,7 +1650,7 @@ class _LibraryPageState extends State<LibraryPage>
                 : AppTheme.accentRed).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
-          child: Text(
+          child: OptimizedText(
             '错误',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
