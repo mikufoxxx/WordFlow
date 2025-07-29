@@ -874,7 +874,7 @@ class _HomePageState extends State<HomePage>
                 : AppTheme.primaryTextColor,
           ),
         ),
-        leading: Padding(
+        leading: (!_isTestingMode && !_isSentenceSubmitted) ? Padding(
               padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
           child: Theme(
             data: Theme.of(context).copyWith(
@@ -902,8 +902,8 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-        ),
-        actions: [
+        ) : null,
+        actions: (!_isTestingMode && !_isSentenceSubmitted) ? [
           Padding(
                 padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
             child: Theme(
@@ -930,7 +930,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-        ],
+        ] : [],
       ),
       body: Stack(
         children: [
