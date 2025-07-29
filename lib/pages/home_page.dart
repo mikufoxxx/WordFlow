@@ -130,8 +130,6 @@ class _HomePageState extends State<HomePage>
   String _userSentence = '';
   late AnimationController _sentenceAnimationController;
   late AnimationController _wordMoveController;
-  late Animation<double> _wordScaleAnimation;
-  late Animation<double> _wordMoveAnimation;
   late Animation<double> _sentenceInputAnimation;
   
   // 逐字母浮现动画相关
@@ -389,22 +387,8 @@ class _HomePageState extends State<HomePage>
     ));
     
     // 造句测试动画
-    _wordScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.8,
-    ).animate(CurvedAnimation(
-      parent: _wordMoveController,
-      curve: Curves.easeOutQuart,
-    ));
-    
-    _wordMoveAnimation = Tween<double>(
-      begin: 0.0,
-      end: -30.0,
-    ).animate(CurvedAnimation(
-      parent: _wordMoveController,
-      curve: Curves.easeOutQuart,
-    ));
-    
+
+
     _sentenceInputAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,

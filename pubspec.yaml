@@ -57,6 +57,10 @@ dependencies:
   file_picker: ^6.1.1
   # 用于权限管理
   permission_handler: ^11.1.0
+  # 用于获取应用包信息
+  package_info_plus: ^4.2.0
+  # 用于启动URL
+  url_launcher: ^6.2.1
 
 dev_dependencies:
   flutter_test:

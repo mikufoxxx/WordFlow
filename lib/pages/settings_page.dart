@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
@@ -39,6 +42,9 @@ class _SettingsPageState extends State<SettingsPage> {
   PronunciationType _pronunciationType = PronunciationType.uk;
   LearningMode? _learningMode; // 改为可空类型，避免默认值闪烁
   
+  // 版本信息
+  String _appVersion = '加载中...';
+  
   // DeepSeek API设置
   final TextEditingController _deepSeekApiKeyController = TextEditingController();
   bool _isApiKeyValid = false;
@@ -50,6 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadAppVersion();
     _deepSeekApiKeyController.addListener(_onApiKeyChanged);
   }
   
@@ -410,45 +417,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   _buildSectionHeader('关于'),
                   _buildSettingsCard([
                     _buildCompactListTile(
-                      leading: const Icon(Icons.info_outline),
-                      title: '关于WordFlow',
-                      subtitle: '版本 1.0.0',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(
-                                  Icons.catching_pokemon_outlined,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '你知道吗，已经改了好几版了，但是版本号没有变。。',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(context).brightness == Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black87
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                ? AppTheme.coolGray600
-                                : AppTheme.coolGray300,
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
+                      leading: const Icon(Icons.system_update_outlined),
+                      title: _appVersion,
+                      subtitle: '点击检查更新',
+                      onTap: _checkForUpdates,
                     ),
                     _buildCompactListTile(
                       leading: const Icon(Icons.feedback_outlined),
@@ -2084,5 +2056,230 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 打开算法设置页面
   void _openAlgorithmSettings() {
     Navigator.of(context).pushNamed('/algorithm_settings');
+  }
+
+  /// 加载应用版本信息
+  Future<void> _loadAppVersion() async {
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        _appVersion = 'v${packageInfo.version}';
+      });
+    } catch (e) {
+      setState(() {
+        _appVersion = '版本信息获取失败';
+      });
+    }
+  }
+
+  /// 检查应用更新
+  Future<void> _checkForUpdates() async {
+    try {
+      // 显示检查中的提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              OptimizedText(
+                '正在检查更新...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // 获取当前应用版本信息
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String currentVersion = packageInfo.version;
+
+      // 这里可以替换为实际的更新检查API
+      // 检查GitHub releases获取最新版本信息
+      // 注意：请将 'your-username' 替换为实际的GitHub用户名或组织名
+      const String updateCheckUrl = 'https://api.github.com/repos/mikufoxxx/WordFlow/releases/latest';
+      
+      final response = await http.get(
+        Uri.parse(updateCheckUrl),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> releaseData = json.decode(response.body);
+        final String latestVersion = releaseData['tag_name']?.replaceFirst('v', '') ?? '';
+        final String downloadUrl = releaseData['html_url'] ?? '';
+        
+        if (_isNewerVersion(currentVersion, latestVersion)) {
+          // 发现新版本
+          _showUpdateDialog(currentVersion, latestVersion, downloadUrl);
+        } else {
+          // 已是最新版本
+          _showNoUpdateDialog(currentVersion);
+        }
+      } else {
+        throw Exception('检查更新失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      // 检查更新失败
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OptimizedText(
+                  '检查更新失败: ${e.toString()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// 比较版本号
+  bool _isNewerVersion(String currentVersion, String latestVersion) {
+    List<int> current = currentVersion.split('.').map(int.parse).toList();
+    List<int> latest = latestVersion.split('.').map(int.parse).toList();
+    
+    // 补齐版本号长度
+    while (current.length < latest.length) current.add(0);
+    while (latest.length < current.length) latest.add(0);
+    
+    for (int i = 0; i < current.length; i++) {
+      if (latest[i] > current[i]) return true;
+      if (latest[i] < current[i]) return false;
+    }
+    return false;
+  }
+
+  /// 显示更新对话框
+  void _showUpdateDialog(String currentVersion, String latestVersion, String downloadUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.system_update,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 8),
+              OptimizedText('发现新版本'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              OptimizedText('当前版本: $currentVersion'),
+              const SizedBox(height: 8),
+              OptimizedText('最新版本: $latestVersion'),
+              const SizedBox(height: 16),
+              OptimizedText(
+                '是否前往下载页面更新应用？',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: OptimizedText('稍后更新'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _launchUrl(downloadUrl);
+              },
+              child: OptimizedText('立即更新'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 显示无更新对话框
+  void _showNoUpdateDialog(String currentVersion) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              OptimizedText('已是最新版本'),
+            ],
+          ),
+          content: OptimizedText('当前版本 $currentVersion 已是最新版本'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: OptimizedText('确定'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 启动URL
+  Future<void> _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: OptimizedText('无法打开下载链接'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
   }
 }
