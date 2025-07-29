@@ -522,16 +522,11 @@ class _SettingsPageState extends State<SettingsPage> {
           boxShadow: Theme.of(context).brightness == Brightness.dark 
               ? null 
               : [
-                  BoxShadow(
-                    color: Theme.of(context).primaryColor.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
                 ],
         ),
         child: Column(
@@ -689,9 +684,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         ? null 
                         : [
                             BoxShadow(
-                              color: Colors.green.withOpacity(0.15),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
+                              color: AppTheme.coolGray200.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
                             ),
                           ],
                   ),

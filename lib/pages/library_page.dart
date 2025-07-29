@@ -490,7 +490,7 @@ class _LibraryPageState extends State<LibraryPage>
           builder: (context, scrollController) => Container(
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkCardColor 
+                  ? AppTheme.darkBackgroundColor
                   : AppTheme.backgroundColor,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   boxShadow: Theme.of(context).brightness == Brightness.dark 
@@ -526,8 +526,8 @@ class _LibraryPageState extends State<LibraryPage>
                         style: TextStyle(
                               fontSize: 18, // 从20减少到18
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).brightness == Brightness.dark 
-                              ? AppTheme.darkPrimaryTextColor 
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkPrimaryTextColor
                               : AppTheme.primaryTextColor,
                         ),
                       ),
@@ -536,16 +536,27 @@ class _LibraryPageState extends State<LibraryPage>
                         '${downloadedBooks.length} 个',
                         style: TextStyle(
                               fontSize: 14, // 从16减少到14
-                          color: Theme.of(context).brightness == Brightness.dark 
-                              ? AppTheme.darkSecondaryTextColor 
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkSecondaryTextColor
                               : AppTheme.secondaryTextColor,
                         ),
                       ),
                     ],
                   ),
                 ),
+                    SizedBox(height: 8,),
                 
-                    Divider(color: AppTheme.coolGray200, height: 1), // 减少高度
+                    // 分割线 - 类似指示器的圆角样式
+                    Container(
+                      margin: EdgeInsets.fromLTRB(20,8,20,0),
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppTheme.coolGray300.withOpacity(0.3)
+                            : AppTheme.coolGray300.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(0.5),
+                      ),
+                    ),
                 
                 // 词库列表
                 Expanded(
@@ -654,25 +665,36 @@ class _LibraryPageState extends State<LibraryPage>
                 child: Text(
                   '使用中',
                   style: TextStyle(
-                    color: AppTheme.accentGreen,
-                    fontSize: 11, // 从12减少到11
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkPrimaryTextColor
+                        : AppTheme.darkGray,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               )
-            : TextButton(
-                onPressed: () {
+            : GestureDetector(
+                onTap: () {
                   Navigator.pop(context);
                   _selectWordBook(item);
                 },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), // 添加padding控制
-                  minimumSize: Size(0, 32), // 设置最小高度
-                ),
-                child: Text(
-                  '选择',
-                  style: TextStyle(
-                    fontSize: 13, // 设置字体大小
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.accentGreen.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '选择',
+                    style: TextStyle(
+                      color: AppTheme.accentGreen,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -816,7 +838,7 @@ class _LibraryPageState extends State<LibraryPage>
   Widget _buildSearchBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6), // 从20,8,20,8减少到16,6,16,6
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 12), // 从20,8,20,8减少到16,6,16,6
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12), // 从16减少到12
@@ -833,16 +855,12 @@ class _LibraryPageState extends State<LibraryPage>
         decoration: InputDecoration(
           hintText: '搜索词库...',
           hintStyle: TextStyle(
-            color: isDark 
-                ? AppTheme.coolGray500 
-                : AppTheme.primaryGray.withOpacity(0.6),
-            fontSize: 14, // 从16减少到14
+            color: AppTheme.accentGreen,
+            fontSize: 16, // 从16减少到14
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: isDark 
-                ? AppTheme.coolGray500 
-                : AppTheme.primaryGray.withOpacity(0.6),
+            color: AppTheme.accentGreen,
             size: 20, // 添加图标大小限制
           ),
           suffixIcon: _searchController.text.isNotEmpty
@@ -860,10 +878,11 @@ class _LibraryPageState extends State<LibraryPage>
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), // 从16,14减少到14,12
+          filled: false,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14), // 从16,14减少到14,12
           ),
         style: TextStyle(
-          fontSize: 14, // 从16减少到14
+          fontSize: 16, // 从16减少到14
           color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.darkGray),
         ),
       ),
@@ -1216,18 +1235,14 @@ class _LibraryPageState extends State<LibraryPage>
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 从10,4减少到8,3
                               decoration: BoxDecoration(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? AppTheme.coolGray600
-                                    : AppTheme.cardColor,
+                                color: AppTheme.accentGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10), // 从12减少到10
                               ),
                               child: Text(
                                 '${item.wordBook.wordCount} 个单词',
                                 style: TextStyle(
                                   fontSize: 12, // 从13减少到12
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? AppTheme.darkPrimaryTextColor
-                                      : AppTheme.darkGray,
+                                  color: AppTheme.accentGreen,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1291,8 +1306,8 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.accentGreen,
-                AppTheme.accentGreen.withOpacity(0.8),
+                AppTheme.coolGray400,
+                AppTheme.coolGray400.withOpacity(0.9),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
@@ -1341,16 +1356,7 @@ class _LibraryPageState extends State<LibraryPage>
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentYellow
-                    : AppTheme.accentYellow).withOpacity(0.2),
-                (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentYellow
-                    : AppTheme.accentYellow),
-              ],
-            ),
+            color: AppTheme.accentGreen.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
             boxShadow: Theme.of(context).brightness == Brightness.dark 
                 ? null 
@@ -1380,9 +1386,7 @@ class _LibraryPageState extends State<LibraryPage>
                 Text(
                   '收集中...',
                   style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? AppTheme.darkAccentYellow
-                        : AppTheme.accentYellow,
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1397,12 +1401,7 @@ class _LibraryPageState extends State<LibraryPage>
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: 42),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.coolGray600,
-                AppTheme.coolGray700,
-              ],
-            ),
+            color: AppTheme.accentGreen.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12), // 从16减少到12
             boxShadow: Theme.of(context).brightness == Brightness.dark 
                 ? null 
@@ -1451,8 +1450,8 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.accentGreen,
-                AppTheme.accentGreen.withOpacity(0.8),
+                AppTheme.darkGray,
+                AppTheme.darkGray.withOpacity(0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
@@ -1556,7 +1555,7 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
                 ? AppTheme.coolGray600
-                : AppTheme.cardColor,
+                : AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
@@ -1596,14 +1595,16 @@ class _LibraryPageState extends State<LibraryPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: AppTheme.coolGray600.withOpacity(0.15),
+            color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
             '已下载',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: AppTheme.coolGray600,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkPrimaryTextColor
+                  : AppTheme.darkGray,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1613,14 +1614,16 @@ class _LibraryPageState extends State<LibraryPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: AppTheme.accentGreen.withOpacity(0.2),
+            color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: Text(
             '使用中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: AppTheme.accentGreen,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkPrimaryTextColor
+                  : AppTheme.darkGray,
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -58,12 +58,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: _showAlgorithmHelp,
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -90,9 +84,31 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   /// 构建算法选择器
   Widget _buildAlgorithmSelector() {
     return Card(
-      color: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkCardColor 
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkCardColor
           : AppTheme.cardColor,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -123,7 +139,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建算法选项
@@ -198,7 +214,28 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,14 +267,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                 fontSize: 14,
                 color: Theme.of(context).brightness == Brightness.dark 
                     ? AppTheme.darkSecondaryTextColor 
-                    : AppTheme.secondaryTextColor,
+                    : AppTheme.primaryTextColor,
                 height: 1.4,
               ),
             ),
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建参数设置
@@ -261,8 +298,29 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -331,7 +389,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建Anki设置
@@ -343,8 +401,29 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -391,7 +470,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建自适应设置
@@ -403,8 +482,29 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -465,7 +565,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
 
@@ -700,8 +800,29 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -835,7 +956,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建预设描述
@@ -1241,18 +1362,52 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
           title: const Text('导入配置'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('请粘贴配置JSON：'),
               const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: '粘贴配置JSON...',
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.getCardColor(context),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppTheme.darkPrimaryTextColor
+                            : AppTheme.primaryTextColor,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    hintText: '粘贴配置JSON...',
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
                 ),
               ),
             ],
@@ -1260,7 +1415,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(
+                '取消',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkSecondaryTextColor
+                      : AppTheme.secondaryTextColor,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () async {
@@ -1278,7 +1440,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                         children: [
                           Icon(
                             Icons.check_circle_outlined,
-                            color: Colors.white,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.darkPrimaryTextColor
+                                : AppTheme.primaryTextColor,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -1288,8 +1452,8 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                               style: TextStyle(
                                   fontSize: 14,
                                   color: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black87
+                                      ? AppTheme.darkPrimaryTextColor
+                                      : AppTheme.primaryTextColor
                               ),
                             ),
                           ),
@@ -1313,7 +1477,9 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                         children: [
                           Icon(
                             Icons.error_outline,
-                            color: Colors.white,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.darkPrimaryTextColor
+                                : AppTheme.primaryTextColor,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -1323,8 +1489,8 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                               style: TextStyle(
                                   fontSize: 14,
                                   color: Theme.of(context).brightness == Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black87
+                                      ? AppTheme.darkPrimaryTextColor
+                                      : AppTheme.primaryTextColor
                               ),
                             ),
                           ),
@@ -1343,7 +1509,14 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
                   );
                 }
               },
-              child: const Text('导入'),
+              child: Text(
+                '导入',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkPrimaryTextColor
+                      : AppTheme.primaryTextColor,
+                ),
+              ),
             ),
           ],
         );
@@ -1480,61 +1653,6 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
   }
 
 
-
-  /// 显示算法帮助
-  void _showAlgorithmHelp() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('算法说明'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHelpSection('SuperMemo (SM-2)', '基于艾宾浩斯遗忘曲线的科学记忆算法，通过精确计算复习间隔来优化记忆效率。适合系统性学习和追求高效率的用户。'),
-              const SizedBox(height: 16),
-              _buildHelpSection('Anki算法', '注重长期记忆保持的稳定算法，采用更保守的间隔策略。适合希望稳定学习、不易遗忘的用户。'),
-              const SizedBox(height: 16),
-              _buildHelpSection('智能自适应', '结合机器学习和AI技术，根据用户的学习习惯和记忆能力自动调整参数。适合新手用户和希望省心学习的用户。'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建帮助节
-  Widget _buildHelpSection(String title, String content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.coolGray700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          content,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.coolGray600,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
 
   /// 获取算法详细描述
   String _getAlgorithmDetailedDescription(AlgorithmType type) {

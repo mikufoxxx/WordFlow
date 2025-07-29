@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
-import 'pages/word_review_page.dart';
 import 'pages/enhanced_word_review_page.dart';
 import 'pages/algorithm_settings_page.dart';
 import 'utils/app_theme.dart';
@@ -137,7 +136,6 @@ class _WordFlowAppState extends State<WordFlowApp> {
           toggleTheme: _toggleTheme,
           child: const SettingsPage(),
         ),
-        '/word_review': (context) => const WordReviewPage(),
         '/enhanced_word_review': (context) => const EnhancedWordReviewPage(),
         '/algorithm_settings': (context) => const AlgorithmSettingsPage(),
       },

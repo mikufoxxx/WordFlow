@@ -415,12 +415,25 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
   /// 构建增强的单词卡片
   Widget _buildEnhancedWordCard(EnhancedWordLearningRecord record) {
     return Card(
+      elevation: 0,
       color: AppTheme.getCardColor(context),
       margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () => _showWordDetails(record),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+         child: InkWell(
+           onTap: () => _showWordDetails(record),
+           borderRadius: BorderRadius.circular(8),
+           child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,7 +572,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// 构建统计芯片
@@ -632,7 +645,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final newWords = _allRecords.where((r) => r.masteryPercentage < 0.3).length;
 
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
@@ -640,17 +653,18 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              // ignore: deprecated_member_use
-              AppTheme.accentBlue.withOpacity(0.05),
-              // ignore: deprecated_member_use
-              AppTheme.accentTeal.withOpacity(0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkCardColor
+                : AppTheme.cardColor,
+
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,6 +677,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                     // ignore: deprecated_member_use
                     color: AppTheme.accentBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : [
+                      BoxShadow(
+                        color: AppTheme.coolGray200.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     Icons.analytics_outlined,
@@ -794,12 +817,26 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final total = _allRecords.length;
 
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,7 +876,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建记忆级别分布卡片
@@ -851,12 +888,26 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final total = _allRecords.length;
 
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,18 +955,32 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建每日学习量趋势卡片
   Widget _buildDailyLearningTrendCard() {
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,7 +1008,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建每日学习量图表

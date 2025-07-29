@@ -76,15 +76,29 @@ class _WordDetailPageState extends State<WordDetailPage> {
   /// 构建单词基本信息卡片
   Widget _buildWordInfoCard() {
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+         child: Padding(
+           padding: const EdgeInsets.all(20),
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 单词和翻译
             Row(
@@ -158,10 +172,10 @@ class _WordDetailPageState extends State<WordDetailPage> {
                 ],
               ),
             ],
-          ],
+            ]),
+          ),
         ),
-      ),
-    );
+      );
   }
 
   /// 构建学习状态概览
@@ -174,11 +188,25 @@ class _WordDetailPageState extends State<WordDetailPage> {
     final easyCount = widget.record.easyCount;
     
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -326,7 +354,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建统计项
@@ -405,12 +433,26 @@ class _WordDetailPageState extends State<WordDetailPage> {
     sortedReviews.sort((a, b) => b.reviewTime.compareTo(a.reviewTime));
 
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkCardColor 
           : AppTheme.cardColor,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? AppTheme.darkCardColor 
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.coolGray200.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,7 +483,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 构建时间轴项目
