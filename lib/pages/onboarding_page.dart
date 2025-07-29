@@ -61,7 +61,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     ),
           OnboardingPageData(
         title: "始于足下",
-        subtitle: "连接DeepSeek AI",
+        subtitle: "输入API Key, 开启智能造句判断",
         description: "输入DeepSeek API Key\n开启智能造句判断",
         icon: Icons.psychology_outlined,
         color: Color(0xFF10B981), // 更柔和的绿色
@@ -71,22 +71,22 @@ class _OnboardingPageState extends State<OnboardingPage>
   // 学习流程数据 - 使用更柔和的颜色
   final List<LearningStepData> _learningSteps = [
     LearningStepData(
-      title: "单词浮现",
-      description: "优雅的流式动画\n逐字浮现单词",
-      icon: Icons.visibility_outlined,
-      color: Color(0xFF6B7280), // 柔和灰色
+      title: "单词呈现",
+      description: "沉浸体验\n单词如流水般展现",
+      icon: Icons.auto_awesome_outlined,
+      color: AppTheme.primaryGray,
     ),
     LearningStepData(
-      title: "思考记忆",
-      description: "点击屏幕查看释义\n加深记忆印象",
+      title: "深入记忆",
+      description: "连词成句\n在思考中构建语言直觉",
+      icon: Icons.psychology_alt_outlined,
+      color: AppTheme.primaryGray,
+    ),
+    LearningStepData(
+      title: "智能推送",
+      description: "无限推词\n让你的词本独一无二",
       icon: Icons.psychology_outlined,
-      color: Color(0xFF8B5CF6), // 柔和紫色
-    ),
-    LearningStepData(
-      title: "确认掌握",
-      description: "标记认识程度\n智能调整复习频率",
-      icon: Icons.done_all_outlined,
-      color: Color(0xFF10B981), // 柔和绿色
+      color: AppTheme.primaryGray,
     ),
   ];
 
@@ -184,6 +184,7 @@ class _OnboardingPageState extends State<OnboardingPage>
       backgroundColor: Theme.of(context).brightness == Brightness.dark 
           ? AppTheme.darkBackgroundColor 
           : AppTheme.backgroundColor,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -231,8 +232,8 @@ class _OnboardingPageState extends State<OnboardingPage>
             height: ResponsiveHelper.getResponsiveSpacing(context, 6),
             decoration: BoxDecoration(
               color: _currentPage == index 
-                  ? _pages[index].color 
-                  : AppTheme.coolGray300,
+                ? AppTheme.primaryGray 
+                : AppTheme.coolGray300,
               borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, 3)),
             ),
           );
@@ -297,31 +298,31 @@ class _OnboardingPageState extends State<OnboardingPage>
     });
 
     return Container(
-      width: 120, // 从150减少到120
-      height: 120, // 从150减少到120
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
-        color: page.color.withOpacity(0.1),
+        color: AppTheme.primaryGray.withOpacity(0.1),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: page.color.withOpacity(0.15), // 从0.2减少到0.15
-            blurRadius: 15, // 从20减少到15
-            offset: const Offset(0, 8), // 从10减少到8
+            color: AppTheme.primaryGray.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: IconViewer(
         controller: controller,
-        width: 80, // 从100减少到80
-        height: 80, // 从100减少到80
+        width: 60,
+        height: 60,
       ),
     );
   }
   
-  /// 构建学习流程轮播图 - 不使用动画
+  /// 构建学习流程轮播图 - 增强视差动效
   Widget _buildLearningCarousel() {
     return SizedBox(
-      height: 240, // 从280减少到240
+      height: 260, // 增加高度以容纳视差效果
       child: PageView.builder(
         controller: _carouselController,
         onPageChanged: (index) {
@@ -332,79 +333,144 @@ class _OnboardingPageState extends State<OnboardingPage>
         itemCount: _learningSteps.length,
         itemBuilder: (context, index) {
           final step = _learningSteps[index];
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
-            decoration: BoxDecoration(
-              color: step.color.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20), // 从24减少到20
-              border: Border.all(
-                color: step.color.withOpacity(0.2),
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 步骤图标
-                Container(
-                  width: 68, // 从80减少到68
-                  height: 68, // 从80减少到68
+          return AnimatedBuilder(
+            animation: _carouselController,
+            builder: (context, child) {
+              double value = 0.0;
+              if (_carouselController.position.haveDimensions) {
+                value = index.toDouble() - (_carouselController.page ?? 0);
+                value = (value * 0.038).clamp(-1, 1);
+              }
+              
+              return Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(value),
+                child: Container(
+                  margin: EdgeInsets.symmetric(
+                    horizontal: 16 + (value.abs() * 8), // 动态边距
+                    vertical: value.abs() * 4, // 垂直视差
+                  ),
                   decoration: BoxDecoration(
-                    color: step.color.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    step.icon,
-                    size: 32, // 从40减少到32
-                    color: step.color,
-                  ),
-                ),
-                
-                const SizedBox(height: 16), // 从20减少到16
-                
-                // 步骤编号
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), // 从12,6减少到10,5
-                  decoration: BoxDecoration(
-                    color: step.color,
-                    borderRadius: BorderRadius.circular(16), // 从20减少到16
-                  ),
-                  child: Text(
-                    '第 ${index + 1} 步',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11, // 从12减少到11
-                      fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryGray.withOpacity(0.08 + (1 - value.abs()) * 0.02),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.primaryGray.withOpacity(0.2 + (1 - value.abs()) * 0.1),
+                      width: 1.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryGray.withOpacity(0.1 * (1 - value.abs())),
+                        blurRadius: 20 * (1 - value.abs()),
+                        offset: Offset(0, 8 * (1 - value.abs())),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 步骤图标 - 添加视差动效
+                      Transform.translate(
+                        offset: Offset(0, -value * 8), // 图标反向移动
+                        child: Transform.scale(
+                          scale: 1.0 - (value.abs() * 0.1), // 缩放效果
+                          child: Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryGray.withOpacity(0.15 + (1 - value.abs()) * 0.05),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryGray.withOpacity(0.2 * (1 - value.abs())),
+                                  blurRadius: 12 * (1 - value.abs()),
+                                  offset: Offset(0, 4 * (1 - value.abs())),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              step.icon,
+                              size: 36,
+                              color: AppTheme.primaryGray.withOpacity(0.8 + (1 - value.abs()) * 0.2),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 18 - (value.abs() * 4)), // 动态间距
+                      
+                      // 步骤编号 - 添加浮动效果
+                      Transform.translate(
+                        offset: Offset(0, value * 4), // 编号正向移动
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryGray.withOpacity(0.9 + (1 - value.abs()) * 0.1),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryGray.withOpacity(0.3 * (1 - value.abs())),
+                                blurRadius: 8 * (1 - value.abs()),
+                                offset: Offset(0, 2 * (1 - value.abs())),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '第 ${index + 1} 步',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9 + (1 - value.abs()) * 0.1),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 16 - (value.abs() * 2)), // 动态间距
+                      
+                      // 步骤标题 - 添加淡入淡出效果
+                      Transform.translate(
+                        offset: Offset(0, value * 6), // 标题移动
+                        child: Opacity(
+                          opacity: 1.0 - (value.abs() * 0.3), // 透明度变化
+                          child: Text(
+                            step.title,
+                            style: TextStyle(
+                              fontSize: 19 - (value.abs() * 1), // 动态字体大小
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryGray.withOpacity(0.9 + (1 - value.abs()) * 0.1),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: 8 - (value.abs() * 2)), // 动态间距
+                      
+                      // 步骤描述 - 添加优雅的浮动效果
+                      Transform.translate(
+                        offset: Offset(0, value * 10), // 描述文字移动更多
+                        child: Opacity(
+                          opacity: 1.0 - (value.abs() * 0.4), // 更明显的透明度变化
+                          child: Text(
+                            step.description,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14 - (value.abs() * 0.5), // 动态字体大小
+                              color: AppTheme.coolGray600.withOpacity(0.8 + (1 - value.abs()) * 0.2),
+                              height: 1.4,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                
-                const SizedBox(height: 14), // 从16减少到14
-                
-                // 步骤标题
-                Text(
-                  step.title,
-                  style: TextStyle(
-                    fontSize: 18, // 从20减少到18
-                    fontWeight: FontWeight.w700,
-                    color: step.color,
-                  ),
-                ),
-                
-                const SizedBox(height: 6), // 从8减少到6
-                
-                // 步骤描述
-                Text(
-                  step.description,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13, // 从14减少到13
-                    color: AppTheme.coolGray600,
-                    height: 1.3, // 从1.4减少到1.3
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -421,103 +487,111 @@ class _OnboardingPageState extends State<OnboardingPage>
       }
     });
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // API连接图标
-        Container(
-          width: 100, // 从120减少到100
-          constraints: const BoxConstraints(minHeight: 100), // 从120减少到100
-          decoration: BoxDecoration(
-            color: page.color.withOpacity(0.1),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: page.color.withOpacity(0.15), // 从0.2减少到0.15
-                blurRadius: 15, // 从20减少到15
-                offset: const Offset(0, 8), // 从10减少到8
-              ),
-            ],
-          ),
-          child: IconViewer(
-            controller: controllerlink,
-            width: 50, // 从60减少到50
-            height: 50, // 从60减少到50
-          ),
-        ),
-        
-        const SizedBox(height: 32), // 从40减少到32
-        
-        // Token输入框
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
-          child: TextField(
-            controller: _tokenController,
-            decoration: InputDecoration(
-              labelText: 'DeepSeek API Key',
-              hintText: '请输入您的DeepSeek API Key',
-              prefixIcon: Icon(Icons.key_outlined, color: page.color),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12), // 从16减少到12
-                borderSide: BorderSide(color: AppTheme.coolGray300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12), // 从16减少到12
-                borderSide: BorderSide(color: page.color, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12), // 从16减少到12
-                borderSide: BorderSide(color: AppTheme.coolGray300),
-              ),
-              filled: true,
-              fillColor: AppTheme.backgroundColor,
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.paste,
-                      color: page.color.withOpacity(0.6),
-                    ),
-                    onPressed: _pasteToken,
-                    tooltip: '粘贴API Key',
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _showToken ? Icons.visibility_off : Icons.visibility,
-                      color: page.color.withOpacity(0.6),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showToken = !_showToken;
-                      });
-                    },
-                    tooltip: _showToken ? '隐藏API Key' : '显示API Key',
-                  ),
-                ],
-              ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // API连接图标
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGray.withOpacity(0.1),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryGray.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            style: const TextStyle(fontSize: 14), // 从16减少到14
-            obscureText: !_showToken,
-          ),
-        ),
-        
-        const SizedBox(height: 14), // 从16减少到14
-        
-        // 帮助文本
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16), // 从20减少到16
-          child: Text(
-            '在DeepSeek官网申请API Key：\nplatform.deepseek.com → API Keys → 创建新Key',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12, // 从13减少到12
-              color: AppTheme.coolGray500,
-              height: 1.3, // 从1.4减少到1.3
+            child: IconViewer(
+              controller: controllerlink,
+              width: 40,
+              height: 40,
             ),
           ),
-        ),
-      ],
+          
+          const SizedBox(height: 24),
+          
+          // Token输入框
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _tokenController,
+              decoration: InputDecoration(
+                labelText: 'DeepSeek API Key',
+                hintText: '请输入您的DeepSeek API Key',
+                labelStyle: TextStyle(color: AppTheme.primaryGray),
+                hintStyle: TextStyle(color: AppTheme.coolGray500),
+                prefixIcon: Icon(Icons.key_outlined, color: AppTheme.primaryGray),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppTheme.coolGray300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppTheme.primaryGray, width: 2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppTheme.coolGray300),
+                ),
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.paste,
+                        color: AppTheme.primaryGray.withOpacity(0.6),
+                      ),
+                      onPressed: _pasteToken,
+                      tooltip: '粘贴API Key',
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _showToken ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.primaryGray.withOpacity(0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _showToken = !_showToken;
+                        });
+                      },
+                      tooltip: _showToken ? '隐藏API Key' : '显示API Key',
+                    ),
+                  ],
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.getPrimaryTextColor(context),
+              ),
+              obscureText: !_showToken,
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // 帮助文本
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              '在DeepSeek官网申请API Key：\nplatform.deepseek.com \n → API Keys \n → 创建新Key',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.getSecondaryTextColor(context),
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
   
@@ -532,7 +606,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           style: TextStyle(
             fontSize: ResponsiveHelper.getResponsiveFontSize(context, 26),
             fontWeight: FontWeight.w800,
-            color: page.color,
+            color: AppTheme.primaryGray,
             height: 1.2,
           ),
           animationController: _textAnimationControllers[index],
@@ -660,7 +734,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     if (_currentPage == _pages.length - 1 && !_isTokenValid) {
       return AppTheme.coolGray400;
     }
-    return _pages[_currentPage].color;
+    return AppTheme.primaryGray;
   }
   
   /// 获取按钮阴影
@@ -718,7 +792,7 @@ class _OnboardingPageState extends State<OnboardingPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('✅ API Key已粘贴'),
-            backgroundColor: _pages[_currentPage].color,
+            backgroundColor: AppTheme.primaryGray,
             duration: const Duration(seconds: 2),
           ),
         );
