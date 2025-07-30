@@ -75,12 +75,17 @@ jobs:
         
         # 如果还是没有内容，使用默认信息
         if [ -z "$RELEASE_NOTES" ]; then
-          RELEASE_NOTES="- 版本更新\n- 性能优化\n- Bug修复"
+          RELEASE_NOTES="- 版本更新
+        - 性能优化
+        - Bug修复"
         fi
         
-        # 将换行符转换为\n以便在GitHub Actions中使用
-        RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed ':a;N;$!ba;s/\n/\\n/g')
-        echo "notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
+        # 使用多行字符串输出，保持原始换行符
+        {
+          echo 'notes<<EOF'
+          echo "$RELEASE_NOTES"
+          echo 'EOF'
+        } >> $GITHUB_OUTPUT
         
     - name: Create Release
       id: create_release
@@ -95,9 +100,6 @@ jobs:
           
           ### 更新内容
           ${{ steps.release_notes.outputs.notes }}
-          
-          ### 下载
-          - [Android APK](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/app-release.apk)
           
           ### 安装说明
           1. 下载APK文件

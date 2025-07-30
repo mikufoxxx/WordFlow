@@ -260,17 +260,58 @@ class _HomePageState extends State<HomePage>
 
   /// 生成下一个单词（扩展版本）
   Future<void> _generateNextWord() async {
-    if (_words.isEmpty) return;
+    if (_words.isEmpty || _currentWordBookName == null) return;
     
-    // 随机选择一个单词
-    final randomIndex = _random.nextInt(_words.length);
-    final wordData = _words[randomIndex];
-    
-    // 获取当前发音类型设置
-    final pronunciationType = await SettingsHelper.getPronunciationType();
-    
-    // 创建扩展的单词数据（从API获取详细信息）
-    _currentWord = await ExtendedWordData.fromWordData(wordData, pronunciationType);
+    try {
+      // 获取所有可用单词
+      final availableWords = _words.map((w) => w.word).toList();
+      
+      // 使用智能推荐算法获取推荐单词（优先复习）
+      final recommendedWords = await LearningDataService.instance.getRecommendedWords(
+        _currentWordBookName!,
+        availableWords,
+        maxCount: 5, // 获取前5个推荐单词
+      );
+      
+      // 获取需要复习的单词数量（用于调试）
+      final reviewWords = await LearningDataService.instance.getReviewWords(_currentWordBookName!);
+      
+      WordData? selectedWordData;
+      
+      if (recommendedWords.isNotEmpty) {
+        // 如果有推荐单词，从中选择一个
+        final selectedWord = recommendedWords.first;
+        selectedWordData = _words.firstWhere(
+          (w) => w.word == selectedWord,
+          orElse: () => _words[_random.nextInt(_words.length)], // 备用方案
+        );
+        
+        // 调试信息：显示推荐状态
+        debugPrint('📚 智能推荐: ${selectedWord} (需要复习的单词: ${reviewWords.length}个)');
+        if (reviewWords.any((r) => r.word == selectedWord)) {
+          debugPrint('⏰ 这是一个需要复习的单词！');
+        }
+      } else {
+        // 如果没有推荐单词，随机选择
+        final randomIndex = _random.nextInt(_words.length);
+        selectedWordData = _words[randomIndex];
+        debugPrint('🎲 随机选择: ${selectedWordData.word} (无推荐单词)');
+      }
+      
+      // 获取当前发音类型设置
+      final pronunciationType = await SettingsHelper.getPronunciationType();
+      
+      // 创建扩展的单词数据（从API获取详细信息）
+      _currentWord = await ExtendedWordData.fromWordData(selectedWordData, pronunciationType);
+    } catch (e) {
+      // 如果推荐算法出错，回退到随机选择
+      debugPrint('智能推荐失败，使用随机选择: $e');
+      final randomIndex = _random.nextInt(_words.length);
+      final wordData = _words[randomIndex];
+      
+      final pronunciationType = await SettingsHelper.getPronunciationType();
+      _currentWord = await ExtendedWordData.fromWordData(wordData, pronunciationType);
+    }
   }
 
   /// 初始化音频播放器
@@ -3125,11 +3166,22 @@ class _HomePageState extends State<HomePage>
                                           height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              Theme.of(context).brightness == Brightness.dark 
+                                                  ? AppTheme.darkPrimaryTextColor 
+                                                  : Colors.white
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Text('正在判断...'),
+                                        Text(
+                                          '正在判断...',
+                                          style: TextStyle(
+                                            color: Theme.of(context).brightness == Brightness.dark 
+                                                ? AppTheme.darkPrimaryTextColor 
+                                                : Colors.white,
+                                          ),
+                                        ),
                                       ],
                                     )
                                   : Text(

@@ -105,17 +105,18 @@ class WordLearningRecord {
     required DateTime reviewTime,
     String? newWordBookName,
   }) {
-    final newReviewRecord = ReviewRecord(
-      reviewTime: reviewTime,
-      reviewResult: reviewResult,
-      reviewInterval: reviewInterval,
-    );
-
     // 计算新的记忆程度
     final newMemoryLevel = _calculateNewMemoryLevel(reviewResult);
     
     // 使用算法管理器计算复习间隔
     final newIntervalAndEase = _calculateIntervalUsingAlgorithm(reviewResult, reviewTime);
+    
+    // 创建复习记录，使用新计算的间隔
+    final newReviewRecord = ReviewRecord(
+      reviewTime: reviewTime,
+      reviewResult: reviewResult,
+      reviewInterval: newIntervalAndEase.interval,
+    );
     
     return WordLearningRecord(
       word: word,

@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/word_book.dart';
@@ -450,34 +451,36 @@ class LearningDataService {
           
           final reviewHistory = <ReviewRecord>[];
           final now = DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3]) * 1000); // 使用lastLearningTime，转换为毫秒
+          final currentInterval = double.parse(parts[11]); // 当前的复习间隔
           
           // 创建简化的复习历史记录（用于统计计算）
+          // 为不同的复习结果分配合理的间隔值
           for (int i = 0; i < forgotCount; i++) {
             reviewHistory.add(ReviewRecord(
               reviewTime: now.subtract(Duration(days: forgotCount - i)),
               reviewResult: ReviewResult.forgot,
-              reviewInterval: 1.0,
+              reviewInterval: 0.5, // 忘记的单词间隔较短
             ));
           }
           for (int i = 0; i < hardCount; i++) {
             reviewHistory.add(ReviewRecord(
               reviewTime: now.subtract(Duration(days: hardCount - i)),
               reviewResult: ReviewResult.hard,
-              reviewInterval: 1.0,
+              reviewInterval: 1.0, // 困难的单词间隔适中
             ));
           }
           for (int i = 0; i < goodCount; i++) {
             reviewHistory.add(ReviewRecord(
               reviewTime: now.subtract(Duration(days: goodCount - i)),
               reviewResult: ReviewResult.good,
-              reviewInterval: 1.0,
+              reviewInterval: math.max(2.0, currentInterval * 0.8), // 良好的单词间隔较长
             ));
           }
           for (int i = 0; i < easyCount; i++) {
             reviewHistory.add(ReviewRecord(
               reviewTime: now.subtract(Duration(days: easyCount - i)),
               reviewResult: ReviewResult.easy,
-              reviewInterval: 1.0,
+              reviewInterval: math.max(3.0, currentInterval), // 简单的单词间隔最长
             ));
           }
           

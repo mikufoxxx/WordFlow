@@ -162,6 +162,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
             // 词书信息
             if (widget.record.wordBookName != null) ...[
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     Icons.book_outlined,
@@ -169,11 +170,15 @@ class _WordDetailPageState extends State<WordDetailPage> {
                     color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray500),
                   ),
                   const SizedBox(width: 8),
-                  OptimizedText(
-                    '来自词书：${widget.record.wordBookName}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                  Expanded(
+                    child: OptimizedText(
+                      '来自词书：${widget.record.wordBookName}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -484,7 +489,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                 final review = sortedReviews[index];
                 final isLast = index == sortedReviews.length - 1;
                 
-                return _buildTimelineItem(review, isLast);
+                return _buildTimelineItem(review, isLast, index);
               },
             ),
           ],
@@ -494,7 +499,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
   }
 
   /// 构建时间轴项目
-  Widget _buildTimelineItem(ReviewRecord review, bool isLast) {
+  Widget _buildTimelineItem(ReviewRecord review, bool isLast, int index) {
     final color = _getReviewResultColor(review.reviewResult);
     
     return Row(
@@ -559,7 +564,7 @@ class _WordDetailPageState extends State<WordDetailPage> {
                     ),
                     const Spacer(),
                     OptimizedText(
-                      '复习间隔: ${review.reviewInterval.toStringAsFixed(1)}天',
+                      _getReviewIntervalText(review, index),
                       style: TextStyle(
                         fontSize: 11,
                         color: AppTheme.coolGray500,
@@ -573,6 +578,21 @@ class _WordDetailPageState extends State<WordDetailPage> {
         ),
       ],
     );
+  }
+
+  /// 获取复习间隔显示文本
+  String _getReviewIntervalText(ReviewRecord review, int index) {
+    // 获取排序后的复习历史
+    final sortedReviews = widget.record.reviewHistory.toList()
+      ..sort((a, b) => a.reviewTime.compareTo(b.reviewTime));
+    
+    // 如果是第一条记录（最早的学习记录），显示"首次遇见"
+    if (index == sortedReviews.length - 1) {
+      return '首次遇见';
+    }
+    
+    // 其他情况显示复习间隔
+    return '复习间隔: ${review.reviewInterval.toStringAsFixed(1)}天';
   }
 
   /// 获取复习结果颜色
@@ -608,29 +628,37 @@ class _WordDetailPageState extends State<WordDetailPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const OptimizedText('掌握程度计算说明'),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        title: const Text('掌握程度计算说明'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            OptimizedText('掌握程度基于你的学习表现综合计算：'),
+            Text('掌握程度基于你的学习表现综合计算：'),
             SizedBox(height: 12),
-            OptimizedText('📊 基础分数（70%权重）：'),
-            OptimizedText('  • 简单：3分'),
-            OptimizedText('  • 良好：2分'),
-            OptimizedText('  • 困难：1分'),
-            OptimizedText('  • 忘记：0分'),
+            Text('📊 基础分数（70%权重）：'),
+            Text('  • 简单：3分'),
+            Text('  • 良好：2分'),
+            Text('  • 困难：1分'),
+            Text('  • 忘记：0分'),
             SizedBox(height: 8),
-            OptimizedText('🎯 记忆级别奖励（每级+5%）'),
-            OptimizedText('⚡ 连续3次以上正确额外+15%'),
+            Text('🎯 记忆级别奖励（每级+5%）'),
+            Text('⚡ 连续3次以上正确额外+15%'),
             SizedBox(height: 12),
-            OptimizedText('掌握程度会随着学习表现实时更新，帮助你了解单词的熟练程度。'),
+            Text('掌握程度会随着学习表现实时更新，帮助你了解单词的熟练程度。'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const OptimizedText('了解'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.getSecondaryTextColor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('了解'),
           ),
         ],
       ),

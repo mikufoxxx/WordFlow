@@ -59,7 +59,6 @@ class AppTheme {
   static const Color darkAccentRed = Color(0xFF60B473);       // 绿色调替代红色
   static const Color darkAccentYellow = Color(0xFFDCEFEA);    // 很浅绿色替代黄色
   static const Color darkAccentOrange = Color(0xFF60B488);    // 绿青色调
-  static const Color darkAccentTeal = Color(0xFF60B4B2);      // 青色调
   static const Color darkAccentPurple = Color(0xFF60B4B2);    // 青色调
 
   /// 便捷的颜色获取方法 - 根据主题自动选择合适的颜色
@@ -88,16 +87,6 @@ class AppTheme {
   static Color getSecondaryTextColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? const Color(0xFFA5D5C8) : secondaryTextColor;
-  }
-  
-  /// 获取图标颜色（配合文本使用）
-  static Color getIconColor(BuildContext context, {bool isSecondary = false}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isSecondary) {
-      return isDark ? const Color(0xFFA5D5C8) : coolGray500;
-    } else {
-      return isDark ? const Color(0xFFDCEFEA) : coolGray600;
-    }
   }
 
   /// 获取卡片背景颜色
