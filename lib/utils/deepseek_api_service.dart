@@ -206,8 +206,8 @@ class DeepSeekApiService {
       final apiKey = await getApiKey();
       if (apiKey == null || apiKey.isEmpty) {
         return ExampleSentenceResult(
-          example: "This is an example sentence with the word '$word'.",
-          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          example: "No example available for '$word'.",
+          exampleTranslation: "暂无例句，请填入API Key获取更多例句",
           errorMessage: '请先在设置中配置DeepSeek API密钥',
         );
       }
@@ -252,23 +252,23 @@ class DeepSeekApiService {
       } else {
         final errorData = jsonDecode(response.body);
         return ExampleSentenceResult(
-          example: "This is an example sentence with the word '$word'.",
-          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          example: "No example available for '$word'.",
+          exampleTranslation: "暂无例句，请填入API Key获取更多例句",
           errorMessage: '请求失败：${errorData['error']['message'] ?? '未知错误'}',
         );
       }
       
     } catch (e) {
       return ExampleSentenceResult(
-        example: "This is an example sentence with the word '$word'.",
-        exampleTranslation: "这是一个包含单词'$word'的例句。",
+        example: "No example available for '$word'.",
+        exampleTranslation: "暂无例句，请填入API Key获取更多例句",
         errorMessage: '网络请求失败，请检查网络连接',
       );
     }
     
     return ExampleSentenceResult(
-      example: "This is an example sentence with the word '$word'.",
-      exampleTranslation: "这是一个包含单词'$word'的例句。",
+      example: "No example available for '$word'.",
+      exampleTranslation: "暂无例句，请填入API Key获取更多例句",
     );
   }
 
@@ -302,8 +302,8 @@ class DeepSeekApiService {
       final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(content);
       if (jsonMatch == null) {
         return ExampleSentenceResult(
-          example: "This is an example sentence with the word '$word'.",
-          exampleTranslation: "这是一个包含单词'$word'的例句。",
+          example: "No example available for '$word'.",
+          exampleTranslation: "暂无例句，请填入API Key获取更多例句",
           errorMessage: '解析响应失败',
         );
       }
@@ -311,8 +311,8 @@ class DeepSeekApiService {
       final jsonStr = jsonMatch.group(0)!;
       final jsonData = jsonDecode(jsonStr);
       
-      final example = jsonData['example'] ?? "This is an example sentence with the word '$word'.";
-      final translation = jsonData['translation'] ?? "这是一个包含单词'$word'的例句。";
+      final example = jsonData['example'] ?? "No example available for '$word'.";
+      final translation = jsonData['translation'] ?? "暂无例句，请填入API Key获取更多例句";
       
       return ExampleSentenceResult(
         example: example,
@@ -321,8 +321,8 @@ class DeepSeekApiService {
       
     } catch (e) {
       return ExampleSentenceResult(
-        example: "This is an example sentence with the word '$word'.",
-        exampleTranslation: "这是一个包含单词'$word'的例句。",
+        example: "No example available for '$word'.",
+        exampleTranslation: "暂无例句，请填入API Key获取更多例句",
         errorMessage: '解析结果失败',
       );
     }

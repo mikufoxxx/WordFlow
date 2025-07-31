@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../models/detailed_learning_record.dart';
 import '../models/word_learning_record.dart';
 import '../utils/learning_data_service.dart';
@@ -1096,108 +1097,19 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     }
     
     final maxCount = dailyData.values.map((data) => data.totalLearningCount).reduce((a, b) => a > b ? a : b);
-    final maxMastery = 1.0; // 掌握度最大值为100%
     
     return Column(
       children: [
-        // 图表
+        // 混合图表：柱状图 + 折线图
         SizedBox(
-          height: 120,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: dailyData.entries.map((entry) {
-              final date = entry.key;
-              final data = entry.value;
-              
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Column(
-                    children: [
-                      // 堆叠柱状图
-                      Expanded(
-                        child: Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            // 总高度容器
-                            Container(
-                              width: double.infinity,
-                              constraints: const BoxConstraints(minHeight: 80),
-                              alignment: Alignment.bottomCenter,
-                              child: maxCount > 0 ? _buildStackedBar(data, maxCount) : Container(height: 2, color: AppTheme.coolGray200),
-                            ),
-                            // 掌握度折线图点和百分比
-                            if (data.averageMastery > 0)
-                              Positioned(
-                                bottom: (data.averageMastery / maxMastery * 80),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // 百分比文本
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.accentTeal,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${(data.averageMastery * 100).toStringAsFixed(0)}%',
-                                        style: const TextStyle(
-                                          fontSize: 8,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    // 圆点
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.accentTeal,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 1),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 4),
-                      
-                      // 日期
-                      Text(
-                        '${date.month}/${date.day}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppTheme.mediumGray
-                              : AppTheme.coolGray500,
-                        ),
-                      ),
-                      
-                      // 学习次数
-                      Text(
-                        '${data.totalLearningCount}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppTheme.mediumGray
-                              : AppTheme.coolGray500,
-                        ),
-                      ),
-                      
-
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+          height: 200,
+          child: Stack(
+            children: [
+              // 柱状图层
+              _buildBarChartLayer(dailyData, maxCount),
+              // 折线图层
+              _buildLineChartLayer(dailyData),
+            ],
           ),
         ),
         
@@ -1229,9 +1141,151 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     );
   }
 
+  /// 构建柱状图层
+  Widget _buildBarChartLayer(Map<DateTime, DailyLearningData> dailyData, int maxCount) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 40), // 为日期标签留空间
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: dailyData.entries.map((entry) {
+          final date = entry.key;
+          final data = entry.value;
+          
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // 堆叠柱状图
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(minHeight: 2),
+                    child: maxCount > 0 ? _buildStackedBar(data, maxCount, 120) : Container(height: 2, color: AppTheme.coolGray200),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 日期
+                  Text(
+                    '${date.month}/${date.day}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.mediumGray
+                          : AppTheme.coolGray500,
+                    ),
+                  ),
+                  
+                  // 学习次数
+                  Text(
+                    '${data.totalLearningCount}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.mediumGray
+                          : AppTheme.coolGray500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// 构建折线图层
+  Widget _buildLineChartLayer(Map<DateTime, DailyLearningData> dailyData) {
+    final spots = <FlSpot>[];
+    final entries = dailyData.entries.toList();
+    
+    for (int i = 0; i < entries.length; i++) {
+      final data = entries[i].value;
+      if (data.averageMastery > 0) {
+        // 精确计算X坐标，确保与柱状图中心对齐
+        // 每个柱子在Row中占用相等空间，中心位置应该在 (i + 0.5) / entries.length 的比例位置
+        final normalizedX = (i + 0.5) / entries.length;
+        // 将归一化坐标映射到图表坐标系
+        final chartX = normalizedX * entries.length;
+        spots.add(FlSpot(chartX, data.averageMastery * 100));
+      }
+    }
+    
+    if (spots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Padding(
+      // 完全匹配柱状图的padding
+      padding: const EdgeInsets.only(bottom: 40),
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(show: false),
+          borderData: FlBorderData(show: false),
+          minX: 0,
+          maxX: entries.length.toDouble(),
+          minY: 0,
+          maxY: 100,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: AppTheme.accentTeal,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 4,
+                    color: AppTheme.accentTeal,
+                    strokeWidth: 2,
+                    strokeColor: Colors.white,
+                  );
+                },
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppTheme.accentTeal.withOpacity(0.1),
+              ),
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                return touchedBarSpots.map((barSpot) {
+                  // 反向计算索引
+                  final normalizedX = barSpot.x / entries.length;
+                  final index = (normalizedX * entries.length - 0.5).round();
+                  if (index >= 0 && index < entries.length) {
+                    final date = entries[index].key;
+                    return LineTooltipItem(
+                      '${date.month}/${date.day}\n掌握度: ${barSpot.y.toStringAsFixed(1)}%',
+                      TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    );
+                  }
+                  return null;
+                }).where((item) => item != null).cast<LineTooltipItem>().toList();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 构建堆叠柱状图
-  Widget _buildStackedBar(DailyLearningData data, int maxCount) {
-    final totalHeight = 80.0;
+  Widget _buildStackedBar(DailyLearningData data, int maxCount, [double totalHeight = 80.0]) {
     final barHeight = (data.totalLearningCount / maxCount * totalHeight);
     
     if (data.totalLearningCount == 0) {

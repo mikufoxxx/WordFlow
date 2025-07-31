@@ -1,3 +1,10 @@
+## [1.0.3+1] - 2025-1-15
+
+#### 修复
+- 修复了 install_plugin 插件的 namespace 配置问题
+- 替换为 open_filex 插件以提供更好的文件打开和 APK 安装功能
+- 解决了 Android Gradle Plugin 升级后的兼容性问题
+
 ## [1.0.3] - 2025-7-31
 
 #### 改进

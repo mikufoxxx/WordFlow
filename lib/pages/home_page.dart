@@ -3980,8 +3980,8 @@ class ExtendedWordData {
     
     // 如果AI生成失败，返回默认例句
     return ExampleSentenceResult(
-      example: "This is an example sentence with the word '$word'.",
-      exampleTranslation: "这是一个包含单词'$word'的例句。",
+      example: "No example available for '$word'.",
+      exampleTranslation: "暂无例句，请填入API Key获取更多例句",
     );
   }
   

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_theme.dart';
 import 'settings_helper.dart';
 import 'update_manager.dart';
 
@@ -144,6 +145,7 @@ class AutoUpdateService {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: Row(
           children: [
             Icon(
@@ -156,8 +158,16 @@ class AutoUpdateService {
         ),
         content: const Text('当前已是最新版本，无需更新。'),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('确定'),
           ),
         ],
@@ -170,6 +180,7 @@ class AutoUpdateService {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
         title: Row(
           children: [
             Icon(
@@ -182,8 +193,16 @@ class AutoUpdateService {
         ),
         content: Text('检查更新时发生错误：$error'),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('确定'),
           ),
         ],
@@ -225,6 +244,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
       title: Row(
         children: [
           Icon(
@@ -344,20 +364,50 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         if (!_isDownloading) ...[
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.getSecondaryTextColor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('稍后更新'),
           ),
           ElevatedButton(
             onPressed: _startDownload,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('立即更新'),
           ),
         ] else if (!_downloadCompleted) ...[
           TextButton(
             onPressed: _cancelDownload,
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.getSecondaryTextColor(context),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('取消下载'),
           ),
         ] else ...[
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGray,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('完成'),
           ),
         ],
