@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_theme.dart';
 import 'settings_helper.dart';
@@ -282,12 +283,40 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                 Container(
                   constraints: const BoxConstraints(maxHeight: 200),
                   child: SingleChildScrollView(
-                    child: Text(
-                      widget.formattedNotes,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                        height: 1.4,
+                    child: MarkdownBody(
+                      data: widget.formattedNotes,
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          height: 1.4,
+                        ),
+                        listBullet: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                        h1: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                        h2: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                        h3: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                        code: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          backgroundColor: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]
+                              : Colors.grey[200],
+                        ),
                       ),
                     ),
                   ),
