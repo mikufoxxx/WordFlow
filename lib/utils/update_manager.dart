@@ -136,30 +136,26 @@ class UpdateManager {
   }
 
   /// 获取直接下载链接
-  static Future<String?> _getDirectDownloadUrl(String releasePageUrl) async {
+  static Future<String?> _getDirectDownloadUrl(String downloadUrl) async {
     try {
-      // 从GitHub Release页面URL构造APK下载URL
-      // 例如: https://github.com/mikufoxxx/WordFlow/releases/tag/v1.0.3
-      // 转换为: https://github.com/mikufoxxx/WordFlow/releases/download/v1.0.3/wordflow-v1.0.3.apk
+      // 现在downloadUrl已经是完整的代理下载链接，直接返回
+      // 格式: http://git.techox.cc/https://github.com/mikufoxxx/WordFlow/releases/download/v1.0.4/app-release.apk
       
-      final uri = Uri.parse(releasePageUrl);
-      final pathSegments = uri.pathSegments;
-      
-      if (pathSegments.length >= 4 && pathSegments[2] == 'releases' && pathSegments[3] == 'tag') {
-        final version = pathSegments[4]; // 例如: v1.0.3
-        final repo = '${pathSegments[0]}/${pathSegments[1]}'; // 例如: mikufoxxx/WordFlow
-        
-        // 构造APK下载URL
-        final apkUrl = 'https://github.com/$repo/releases/download/$version/wordflow-$version.apk';
-        
-        // 验证URL是否有效
-        final response = await _dio.head(apkUrl);
-        if (response.statusCode == 200) {
-          return apkUrl;
+      if (downloadUrl.isNotEmpty) {
+        // 可以选择验证URL是否有效（可选）
+        try {
+          final response = await _dio.head(downloadUrl);
+          if (response.statusCode == 200) {
+            return downloadUrl;
+          }
+        } catch (e) {
+          // 如果验证失败，仍然返回URL，让下载时处理错误
+          debugPrint('验证下载链接时出错: $e');
+          return downloadUrl;
         }
       }
       
-      return null;
+      return downloadUrl.isNotEmpty ? downloadUrl : null;
     } catch (e) {
       debugPrint('获取下载链接失败: $e');
       return null;

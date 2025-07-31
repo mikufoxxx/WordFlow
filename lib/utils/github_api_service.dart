@@ -20,7 +20,7 @@ class GitHubApiService {
   static const String _githubOwner = 'busiyiworld';
   
   // 镜像源配置
-  static const String _mirrorBaseUrl = 'http://gitraw.techox.cc';
+  static const String _mirrorBaseUrl = 'http://git.techox.cc';
   
   // 网络请求超时时间
   static const Duration _timeout = Duration(seconds: 15);

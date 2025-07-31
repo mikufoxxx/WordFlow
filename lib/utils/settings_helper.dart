@@ -19,9 +19,18 @@ class VersionInfo {
   });
 
   factory VersionInfo.fromJson(Map<String, dynamic> json) {
+    final tagName = json['tag_name'] as String? ?? '';
+    final version = tagName.replaceFirst('v', '');
+    
+    // 构造代理下载链接
+    // 格式: http://git.techox.cc/https://github.com/mikufoxxx/WordFlow/releases/download/v1.0.4/app-release.apk
+    final downloadUrl = tagName.isNotEmpty 
+        ? 'http://git.techox.cc/https://github.com/mikufoxxx/WordFlow/releases/download/$tagName/app-release.apk'
+        : '';
+    
     return VersionInfo(
-      version: (json['tag_name'] as String?)?.replaceFirst('v', '') ?? '',
-      downloadUrl: json['html_url'] as String? ?? '',
+      version: version,
+      downloadUrl: downloadUrl,
       releaseNotes: json['body'] as String? ?? '',
       publishedAt: DateTime.tryParse(json['published_at'] as String? ?? '') ?? DateTime.now(),
     );
