@@ -65,10 +65,10 @@ dependencies:
   flutter_markdown: ^0.6.18
   # 用于后台下载
   dio: ^5.3.2
-  # 用于安装APK文件
-  install_plugin: ^2.1.0
   # 用于获取设备信息
   device_info_plus: ^9.1.1
+  # 用于打开文件（包括APK安装）
+  open_filex: ^4.4.0
 
 dev_dependencies:
   flutter_test:

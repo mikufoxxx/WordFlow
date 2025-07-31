@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:install_plugin/install_plugin.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'settings_helper.dart';
@@ -213,11 +213,14 @@ class UpdateManager {
         return false;
       }
 
-      // 使用install_plugin安装APK
-      final result = await InstallPlugin.installApk(apkPath);
-      return result['isSuccess'] == true;
+      // 使用open_filex打开APK文件，让系统处理安装
+      final result = await OpenFilex.open(apkPath);
+      
+      // OpenFilex.open 返回 OpenResult 对象
+      // type 为 ResultType.done 表示成功打开
+      return result.type == ResultType.done;
     } catch (e) {
-      debugPrint('安装APK失败: $e');
+      debugPrint('打开APK文件失败: $e');
       return false;
     }
   }
