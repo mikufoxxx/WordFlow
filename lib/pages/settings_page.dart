@@ -4,9 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
@@ -18,6 +16,7 @@ import '../utils/file_helper.dart';
 import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 import '../utils/performance_optimizer.dart';
+import '../utils/auto_update_service.dart';
 import '../main.dart';
 
 /// 导入模式枚举
@@ -44,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
   
   // 版本信息
   String _appVersion = '加载中...';
-  String _currentVersion = '1.0.0'; // 当前应用版本
+// 当前应用版本
   
   // DeepSeek API设置
   final TextEditingController _deepSeekApiKeyController = TextEditingController();
@@ -2065,299 +2064,18 @@ class _SettingsPageState extends State<SettingsPage> {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       setState(() {
         _appVersion = 'v${packageInfo.version}';
-        _currentVersion = packageInfo.version;
       });
     } catch (e) {
       setState(() {
         _appVersion = '版本信息获取失败';
-        _currentVersion = '1.0.0';
       });
     }
   }
 
   /// 检查应用更新
   Future<void> _checkForUpdates() async {
-    try {
-      // 显示检查中的提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              OptimizedText(
-                '正在检查更新...',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.coolGray600
-              : AppTheme.coolGray300,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // 获取当前应用版本信息
-      PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      String currentVersion = packageInfo.version;
-
-      // 使用SettingsHelper检查更新
-      final result = await SettingsHelper.checkForUpdates(currentVersion);
-      
-      if (result.error != null) {
-        throw Exception(result.error!);
-      }
-      
-      if (result.hasUpdate && result.latestVersion != null) {
-        // 发现新版本
-        _showUpdateDialog(result.latestVersion!);
-      } else {
-        // 已是最新版本
-        _showNoUpdateDialog();
-      }
-    } catch (e) {
-      // 检查更新失败
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OptimizedText(
-                  '检查更新失败: ${e.toString()}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red.shade600,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+    // 使用自动更新服务进行手动检查
+    await AutoUpdateService.instance.checkManually(context);
   }
 
-  /// 显示更新对话框
-  void _showUpdateDialog(VersionInfo versionInfo) {
-    final formattedNotes = SettingsHelper.formatReleaseNotes(versionInfo.releaseNotes);
-    SettingsHelper.extractUpdateCategories(versionInfo.releaseNotes);
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
-          title: Row(
-            children: [
-              Icon(
-                Icons.system_update,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 8),
-              const Text('发现新版本'),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('当前版本: $_currentVersion'),
-                  const SizedBox(height: 8),
-                  Text('最新版本: ${versionInfo.version}'),
-                  const SizedBox(height: 16),
-                  
-                  // 显示更新内容
-                  Text(
-                    '更新内容:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // 使用Markdown渲染更新内容
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: SingleChildScrollView(
-                      child: MarkdownBody(
-                        data: formattedNotes,
-                        styleSheet: MarkdownStyleSheet(
-                          p: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                            height: 1.4,
-                          ),
-                          h1: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          h2: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          h3: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          listBullet: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                          ),
-                          strong: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                          em: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                          ),
-                          code: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.grey[800] 
-                                : Colors.grey[200],
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                          ),
-                          blockquote: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  Text(
-                    '是否前往下载页面更新应用？',
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.getSecondaryTextColor(context),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('稍后更新'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _launchUrl(versionInfo.downloadUrl);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0.5,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('立即更新'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// 显示无更新对话框
-  void _showNoUpdateDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
-          title: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-              ),
-              const SizedBox(width: 8),
-              const Text('已是最新版本'),
-            ],
-          ),
-          content: Text('当前版本 $_currentVersion 已是最新版本'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.getSecondaryTextColor(context),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('确定'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// 启动URL
-  Future<void> _launchUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: OptimizedText('无法打开下载链接'),
-          backgroundColor: Colors.red.shade600,
-        ),
-      );
-    }
-  }
 }

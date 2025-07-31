@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'english_word_api_service.dart';
 
 /// 版本信息类
@@ -40,6 +41,9 @@ class UpdateCheckResult {
     required this.currentVersion,
     this.error,
   });
+
+  /// 获取版本信息（为了兼容性）
+  VersionInfo? get versionInfo => latestVersion;
 }
 
 /// 学习模式枚举
@@ -75,6 +79,11 @@ class SettingsHelper {
   /// GitHub仓库信息
   static const String _githubRepo = 'mikufoxxx/WordFlow';
   static const String _updateCheckUrl = 'https://api.github.com/repos/$_githubRepo/releases/latest';
+
+  /// 获取应用包信息
+  static Future<PackageInfo> getPackageInfo() async {
+    return await PackageInfo.fromPlatform();
+  }
 
   /// 检查应用更新
   static Future<UpdateCheckResult> checkForUpdates(String currentVersion) async {
@@ -117,8 +126,12 @@ class SettingsHelper {
     List<int> latest = latestVersion.split('.').map(int.parse).toList();
     
     // 补齐版本号长度
-    while (current.length < latest.length) current.add(0);
-    while (latest.length < current.length) latest.add(0);
+    while (current.length < latest.length) {
+      current.add(0);
+    }
+    while (latest.length < current.length) {
+      latest.add(0);
+    }
     
     for (int i = 0; i < current.length; i++) {
       if (latest[i] > current[i]) return true;

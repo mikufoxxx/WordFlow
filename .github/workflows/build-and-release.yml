@@ -58,8 +58,19 @@ jobs:
         
         # 如果存在CHANGELOG.md文件，尝试提取对应版本的更新内容
         if [ -f "CHANGELOG.md" ]; then
-          # 提取当前版本的更新内容
-          RELEASE_NOTES=$(awk '/^## \[?v?${{ steps.version.outputs.version }}\]?/{flag=1; next} /^## /{flag=0} flag' CHANGELOG.md || echo "")
+          # 提取当前版本的更新内容，支持多种版本格式
+          RELEASE_NOTES=$(awk '
+            /^## \[?v?${{ steps.version.outputs.version }}\]?/ { flag=1; next }
+            /^## / && flag { flag=0 }
+            flag && /^#### / { print $0; next }
+            flag && /^- / { print $0; next }
+            flag && NF > 0 { print $0 }
+          ' CHANGELOG.md | sed '/^$/d')
+          
+          # 如果没有找到版本标题，尝试提取所有内容（适用于没有版本标题的情况）
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES=$(grep -E '^(####|-)' CHANGELOG.md | head -20)
+          fi
         fi
         
         # 如果没有CHANGELOG.md或者没有找到对应版本，使用Git提交信息

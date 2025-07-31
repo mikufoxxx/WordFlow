@@ -12,6 +12,7 @@ import 'utils/settings_helper.dart';
 import 'utils/deepseek_api_service.dart';
 import 'pages/library_page.dart';
 import 'utils/algorithm_manager.dart';
+import 'utils/auto_update_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,9 @@ void main() async {
   
   // 初始化学习数据服务
   await LearningDataService.instance.initialize();
+  
+  // 初始化自动更新服务
+  await AutoUpdateService.instance.initialize();
   
   // 检查API Key和学习模式的兼容性
   await _validateLearningModeAndApiKey();
@@ -51,13 +55,35 @@ class WordFlowApp extends StatefulWidget {
   State<WordFlowApp> createState() => _WordFlowAppState();
 }
 
-class _WordFlowAppState extends State<WordFlowApp> {
+class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
   bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initServices();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AutoUpdateService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // 当应用从后台恢复到前台时检查更新
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          AutoUpdateService.instance.checkOnAppResume(context);
+        }
+      });
+    }
   }
 
   /// 初始化所有服务
@@ -174,6 +200,17 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    // 在应用启动后检查更新
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AutoUpdateService.instance.checkOnAppStart(context);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(

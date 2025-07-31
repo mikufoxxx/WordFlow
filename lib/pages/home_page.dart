@@ -287,7 +287,7 @@ class _HomePageState extends State<HomePage>
         );
         
         // 调试信息：显示推荐状态
-        debugPrint('📚 智能推荐: ${selectedWord} (需要复习的单词: ${reviewWords.length}个)');
+        debugPrint('📚 智能推荐: $selectedWord (需要复习的单词: ${reviewWords.length}个)');
         if (reviewWords.any((r) => r.word == selectedWord)) {
           debugPrint('⏰ 这是一个需要复习的单词！');
         }
@@ -1752,7 +1752,6 @@ class _HomePageState extends State<HomePage>
   Future<void> _undoLearningRecord(String wordToUndo) async {
     if (_currentWordBookName == null) return;
 
-    try {
       // 获取指定单词的学习记录
       final records = await LearningDataService.instance.getWordBookRecords(_currentWordBookName!);
       final existingRecord = records.where((r) => r.word == wordToUndo).firstOrNull;
@@ -1829,9 +1828,7 @@ class _HomePageState extends State<HomePage>
         // 更新学习统计
         await _updateLearningStats();
       }
-    } catch (e) {
-      print('撤回学习记录失败: $e');
-    }
+
   }
 
   /// 保存学习记录
