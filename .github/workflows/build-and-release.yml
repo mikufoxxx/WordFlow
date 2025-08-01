@@ -41,6 +41,17 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
+    - name: Setup signing
+      run: |
+        # 创建签名密钥文件
+        echo "${{ secrets.SIGNING_KEY }}" | base64 -d > android/wordflow-key.jks
+        
+        # 创建key.properties文件
+        echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > android/key.properties
+        echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+        echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+        echo "storeFile=../wordflow-key.jks" >> android/key.properties
+      
     - name: Build APK
       run: flutter build apk --release
       
