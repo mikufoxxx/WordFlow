@@ -14,6 +14,7 @@ import 'utils/deepseek_api_service.dart';
 import 'pages/library_page.dart';
 import 'utils/algorithm_manager.dart';
 import 'utils/auto_update_service.dart';
+import 'utils/performance_optimizer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,9 @@ void main() async {
   
   // 初始化自动更新服务
   await AutoUpdateService.instance.initialize();
+  
+  // 预热性能优化器对象池
+  PerformanceOptimizer.preWarmPools();
   
   // 检查API Key和学习模式的兼容性
   await _validateLearningModeAndApiKey();

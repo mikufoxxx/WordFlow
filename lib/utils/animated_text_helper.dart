@@ -106,23 +106,29 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
         vsync: this,
       );
       
-      // 透明度动画（渐入效果）
-      final opacityAnimation = Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(CurvedAnimation(
+      // 透明度动画（渐入效果）- 使用池化的Tween和CurvedAnimation
+      final opacityTween = PerformanceOptimizer.getTween<double>(
+        '${_animationPoolKey}_opacity_tween',
+        0.0,
+        1.0,
+      );
+      final opacityCurve = PerformanceOptimizer.getCurvedAnimation(
         parent: controller,
         curve: Curves.easeOutCubic,
-      ));
+      );
+      final opacityAnimation = opacityTween.animate(opacityCurve);
       
-      // 位移动画（向上浮现效果）
-      final slideAnimation = Tween<Offset>(
-        begin: Offset(0, widget.animationDistance / 20), // 转换为相对偏移
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
+      // 位移动画（向上浮现效果）- 使用池化的Tween和CurvedAnimation
+      final slideTween = PerformanceOptimizer.getTween<Offset>(
+        '${_animationPoolKey}_slide_tween',
+        Offset(0, widget.animationDistance / 20),
+        Offset.zero,
+      );
+      final slideCurve = PerformanceOptimizer.getCurvedAnimation(
         parent: controller,
         curve: Curves.easeOutCubic,
-      ));
+      );
+      final slideAnimation = slideTween.animate(slideCurve);
       
       _characterControllers.add(controller);
       _characterOpacityAnimations.add(opacityAnimation);
@@ -223,7 +229,7 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
         if (index >= _characterControllers.length || 
             index >= _characterOpacityAnimations.length ||
             index >= _characterSlideAnimations.length) {
-          return Text(character, style: widget.style);
+          return OptimizedText(character, style: widget.style);
         }
         
         // 空格特殊处理
@@ -243,7 +249,7 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
               offset: _characterSlideAnimations[index].value * widget.animationDistance,
               child: Opacity(
                 opacity: _characterOpacityAnimations[index].value,
-                child: Text(
+                child: OptimizedText(
                   character,
                   style: widget.style,
                 ),
@@ -255,13 +261,15 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
     );
   }
   
-  /// 计算空格宽度
+  /// 计算空格宽度 - 使用池化的TextPainter
   double _calculateSpaceWidth(TextStyle style) {
-    final textPainter = TextPainter(
-      text: TextSpan(text: ' ', style: style),
+    final textPainter = PerformanceOptimizer.getTextPainter(
+      textSpan: TextSpan(text: ' ', style: style),
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    return textPainter.width;
+    final width = textPainter.width;
+    PerformanceOptimizer.returnTextPainter(textPainter);
+    return width;
   }
 }

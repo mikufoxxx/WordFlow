@@ -2526,7 +2526,7 @@ class _HomePageState extends State<HomePage>
               }
               
               if (index >= slideAnimations.length || index >= opacityAnimations.length) {
-                return Text(
+                return OptimizedText(
                   text[index],
                   style: style,
                 );
@@ -2540,7 +2540,7 @@ class _HomePageState extends State<HomePage>
                       offset: Offset(0, slideAnimations[index].value),
                       child: Opacity(
                         opacity: opacityAnimations[index].value,
-                        child: Text(
+                        child: OptimizedText(
                           text[index],
                           style: style,
                         ),
@@ -2558,13 +2558,15 @@ class _HomePageState extends State<HomePage>
 
   /// 测量文本宽度的辅助方法
   double _measureTextWidth(String text, TextStyle style) {
-    final textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
+    final textSpan = TextSpan(text: text, style: style);
+    final textPainter = PerformanceOptimizer.getTextPainter(
+      textSpan: textSpan,
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    return textPainter.size.width;
+    final width = textPainter.size.width;
+    PerformanceOptimizer.returnTextPainter(textPainter);
+    return width;
   }
 
   /// 构建单词级动画的文本（用于英文例句）
@@ -2614,10 +2616,10 @@ class _HomePageState extends State<HomePage>
       runSpacing: 2.0, // 行之间的垂直间距
       children: [
         // 开始引号
-        Text('"', style: style),
+        OptimizedText('"', style: style),
         ...List.generate(words.length, (index) {
           if (index >= slideAnimations.length || index >= opacityAnimations.length) {
-            return Text(words[index], style: style);
+            return OptimizedText(words[index], style: style);
           }
           
           return AnimatedBuilder(
@@ -2627,7 +2629,7 @@ class _HomePageState extends State<HomePage>
                 offset: Offset(0, slideAnimations[index].value),
                 child: Opacity(
                   opacity: opacityAnimations[index].value,
-                  child: Text(
+                  child: OptimizedText(
                     words[index],
                     style: style,
                   ),
@@ -2637,7 +2639,7 @@ class _HomePageState extends State<HomePage>
           );
         }),
         // 结束引号
-        Text('"', style: style),
+        OptimizedText('"', style: style),
       ],
     );
   }
@@ -2651,7 +2653,7 @@ class _HomePageState extends State<HomePage>
   ) {
     if (slideAnimations.isEmpty || opacityAnimations.isEmpty) {
       return Center(
-        child: Text(
+        child: OptimizedText(
           text,
           style: style,
           textAlign: TextAlign.center,
@@ -2827,7 +2829,7 @@ class _HomePageState extends State<HomePage>
                   offset: Offset(0, slideAnimations[lastSlideIndex].value),
                   child: Opacity(
                     opacity: opacityAnimations[lastOpacityIndex].value,
-                    child: Text(
+                    child: OptimizedText(
                       char,
                       style: style,
                     ),
@@ -2836,7 +2838,7 @@ class _HomePageState extends State<HomePage>
               },
             );
           } else {
-            return Text(
+            return OptimizedText(
               char,
               style: style,
             );
@@ -2854,7 +2856,7 @@ class _HomePageState extends State<HomePage>
               offset: Offset(0, slideAnimations[globalIndex].value),
               child: Opacity(
                 opacity: opacityAnimations[globalIndex].value,
-                child: Text(
+                child: OptimizedText(
                   char,
                   style: style,
                 ),
@@ -2880,7 +2882,7 @@ class _HomePageState extends State<HomePage>
                 duration: const Duration(milliseconds: 300),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeOutCubic,
-                child: Text(
+                child: OptimizedText(
                   _isTestingMode 
                       ? (_showSentenceInput 
                           ? ''
