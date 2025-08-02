@@ -247,6 +247,7 @@ class ResponsiveGrid extends StatelessWidget {
           crossAxisCount: columns,
           crossAxisSpacing: crossAxisSpacing,
           mainAxisSpacing: mainAxisSpacing,
+          physics: const ClampingScrollPhysics(),
           children: children,
         );
       },
@@ -276,6 +277,7 @@ class ResponsiveCardList extends StatelessWidget {
         
         return ListView.separated(
           padding: padding ?? ResponsiveHelper.getResponsivePadding(context),
+          physics: const ClampingScrollPhysics(),
           itemCount: children.length,
           separatorBuilder: (context, index) => SizedBox(height: responsiveSpacing),
           itemBuilder: (context, index) => children[index],
@@ -283,4 +285,4 @@ class ResponsiveCardList extends StatelessWidget {
       },
     );
   }
-} 
+}

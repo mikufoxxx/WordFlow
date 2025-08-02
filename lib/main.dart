@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/onboarding_page.dart';
@@ -16,6 +17,9 @@ import 'utils/auto_update_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 优化渲染性能，解决特定设备滑动闪烁问题
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   
   // 立即设置默认的系统UI覆盖层（浅色模式）
   AppTheme.setLightSystemUIOverlay();
@@ -140,6 +144,10 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      // 优化滚动行为，解决特定设备滑动闪烁问题
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        physics: const ClampingScrollPhysics(),
+      ),
       // 本地化配置
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

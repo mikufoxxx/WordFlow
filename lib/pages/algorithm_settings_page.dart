@@ -68,6 +68,7 @@ class _AlgorithmSettingsPageState extends State<AlgorithmSettingsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               padding: ResponsiveHelper.getResponsivePadding(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -200,6 +200,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
+                physics: const ClampingScrollPhysics(),
                 onPageChanged: _onPageChanged,
                 itemCount: _pages.length,
                 itemBuilder: (context, index) => _buildPage(index),
@@ -559,6 +560,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     });
 
     return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,

@@ -146,6 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 maxWidth: ResponsiveHelper.getMaxContentWidth(context),
               ),
               child: ListView(
+                physics: const ClampingScrollPhysics(),
                 padding: ResponsiveHelper.getResponsivePadding(context),
                 children: [
                   // 学习设置部分

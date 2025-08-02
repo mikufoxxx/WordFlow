@@ -73,6 +73,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                 maxWidth: ResponsiveHelper.getMaxContentWidth(context),
               ),
               child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 child: Container(
                   padding: ResponsiveHelper.getResponsivePadding(context),
                   child: Column(

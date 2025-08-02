@@ -316,6 +316,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     }
     
     return ListView.builder(
+      physics: const ClampingScrollPhysics(),
       padding: ResponsiveHelper.getResponsivePadding(context),
       itemCount: recordsForDate.length + 1, // +1 for header
       itemBuilder: (context, index) {

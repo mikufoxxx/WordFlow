@@ -582,6 +582,7 @@ class _LibraryPageState extends State<LibraryPage>
                         )
                       : ListView.builder(
                           controller: scrollController,
+                          physics: const ClampingScrollPhysics(),
                           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
                           itemCount: downloadedBooks.length,
                           itemBuilder: (context, index) => _buildDownloadedBookCard(
@@ -1131,6 +1132,7 @@ class _LibraryPageState extends State<LibraryPage>
   Widget _buildWordBookList() {
     return ListView.builder(
       controller: _scrollController,
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // 从20,0,20,20减少到16,0,16,16
       itemCount: _displayedItems.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
