@@ -1312,7 +1312,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.notDownloaded:
         return Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 42),
+          height: 42, // 固定高度，避免抖动
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1342,19 +1342,28 @@ class _LibraryPageState extends State<LibraryPage>
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min, // 防止内容撑开
                   children: [
-                    const Icon(
-                      Icons.download_outlined,
-                      color: Colors.white,
-                      size: 18,
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Icon(
+                        Icons.download_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    const OptimizedText(
-                      '收集词书',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(
+                      width: 64, // 固定文本宽度
+                      child: OptimizedText(
+                        '收集词书',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -1367,7 +1376,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.downloading:
         return Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 42),
+          height: 42, // 固定高度，避免抖动
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
@@ -1386,6 +1395,7 @@ class _LibraryPageState extends State<LibraryPage>
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // 防止内容撑开
               children: [
                 SizedBox(
                   width: 18,
@@ -1395,13 +1405,17 @@ class _LibraryPageState extends State<LibraryPage>
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
-                const SizedBox(width: 10),
-                OptimizedText(
-                  '收集中...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 128, // 固定文本宽度 
+                  child: OptimizedText(
+                    '收集中...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -1412,10 +1426,10 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.downloaded:
         return Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 42),
+          height: 42, // 固定高度，避免抖动
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(12), // 从16减少到12
+            borderRadius: BorderRadius.circular(12),
             boxShadow: Theme.of(context).brightness == Brightness.dark 
                 ? null 
                 : [
@@ -1433,23 +1447,32 @@ class _LibraryPageState extends State<LibraryPage>
                 SoundService.playChooseBookSound();
                 _selectWordBook(item);
               },
-              borderRadius: BorderRadius.circular(12), // 从16减少到12
+              borderRadius: BorderRadius.circular(12),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min, // 防止内容撑开
                   children: [
-                    const Icon(
-                      Icons.touch_app_rounded,
-                      color: Colors.white,
-                      size: 18,
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Icon(
+                        Icons.touch_app_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    const OptimizedText(
-                      '选择词书',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(
+                      width: 64, // 固定文本宽度
+                      child: OptimizedText(
+                        '选择词书',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -1462,7 +1485,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.selected:
         return Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 42),
+          height: 42, // 固定高度，避免抖动
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1484,19 +1507,28 @@ class _LibraryPageState extends State<LibraryPage>
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // 防止内容撑开
               children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.white,
-                  size: 18,
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 8),
-                const OptimizedText(
-                  '使用中',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(
+                  width: 64, // 固定文本宽度
+                  child: OptimizedText(
+                    '使用中',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -1507,7 +1539,7 @@ class _LibraryPageState extends State<LibraryPage>
       case WordBookStatus.error:
         return Container(
           width: double.infinity,
-          height: 42,
+          height: 42, // 固定高度，避免抖动
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -1538,19 +1570,28 @@ class _LibraryPageState extends State<LibraryPage>
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min, // 防止内容撑开
                   children: [
-                    const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 18,
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    const OptimizedText(
-                      '重试下载',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(
+                      width: 64, // 固定文本宽度
+                      child: OptimizedText(
+                        '重试下载',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
