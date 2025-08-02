@@ -23,12 +23,7 @@ class AppTheme {
   static const Color accentTeal = Color(0xFF60B488);   // 绿青色调
   static const Color accentOrange = Color(0xFF60B473); // 绿色调
   
-  // 书本封面专用配色 (莫奈风格)
-  static const Color bookColor1 = Color(0xFF60B473);   // 绿色调
-  static const Color bookColor2 = Color(0xFF60B488);   // 绿青色调
-  static const Color bookColor3 = Color(0xFF60B49D);   // 主要初音色
-  static const Color bookColor4 = Color(0xFF60B4B2);   // 青色调
-  static const Color bookColor5 = Color(0xFF60A1B4);   // 蓝色调
+
   
   // 统一文字颜色 - 用户要求
   static const Color primaryTextColor = Color(0xFF17312A);    // 浅色模式主字体
@@ -59,7 +54,6 @@ class AppTheme {
   static const Color darkAccentRed = Color(0xFF60B473);       // 绿色调替代红色
   static const Color darkAccentYellow = Color(0xFFDCEFEA);    // 很浅绿色替代黄色
   static const Color darkAccentOrange = Color(0xFF60B488);    // 绿青色调
-  static const Color darkAccentPurple = Color(0xFF60B4B2);    // 青色调
 
   /// 便捷的颜色获取方法 - 根据主题自动选择合适的颜色
   

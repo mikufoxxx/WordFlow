@@ -3404,13 +3404,7 @@ class _HomePageState extends State<HomePage>
     final cleanWord = word.toLowerCase().replaceAll(RegExp(r'[^\w]'), '');
     
     for (final error in result.errors) {
-      final errorText = error.description.toLowerCase();
-      final errorPosition = error.position.toLowerCase();
-      
-      // 直接匹配错误位置
-      if (errorPosition.contains(cleanWord) || cleanWord.contains(errorPosition)) {
-        return true;
-      }
+      final errorText = error.toLowerCase();
       
       // 检查错误描述中是否提到了这个单词
       if (errorText.contains(cleanWord)) {
@@ -3599,7 +3593,7 @@ class _HomePageState extends State<HomePage>
             ..._judgmentResult!.errors.map((error) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                '• ${error.description}',
+                '• $error',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
@@ -3738,17 +3732,17 @@ class _HomePageState extends State<HomePage>
   bool _isWordInSimplicityImprovement(String correctWord, int index) {
     // 检查是否有简单性相关的错误
     final hasSimplicityErrors = _judgmentResult!.errors.any((error) => 
-      error.type.toLowerCase().contains('简单') || 
-      error.type.toLowerCase().contains('简陋') ||
-      error.type.toLowerCase().contains('basic') ||
-      error.type.toLowerCase().contains('simple') ||
-      error.description.contains('过于简单') ||
-      error.description.contains('太简单') ||
-      error.description.contains('可以更丰富') ||
-      error.description.contains('表达更丰富') ||
-      error.description.contains('更复杂') ||
-      error.description.contains('更详细') ||
-      error.description.contains('更具体')
+      error.toLowerCase().contains('简单') || 
+      error.toLowerCase().contains('简陋') ||
+      error.toLowerCase().contains('basic') ||
+      error.toLowerCase().contains('simple') ||
+      error.contains('过于简单') ||
+      error.contains('太简单') ||
+      error.contains('可以更丰富') ||
+      error.contains('表达更丰富') ||
+      error.contains('更复杂') ||
+      error.contains('更详细') ||
+      error.contains('更具体')
     );
     
     if (!hasSimplicityErrors) return false;
@@ -3776,11 +3770,11 @@ class _HomePageState extends State<HomePage>
   bool _isWordInIdiomaticImprovement(String correctWord, int index) {
     // 检查是否有地道性相关的错误
     final hasIdiomaticErrors = _judgmentResult!.errors.any((error) => 
-      error.type.toLowerCase().contains('地道') || 
-      error.type.toLowerCase().contains('idiomatic') ||
-      error.description.contains('地道') ||
-      error.description.contains('更自然') ||
-      error.description.contains('更常用')
+      error.toLowerCase().contains('地道') || 
+      error.toLowerCase().contains('idiomatic') ||
+      error.contains('地道') ||
+      error.contains('更自然') ||
+      error.contains('更常用')
     );
     
     if (!hasIdiomaticErrors) return false;

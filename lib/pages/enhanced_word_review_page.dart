@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../models/detailed_learning_record.dart';
 import '../models/word_learning_record.dart';
 import '../utils/learning_data_service.dart';

@@ -254,44 +254,7 @@ class MemoryCache {
   }
 }
 
-/// 性能监控 Widget
-class PerformanceMonitor extends StatefulWidget {
-  final Widget child;
-  final String label;
-  final bool enableLogging;
-  
-  const PerformanceMonitor({
-    Key? key,
-    required this.child,
-    required this.label,
-    this.enableLogging = false,
-  }) : super(key: key);
-  
-  @override
-  State<PerformanceMonitor> createState() => _PerformanceMonitorState();
-}
 
-class _PerformanceMonitorState extends State<PerformanceMonitor> {
-  DateTime? _lastBuildTime;
-  
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    
-    if (widget.enableLogging) {
-
-      if (_lastBuildTime != null) {
-        final timeSinceLastBuild = now.difference(_lastBuildTime!);
-        if (timeSinceLastBuild.inMilliseconds > 16) { // 超过一帧的时间
-        }
-      }
-      
-      _lastBuildTime = now;
-    }
-    
-    return widget.child;
-  }
-}
 
 /// 优化的Text Widget - 减少重建
 class OptimizedText extends StatelessWidget {
@@ -323,44 +286,3 @@ class OptimizedText extends StatelessWidget {
     );
   }
 }
-
-/// 延迟构建 Widget - 在视图中时才构建
-class LazyBuilder extends StatefulWidget {
-  final Widget Function(BuildContext context) builder;
-  final double triggerOffset;
-  
-  const LazyBuilder({
-    Key? key,
-    required this.builder,
-    this.triggerOffset = 100.0,
-  }) : super(key: key);
-  
-  @override
-  State<LazyBuilder> createState() => _LazyBuilderState();
-}
-
-class _LazyBuilderState extends State<LazyBuilder> {
-  bool _isBuilt = false;
-  
-  @override
-  Widget build(BuildContext context) {
-    if (!_isBuilt) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          // 在下一帧检查是否在可视区域内
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _isBuilt = true;
-              });
-            }
-          });
-          
-          return SizedBox(height: constraints.maxHeight);
-        },
-      );
-    }
-    
-    return widget.builder(context);
-  }
-} 

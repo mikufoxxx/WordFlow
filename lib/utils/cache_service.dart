@@ -90,28 +90,5 @@ class CacheService {
     return prefs.getString(_selectedWordBookKey);
   }
   
-  /// 清除词库缓存
-  static Future<void> clearWordBookCache(String wordBookName) async {
-    final prefs = await SharedPreferences.getInstance();
-    final wordDataKey = _wordDataPrefix + wordBookName.hashCode.toString();
-    final statusKey = _downloadStatusPrefix + wordBookName.hashCode.toString();
-    
-    await prefs.remove(wordDataKey);
-    await prefs.remove(statusKey);
-  }
-  
-  /// 清除所有缓存
-  static Future<void> clearAllCache() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys();
-    
-    for (final key in keys) {
-      if (key.startsWith(_wordDataPrefix) || 
-          key.startsWith(_downloadStatusPrefix) ||
-          key == _wordBooksKey ||
-          key == _selectedWordBookKey) {
-        await prefs.remove(key);
-      }
-    }
-  }
-} 
+
+}

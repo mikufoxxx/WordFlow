@@ -165,13 +165,7 @@ class DeepSeekApiService {
       
       final isCorrect = jsonData['isCorrect'] ?? false;
       final score = jsonData['score'] ?? 0;
-      final errors = (jsonData['errors'] as List?)?.map((e) => 
-        SentenceError(
-          type: e['type'] ?? '',
-          description: e['description'] ?? '',
-          position: e['position'] ?? '',
-        )
-      ).toList() ?? [];
+      final errors = <String>[];
       
       final suggestions = (jsonData['suggestions'] as List?)?.map((s) => s.toString()).toList() ?? [];
       final betterSentences = (jsonData['betterSentences'] as List?)?.map((s) => s.toString()).toList() ?? [];
@@ -373,7 +367,7 @@ class DeepSeekApiService {
 class SentenceJudgmentResult {
   final bool isCorrect;
   final int score;
-  final List<SentenceError> errors;
+  final List<String> errors;
   final List<String> suggestions;
   final List<String> betterSentences;
   final String? errorMessage;
@@ -388,18 +382,7 @@ class SentenceJudgmentResult {
   });
 }
 
-/// 句子错误信息
-class SentenceError {
-  final String type;
-  final String description;
-  final String position;
-  
-  SentenceError({
-    required this.type,
-    required this.description,
-    required this.position,
-  });
-}
+
 
 /// 例句生成结果
 class ExampleSentenceResult {

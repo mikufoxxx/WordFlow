@@ -399,7 +399,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   ...result.errors.map((error) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: OptimizedText(
-                      '• ${error.type}: ${error.description}',
+                      '• $error',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.orange.shade700,
