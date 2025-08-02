@@ -24,6 +24,108 @@ class DailyLearningData {
   double averageMastery = 0.0;
 }
 
+/// 自定义折线图绘制器
+class _LineChartPainter extends CustomPainter {
+  final List<MapEntry<DateTime, DailyLearningData>> entries;
+  final double minMastery;
+  final double maxMastery;
+  final double maxBarHeight;
+  final BuildContext context;
+
+  _LineChartPainter({
+    required this.entries,
+    required this.minMastery,
+    required this.maxMastery,
+    required this.maxBarHeight,
+    required this.context,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (entries.isEmpty) return;
+
+    final paint = Paint()
+      ..color = AppTheme.accentTeal
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final dotPaint = Paint()
+      ..color = AppTheme.accentTeal
+      ..style = PaintingStyle.fill;
+
+    final dotBorderPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    // 使用完整的绘制区域（外层容器已经处理了边距）
+    final drawWidth = size.width;
+    final drawHeight = size.height;
+
+    // 计算每个柱子的宽度和间距
+    final barSpacing = 8.0; // 与柱状图的horizontal padding保持一致
+    final totalSpacing = (entries.length - 1) * barSpacing;
+    final barWidth = (drawWidth - totalSpacing) / entries.length;
+
+    final path = Path();
+    final points = <Offset>[];
+
+    for (int i = 0; i < entries.length; i++) {
+      final data = entries[i].value;
+      
+      // 计算X坐标（柱子中心位置）
+      final x = (i * (barWidth + barSpacing)) + (barWidth / 2);
+      
+      // 计算Y坐标（直接将掌握度0-100%映射到柱状图的完整高度范围）
+      // 掌握度0%对应柱状图底部，100%对应柱状图顶部
+      final normalizedMastery = data.averageMastery / 100.0; // 将掌握度转换为0-1的比例
+      // 计算柱状图区域的底部位置（考虑到底部有日期标签的空间）
+      final chartBottomY = drawHeight - 32; // 32px是底部日期标签的空间（与容器padding保持一致）
+      final y = chartBottomY - (normalizedMastery * maxBarHeight); // 从柱状图底部向上映射
+
+      final point = Offset(x, y);
+      points.add(point);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        // 使用二次贝塞尔曲线创建平滑曲线
+        final prevPoint = points[i - 1];
+        final controlPoint1 = Offset(
+          prevPoint.dx + (x - prevPoint.dx) * 0.5,
+          prevPoint.dy,
+        );
+        final controlPoint2 = Offset(
+          prevPoint.dx + (x - prevPoint.dx) * 0.5,
+          y,
+        );
+        path.cubicTo(
+          controlPoint1.dx, controlPoint1.dy,
+          controlPoint2.dx, controlPoint2.dy,
+          x, y,
+        );
+      }
+    }
+
+    // 绘制折线
+    canvas.drawPath(path, paint);
+
+    // 绘制数据点
+    for (final point in points) {
+      // 绘制白色边框
+      canvas.drawCircle(point, 6, dotBorderPaint);
+      // 绘制主色点
+      canvas.drawCircle(point, 4, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return oldDelegate != this;
+  }
+}
+
 /// 增强的单词回溯页面
 class EnhancedWordReviewPage extends StatefulWidget {
   const EnhancedWordReviewPage({super.key});
@@ -1027,10 +1129,52 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     final now = DateTime.now();
     final dailyData = <DateTime, DailyLearningData>{};
     
-    // 初始化最近7天的数据
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime(now.year, now.month, now.day - i);
-      dailyData[date] = DailyLearningData();
+    // 找到第一天使用的日期
+    DateTime? firstUseDate;
+    if (_allRecords.isNotEmpty) {
+      for (final record in _allRecords) {
+        if (record.reviewHistory.isNotEmpty) {
+          for (final review in record.reviewHistory) {
+            final reviewDate = DateTime(
+              review.reviewTime.year,
+              review.reviewTime.month,
+              review.reviewTime.day,
+            );
+            if (firstUseDate == null || reviewDate.isBefore(firstUseDate)) {
+              firstUseDate = reviewDate;
+            }
+          }
+        }
+      }
+    }
+    
+    // 如果没有使用记录，显示最近7天
+    if (firstUseDate == null) {
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime(now.year, now.month, now.day - i);
+        dailyData[date] = DailyLearningData();
+      }
+    } else {
+      // 计算从第一天使用到现在的天数
+      final daysSinceFirst = now.difference(firstUseDate).inDays;
+      
+      if (daysSinceFirst < 7) {
+        // 不满一周，从第一天开始显示到今天
+        for (int i = 0; i <= daysSinceFirst; i++) {
+          final date = DateTime(
+            firstUseDate.year,
+            firstUseDate.month,
+            firstUseDate.day + i,
+          );
+          dailyData[date] = DailyLearningData();
+        }
+      } else {
+        // 满一周后，显示最近7天（滑动窗口）
+        for (int i = 6; i >= 0; i--) {
+          final date = DateTime(now.year, now.month, now.day - i);
+          dailyData[date] = DailyLearningData();
+        }
+      }
     }
     
     // 统计每日数据 - 基于reviewHistory
@@ -1064,21 +1208,39 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
       }
     }
     
-    // 计算每日平均掌握度
+    // 计算每日平均掌握度 - 基于当天所有单词的掌握度
+    double lastValidMastery = 0.0; // 记录上一个有效的掌握度值
+    
     for (final entry in dailyData.entries) {
       final date = entry.key;
       final data = entry.value;
-      final recordsOnDate = _allRecords.where((r) {
-        final lastDate = DateTime(
-          r.lastLearningTime.year,
-          r.lastLearningTime.month,
-          r.lastLearningTime.day,
-        );
-        return lastDate == date;
-      }).toList();
       
-      if (recordsOnDate.isNotEmpty) {
-        data.averageMastery = recordsOnDate.map((r) => r.masteryPercentage).reduce((a, b) => a + b) / recordsOnDate.length;
+      // 获取当天有学习记录的所有单词
+      final wordsLearnedOnDate = <EnhancedWordLearningRecord>[];
+      for (final record in _allRecords) {
+        // 检查该单词在当天是否有复习记录
+        final hasReviewOnDate = record.reviewHistory.any((review) {
+          final reviewDate = DateTime(
+            review.reviewTime.year,
+            review.reviewTime.month,
+            review.reviewTime.day,
+          );
+          return reviewDate == date;
+        });
+        
+        if (hasReviewOnDate) {
+          wordsLearnedOnDate.add(record);
+        }
+      }
+      
+      // 计算当天所有学习单词的平均掌握度
+      if (wordsLearnedOnDate.isNotEmpty) {
+        final totalMastery = wordsLearnedOnDate.map((r) => r.masteryPercentage).reduce((a, b) => a + b);
+        data.averageMastery = (totalMastery / wordsLearnedOnDate.length) * 100; // 转换为0-100范围用于显示
+        lastValidMastery = data.averageMastery; // 更新最后有效值
+      } else {
+        // 如果当天没有学习记录，延续前一天的掌握度
+        data.averageMastery = lastValidMastery;
       }
     }
     
@@ -1102,8 +1264,9 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
     return Column(
       children: [
         // 混合图表：柱状图 + 折线图
-        SizedBox(
-          height: 200,
+        Container(
+          height: 180,
+          padding: const EdgeInsets.only(left: 32, bottom: 32, right: 16, top: 16), // 调整padding使图表更居中
           child: Stack(
             children: [
               // 柱状图层
@@ -1114,7 +1277,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
           ),
         ),
         
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         
         // 图例
         Row(
@@ -1144,12 +1307,10 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
 
   /// 构建柱状图层
   Widget _buildBarChartLayer(Map<DateTime, DailyLearningData> dailyData, int maxCount) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 40), // 为日期标签留空间
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: dailyData.entries.map((entry) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: dailyData.entries.map((entry) {
           final date = entry.key;
           final data = entry.value;
           
@@ -1163,7 +1324,7 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                   Container(
                     width: double.infinity,
                     constraints: const BoxConstraints(minHeight: 2),
-                    child: maxCount > 0 ? _buildStackedBar(data, maxCount, 120) : Container(height: 2, color: AppTheme.coolGray200),
+                    child: maxCount > 0 ? _buildStackedBar(data, maxCount, 100) : Container(height: 2, color: AppTheme.coolGray200),
                   ),
                   
                   const SizedBox(height: 8),
@@ -1195,98 +1356,37 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
             ),
           );
         }).toList(),
-      ),
     );
   }
 
   /// 构建折线图层
   Widget _buildLineChartLayer(Map<DateTime, DailyLearningData> dailyData) {
-    final spots = <FlSpot>[];
     final entries = dailyData.entries.toList();
     
-    for (int i = 0; i < entries.length; i++) {
-      final data = entries[i].value;
-      if (data.averageMastery > 0) {
-        // 精确计算X坐标，确保与柱状图中心对齐
-        // 每个柱子在Row中占用相等空间，中心位置应该在 (i + 0.5) / entries.length 的比例位置
-        final normalizedX = (i + 0.5) / entries.length;
-        // 将归一化坐标映射到图表坐标系
-        final chartX = normalizedX * entries.length;
-        spots.add(FlSpot(chartX, data.averageMastery * 100));
-      }
-    }
+    // 计算最大柱状图高度，用于正确映射折线图位置
+    final maxCount = dailyData.values.map((d) => d.totalLearningCount).fold(0, (a, b) => a > b ? a : b);
+    const maxBarHeight = 100.0; // 与_buildStackedBar中的totalHeight保持一致（容器180-上下padding32*2=116，减去日期标签空间约100）
     
-    if (spots.isEmpty) {
+    // 如果没有学习记录，返回空的折线图
+    if (maxCount == 0 || entries.isEmpty) {
       return const SizedBox.shrink();
     }
     
-    return Padding(
-      // 完全匹配柱状图的padding
-      padding: const EdgeInsets.only(bottom: 40),
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: entries.length.toDouble(),
-          minY: 0,
-          maxY: 100,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: AppTheme.accentTeal,
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 4,
-                    color: AppTheme.accentTeal,
-                    strokeWidth: 2,
-                    strokeColor: Colors.white,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                color: AppTheme.accentTeal.withOpacity(0.1),
-              ),
-            ),
-          ],
-          lineTouchData: LineTouchData(
-            enabled: true,
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                return touchedBarSpots.map((barSpot) {
-                  // 反向计算索引
-                  final normalizedX = barSpot.x / entries.length;
-                  final index = (normalizedX * entries.length - 0.5).round();
-                  if (index >= 0 && index < entries.length) {
-                    final date = entries[index].key;
-                    return LineTooltipItem(
-                      '${date.month}/${date.day}\n掌握度: ${barSpot.y.toStringAsFixed(1)}%',
-                      TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    );
-                  }
-                  return null;
-                }).where((item) => item != null).cast<LineTooltipItem>().toList();
-              },
-            ),
-          ),
+    return Positioned.fill(
+      child: CustomPaint(
+        painter: _LineChartPainter(
+          entries: entries,
+          minMastery: 0.0,  // 固定使用0%作为最小值
+          maxMastery: 100.0, // 固定使用100%作为最大值
+          maxBarHeight: maxBarHeight,
+          context: context,
         ),
       ),
     );
   }
 
   /// 构建堆叠柱状图
-  Widget _buildStackedBar(DailyLearningData data, int maxCount, [double totalHeight = 80.0]) {
+  Widget _buildStackedBar(DailyLearningData data, int maxCount, [double totalHeight = 100.0]) {
     final barHeight = (data.totalLearningCount / maxCount * totalHeight);
     
     if (data.totalLearningCount == 0) {
