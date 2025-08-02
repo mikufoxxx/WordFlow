@@ -607,9 +607,10 @@ class _LibraryPageState extends State<LibraryPage>
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
-        border: item.status == WordBookStatus.selected 
-            ? Border.all(color: AppTheme.accentGreen, width: 2)
-            : null,
+        border: Border.all(
+          color: item.status == WordBookStatus.selected ? AppTheme.accentGreen : Colors.transparent, 
+          width: 2
+        ),
         boxShadow: Theme.of(context).brightness == Brightness.dark 
             ? null 
             : [
@@ -1187,9 +1188,10 @@ class _LibraryPageState extends State<LibraryPage>
             ? AppTheme.darkCardColor 
             : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16), // 从20减少到16
-        border: isSelected 
-            ? Border.all(color: AppTheme.accentGreen, width: 2)
-            : null,
+        border: Border.all(
+          color: isSelected ? AppTheme.accentGreen : Colors.transparent, 
+          width: 2
+        ),
         boxShadow: Theme.of(context).brightness == Brightness.dark 
             ? null 
             : [
