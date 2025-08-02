@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'performance_optimizer.dart';
 
 /// 动画文字帮助类
 /// 提供字符级别的浮现动画效果，每个字符独立动画
@@ -64,6 +65,9 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
   Timer? _animationTimer;
   bool _isDisposed = false;
   
+  // 性能优化：使用池化的key
+  static const String _animationPoolKey = 'animated_text_helper_chars';
+  
   @override
   void initState() {
     super.initState();
@@ -75,9 +79,14 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
   void dispose() {
     _isDisposed = true;
     _animationTimer?.cancel();
+    
+    // 返回控制器到池中而不是销毁
     for (final controller in _characterControllers) {
       try {
-        controller.dispose();
+        PerformanceOptimizer.returnAnimationController(
+          _animationPoolKey,
+          controller,
+        );
       } catch (e) {
         // 忽略已销毁控制器的错误
       }
@@ -90,8 +99,9 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
     final characters = widget.text.split('');
     
     for (int i = 0; i < characters.length; i++) {
-      // 为每个字符创建独立的动画控制器
-      final controller = AnimationController(
+      // 为每个字符创建独立的动画控制器 - 使用性能优化器池化
+      final controller = PerformanceOptimizer.getAnimationController(
+        poolKey: _animationPoolKey,
         duration: const Duration(milliseconds: 600),
         vsync: this,
       );
@@ -147,24 +157,33 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
     
     _animationTimer?.cancel();
     
-    // 延迟开始动画
-    _animationTimer = Timer(widget.animationDelay, () {
-      if (!mounted || _isDisposed) return;
-      
-      // 依次启动每个字符的动画
-      for (int i = 0; i < _characterControllers.length; i++) {
-        Timer(widget.characterDelay * i, () {
-          if (mounted && !_isDisposed && 
-              !_characterControllers[i].isAnimating) {
-            try {
-              _characterControllers[i].forward();
-            } catch (e) {
-              // 忽略已销毁控制器的错误
-            }
-          }
-        });
-      }
-    });
+    // 延迟开始动画 - 使用性能优化器Timer池
+    PerformanceOptimizer.createTimer(
+      poolKey: '${_animationPoolKey}_timers',
+      duration: widget.animationDelay,
+      callback: () {
+        if (!mounted || _isDisposed) return;
+        
+        // 依次启动每个字符的动画
+        for (int i = 0; i < _characterControllers.length; i++) {
+          PerformanceOptimizer.createTimer(
+            poolKey: '${_animationPoolKey}_timers',
+            duration: widget.characterDelay * i,
+            callback: () {
+              if (mounted && !_isDisposed && 
+                  i < _characterControllers.length &&
+                  !_characterControllers[i].isAnimating) {
+                try {
+                  _characterControllers[i].forward();
+                } catch (e) {
+                  // 忽略已销毁控制器的错误
+                }
+              }
+            },
+          );
+        }
+      },
+    );
   }
   
   /// 重置所有字符动画 - 添加安全检查
@@ -172,6 +191,9 @@ class _AnimatedTextWidgetState extends State<_AnimatedTextWidget>
     if (_isDisposed) return; // 安全检查
     
     _animationTimer?.cancel();
+    // 取消性能优化器Timer池中的定时器
+    PerformanceOptimizer.cancelTimers('${_animationPoolKey}_timers');
+    
     for (final controller in _characterControllers) {
       try {
         if (controller.isAnimating) {

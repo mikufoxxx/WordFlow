@@ -21,28 +21,48 @@ class PerformanceOptimizer {
   }) {
     final pool = _controllerPool[poolKey] ??= [];
     
-    // 尝试重用现有的控制器
+    // 尝试重用现有的控制器 - 优化：检查更多条件
     for (int i = pool.length - 1; i >= 0; i--) {
       final controller = pool[i];
-      if (!controller.isAnimating && controller.duration == duration) {
+      if (!controller.isAnimating && 
+          !controller.isCompleted && 
+          controller.duration == duration) {
         controller.reset();
+        pool.removeAt(i); // 从池中移除，避免重复使用
         return controller;
+      }
+    }
+    
+    // 限制池大小，避免内存泄漏
+    if (pool.length > 20) {
+      // 清理最旧的控制器
+      final oldController = pool.removeAt(0);
+      try {
+        oldController.dispose();
+      } catch (e) {
+        // 忽略已释放的控制器
       }
     }
     
     // 如果没有可重用的，创建新的控制器
     final controller = AnimationController(duration: duration, vsync: vsync);
-    pool.add(controller);
     return controller;
   }
   
   /// 归还动画控制器到池中
   static void returnAnimationController(String poolKey, AnimationController controller) {
     try {
+      // 检查控制器状态
+      
       controller.reset();
       final pool = _controllerPool[poolKey] ??= [];
-      if (!pool.contains(controller)) {
+      
+      // 限制池大小并检查重复
+      if (pool.length < 10 && !pool.contains(controller)) {
         pool.add(controller);
+      } else if (!pool.contains(controller)) {
+        // 池已满，直接释放控制器
+        controller.dispose();
       }
     } catch (e) {
       // 如果控制器已被释放，忽略错误
@@ -55,22 +75,48 @@ class PerformanceOptimizer {
     required Duration duration,
     required VoidCallback callback,
   }) {
-    final timer = Timer(duration, callback);
+    _cleanupInactiveTimers(poolKey); // 清理无效Timer
+    
+    Timer? timer;
+    timer = Timer(duration, () {
+      callback();
+      if (timer != null) {
+        _removeTimerFromPool(poolKey, timer);
+      }
+    });
     final pool = _timerPool[poolKey] ??= [];
     pool.add(timer);
     return timer;
   }
-  
+
   /// 创建并管理周期性Timer
   static Timer createPeriodicTimer({
     required String poolKey,
     required Duration duration,
     required void Function(Timer) callback,
   }) {
+    _cleanupInactiveTimers(poolKey); // 清理无效Timer
+    
     final timer = Timer.periodic(duration, callback);
     final pool = _timerPool[poolKey] ??= [];
     pool.add(timer);
     return timer;
+  }
+
+  /// 清理无效的Timer
+  static void _cleanupInactiveTimers(String poolKey) {
+    final pool = _timerPool[poolKey];
+    if (pool != null) {
+      pool.removeWhere((timer) => !timer.isActive);
+    }
+  }
+
+  /// 从池中移除Timer
+  static void _removeTimerFromPool(String poolKey, Timer timer) {
+    final pool = _timerPool[poolKey];
+    if (pool != null) {
+      pool.remove(timer);
+    }
   }
   
   /// 清理指定池的所有Timer
@@ -196,14 +242,34 @@ class MemoryCache {
   static final Map<String, dynamic> _cache = {};
   static final Map<String, DateTime> _timestamps = {};
   static const Duration _defaultTTL = Duration(minutes: 10);
+  static const int _maxCacheSize = 100; // 限制缓存大小
   
   /// 设置缓存
   static void set(String key, dynamic value, {Duration? ttl}) {
+    // 限制缓存大小，防止内存泄漏
+    if (_cache.length >= _maxCacheSize) {
+      _evictOldestEntries(10); // 清理最旧的10个条目
+    }
+    
     _cache[key] = value;
     _timestamps[key] = DateTime.now();
     
     // 清理过期缓存
     _cleanExpired(ttl ?? _defaultTTL);
+  }
+
+  /// 清理最旧的条目
+  static void _evictOldestEntries(int count) {
+    if (_timestamps.isEmpty) return;
+    
+    final sortedEntries = _timestamps.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    
+    final toRemove = sortedEntries.take(count);
+    for (final entry in toRemove) {
+      _cache.remove(entry.key);
+      _timestamps.remove(entry.key);
+    }
   }
   
   /// 获取缓存

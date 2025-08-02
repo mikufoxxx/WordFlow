@@ -682,10 +682,11 @@ class _HomePageState extends State<HomePage>
     // 清理旧的控制器
     _disposeCharacterControllers();
     
-    // 单词字符动画
+    // 单词字符动画 - 使用性能优化器池化
     _wordControllers = List.generate(
       word.word.length,
-      (index) => AnimationController(
+      (index) => PerformanceOptimizer.getAnimationController(
+        poolKey: '${_animationPoolKey}_word_chars',
         duration: const Duration(milliseconds: 500),
         vsync: this,
       ),
@@ -721,10 +722,11 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 翻译字符动画
+    // 翻译字符动画 - 使用性能优化器池化
     _translationControllers = List.generate(
       word.translation.length,
-      (index) => AnimationController(
+      (index) => PerformanceOptimizer.getAnimationController(
+        poolKey: '${_animationPoolKey}_translation_chars',
         duration: const Duration(milliseconds: 400),
         vsync: this,
       ),
@@ -748,10 +750,11 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 释义字符动画
+    // 释义字符动画 - 使用性能优化器池化
     _meaningControllers = List.generate(
       word.translation.length,
-      (index) => AnimationController(
+      (index) => PerformanceOptimizer.getAnimationController(
+        poolKey: '${_animationPoolKey}_meaning_chars',
         duration: const Duration(milliseconds: 400),
         vsync: this,
       ),
@@ -759,11 +762,12 @@ class _HomePageState extends State<HomePage>
     
 
 
-    // 例句单词动画 - 改为单词级动画以优化性能
+    // 例句单词动画 - 改为单词级动画以优化性能，使用性能优化器池化
     final exampleWords = word.example.trim().split(RegExp(r'\s+'));
     _exampleControllers = List.generate(
       exampleWords.length,
-      (index) => AnimationController(
+      (index) => PerformanceOptimizer.getAnimationController(
+        poolKey: '${_animationPoolKey}_example_words',
         duration: const Duration(milliseconds: 400),
         vsync: this,
       ),
@@ -787,10 +791,11 @@ class _HomePageState extends State<HomePage>
       ),
     ).toList();
     
-    // 例句翻译字符动画
+    // 例句翻译字符动画 - 使用性能优化器池化
     _exampleTranslationControllers = List.generate(
       word.exampleTranslation.length,
-      (index) => AnimationController(
+      (index) => PerformanceOptimizer.getAnimationController(
+        poolKey: '${_animationPoolKey}_example_translation_chars',
         duration: const Duration(milliseconds: 400),
         vsync: this,
       ),
@@ -853,24 +858,40 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// 清理字符控制器
+  /// 清理字符控制器 - 返回到池中重用
   void _disposeCharacterControllers() {
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
     
+    // 返回控制器到池中而不是销毁
     for (var controller in _wordControllers) {
-      controller.dispose();
+      PerformanceOptimizer.returnAnimationController(
+        '${_animationPoolKey}_word_chars',
+        controller,
+      );
     }
     for (var controller in _translationControllers) {
-      controller.dispose();
+      PerformanceOptimizer.returnAnimationController(
+        '${_animationPoolKey}_translation_chars',
+        controller,
+      );
     }
     for (var controller in _meaningControllers) {
-      controller.dispose();
+      PerformanceOptimizer.returnAnimationController(
+        '${_animationPoolKey}_meaning_chars',
+        controller,
+      );
     }
     for (var controller in _exampleControllers) {
-      controller.dispose();
+      PerformanceOptimizer.returnAnimationController(
+        '${_animationPoolKey}_example_words',
+        controller,
+      );
     }
     for (var controller in _exampleTranslationControllers) {
-      controller.dispose();
+      PerformanceOptimizer.returnAnimationController(
+        '${_animationPoolKey}_example_translation_chars',
+        controller,
+      );
     }
     
     _wordControllers.clear();
@@ -2923,14 +2944,12 @@ class _HomePageState extends State<HomePage>
                 // 键盘从显示状态变为隐藏状态
                 isClosing = true;
                 Navigator.of(dialogContext).pop();
-                setState(() {});
               }
               previousKeyboardHeight = currentKeyboardHeight;
             });
             
             return WillPopScope(
               onWillPop: () async {
-                setState(() {});
                 return true;
               },
               child: Scaffold(
@@ -3006,7 +3025,6 @@ class _HomePageState extends State<HomePage>
                                   if (!isClosing) {
                                     isClosing = true;
                                     Navigator.of(dialogContext).pop();
-                                    setState(() {});
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
