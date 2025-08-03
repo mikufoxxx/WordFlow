@@ -532,13 +532,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
         decoration: BoxDecoration(
           color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
          child: InkWell(
            onTap: () {
@@ -771,13 +773,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
                 : AppTheme.cardColor,
 
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -941,13 +945,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1012,13 +1018,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1085,13 +1093,15 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Padding(
         padding: const EdgeInsets.all(16),

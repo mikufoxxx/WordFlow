@@ -95,13 +95,15 @@ class _WordDetailPageState extends State<WordDetailPage> {
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
          child: Padding(
            padding: const EdgeInsets.all(20),
@@ -212,13 +214,15 @@ class _WordDetailPageState extends State<WordDetailPage> {
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -457,13 +461,15 @@ class _WordDetailPageState extends State<WordDetailPage> {
               ? AppTheme.darkCardColor 
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark 
+              ? null 
+              : [
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Padding(
         padding: const EdgeInsets.all(20),
