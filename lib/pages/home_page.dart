@@ -16,6 +16,8 @@ import '../utils/learning_data_service.dart';
 import '../utils/algorithm_manager.dart';
 import '../utils/app_theme.dart';
 import '../utils/sound_service.dart';
+import '../utils/render_compatibility_helper.dart';
+import '../utils/compatible_page_route.dart';
 
 /// 修改类型枚举
 enum ModificationType {
@@ -941,7 +943,11 @@ class _HomePageState extends State<HomePage>
                   iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
               onPressed: () async {
                 SoundService.playTapSound();
-                await Navigator.pushNamed(context, '/library');
+                await CompatibleNavigator.pushNamed(
+                  context, 
+                  '/library',
+                  transitionType: PageTransitionType.slideFromBottom,
+                );
                 // 从词库页面返回时，检查是否需要重新加载词库数据
                 await _checkAndReloadWordBook();
               },
@@ -971,7 +977,11 @@ class _HomePageState extends State<HomePage>
                     iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
                 onPressed: () {
                   SoundService.playTapSound();
-                  Navigator.pushNamed(context, '/settings');
+                  CompatibleNavigator.pushNamed(
+                    context, 
+                    '/settings',
+                    transitionType: PageTransitionType.slideFromBottom,
+                  );
                 },
                 color: Theme.of(context).primaryColor,
                 padding: EdgeInsets.zero,
@@ -1062,7 +1072,11 @@ class _HomePageState extends State<HomePage>
               SizedBox(height: 20), // 从24减少到20
               ElevatedButton.icon(
                 onPressed: () async {
-                  await Navigator.pushNamed(context, '/library');
+                  await CompatibleNavigator.pushNamed(
+                    context, 
+                    '/library',
+                    transitionType: PageTransitionType.slideFromBottom,
+                  );
                   // 从词库页面返回时，重新加载词库数据
                   await _loadWordsFromSelectedWordBook();
                 },
@@ -1109,8 +1123,7 @@ class _HomePageState extends State<HomePage>
           _toggleMeaning();
         }
       },
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
+      child: RenderCompatibilityHelper.createCompatibleSingleChildScrollView(
         padding: ResponsiveHelper.getResponsivePadding(context),
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -3598,7 +3611,7 @@ class _HomePageState extends State<HomePage>
                 size: 18,
               ),
               const SizedBox(width: 8),
-              Text(
+              RenderCompatibilityHelper.createCompatibleText(
                 hasErrors ? '修改说明' : '句子评价',
                 style: TextStyle(
                   fontSize: 14,
@@ -3612,7 +3625,7 @@ class _HomePageState extends State<HomePage>
           if (hasErrors) ...[
             ..._judgmentResult!.errors.map((error) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
+              child: RenderCompatibilityHelper.createCompatibleText(
                 '• $error',
                 style: TextStyle(
                   fontSize: 13,
@@ -3626,7 +3639,7 @@ class _HomePageState extends State<HomePage>
             if (_judgmentResult!.suggestions.isNotEmpty) ...[
               ..._judgmentResult!.suggestions.map((suggestion) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
+                child: RenderCompatibilityHelper.createCompatibleText(
                   '• $suggestion',
                   style: TextStyle(
                     fontSize: 13,
@@ -3636,7 +3649,7 @@ class _HomePageState extends State<HomePage>
                 ),
               )),
             ] else ...[
-              Text(
+              RenderCompatibilityHelper.createCompatibleText(
                 '• 您的句子语法正确，用词恰当',
                 style: TextStyle(
                   fontSize: 13,
@@ -3645,7 +3658,7 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
+              RenderCompatibilityHelper.createCompatibleText(
                 '• 句子表达清晰，符合英语习惯',
                 style: TextStyle(
                   fontSize: 13,
@@ -3684,7 +3697,7 @@ class _HomePageState extends State<HomePage>
           final modificationInfo = _getWordModificationInfo(word, index);
           
           if (index >= _betterSentenceAnimations.length) {
-            return Text(
+            return RenderCompatibilityHelper.createCompatibleText(
               word,
               style: TextStyle(
                 fontSize: 15,
@@ -3702,7 +3715,7 @@ class _HomePageState extends State<HomePage>
                 offset: Offset(0, 8 * (1 - _betterSentenceAnimations[index].value)),
                                   child: Opacity(
                     opacity: _betterSentenceAnimations[index].value,
-                    child: Text(
+                    child: RenderCompatibilityHelper.createCompatibleText(
                       word,
                       style: TextStyle(
                         fontSize: 15,

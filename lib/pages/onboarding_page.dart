@@ -6,6 +6,7 @@ import 'package:lordicon/lordicon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_theme.dart';
 import '../utils/animated_text_helper.dart';
+import '../utils/render_compatibility_helper.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/deepseek_api_service.dart';
@@ -460,7 +461,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                                 ),
                               ],
                             ),
-                            child: Text(
+                            child: RenderCompatibilityHelper.createCompatibleText(
                               '第 ${index + 1} 步',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9 + (parallaxIntensity * 0.1)),
@@ -485,7 +486,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                           scale: 0.9 + (parallaxIntensity * 0.2), // 更明显的缩放效果
                           child: Opacity(
                             opacity: 0.6 + (parallaxIntensity * 0.4), // 更强的透明度变化
-                            child: Text(
+                            child: RenderCompatibilityHelper.createCompatibleText(
                               step.title,
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -518,7 +519,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                           scale: 0.88 + (parallaxIntensity * 0.24), // 更强的缩放效果
                           child: Opacity(
                             opacity: 0.5 + (parallaxIntensity * 0.5), // 最强的透明度变化
-                            child: Text(
+                            child: RenderCompatibilityHelper.createCompatibleText(
                               step.description,
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -653,7 +654,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           // 帮助文本
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
+            child: RenderCompatibilityHelper.createCompatibleText(
               '在DeepSeek官网申请API Key：\nplatform.deepseek.com \n → API Keys \n → 创建新Key',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -747,7 +748,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                     borderRadius: BorderRadius.circular(10), // 从12减少到10
                   ),
                 ),
-                child: Text(
+                child: RenderCompatibilityHelper.createCompatibleText(
                   '以后再说',
                   style: TextStyle(
                     fontSize: 14, // 从16减少到14
@@ -779,7 +780,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 elevation: _getButtonElevation(),
                 shadowColor: _getButtonColor().withOpacity(0.4),
               ),
-              child: Text(
+              child: RenderCompatibilityHelper.createCompatibleText(
                 _getButtonText(),
                 style: const TextStyle(
                   fontSize: 14, // 从16减少到14
@@ -873,7 +874,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: RenderCompatibilityHelper.createCompatibleText(
                     'API Key已粘贴',
                     style: TextStyle(
                       fontSize: 14,
@@ -906,7 +907,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: RenderCompatibilityHelper.createCompatibleText(
                     '剪贴板为空',
                     style: TextStyle(
                       fontSize: 14,

@@ -17,6 +17,8 @@ import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/auto_update_service.dart';
+import '../utils/render_compatibility_helper.dart';
+import '../utils/compatible_page_route.dart';
 import '../main.dart';
 
 /// 导入模式枚举
@@ -212,7 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
+                                    child: RenderCompatibilityHelper.createCompatibleText(
                                       '请先配置有效的DeepSeek API Key',
                                       style: TextStyle(
                                           fontSize: 14,
@@ -251,7 +253,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ),
                         ),
-                        title: Text('正在加载学习模式设置...'),
+                        title: RenderCompatibilityHelper.createCompatibleText('正在加载学习模式设置...'),
                         dense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
@@ -361,7 +363,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
+                                  child: RenderCompatibilityHelper.createCompatibleText(
                                     value ? '智能同步已开启' : '智能同步已关闭',
                                     style: TextStyle(
                                         fontSize: 14,
@@ -2051,12 +2053,20 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
 
-    Navigator.of(context).pushNamed('/enhanced_word_review');
+    CompatibleNavigator.pushNamed(
+      context,
+      '/enhanced_word_review',
+      transitionType: PageTransitionType.slideFromBottom,
+    );
   }
 
   /// 打开算法设置页面
   void _openAlgorithmSettings() {
-    Navigator.of(context).pushNamed('/algorithm_settings');
+    CompatibleNavigator.pushNamed(
+      context,
+      '/algorithm_settings',
+      transitionType: PageTransitionType.slideFromBottom,
+    );
   }
 
   /// 加载应用版本信息

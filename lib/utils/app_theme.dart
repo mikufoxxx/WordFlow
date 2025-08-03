@@ -100,10 +100,16 @@ class AppTheme {
       systemNavigationBarDividerColor: Colors.transparent,
     ));
     
-    // 启用边缘到边缘显示模式
+    // 启用边缘到边缘显示模式，使用兼容性设置
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
     );
+    
+    // 设置首选方向，避免旋转时的渲染问题
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
   /// 配置深色模式的系统UI
@@ -117,10 +123,16 @@ class AppTheme {
       systemNavigationBarDividerColor: Colors.transparent,
     ));
     
-    // 启用边缘到边缘显示模式
+    // 启用边缘到边缘显示模式，使用兼容性设置
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
     );
+    
+    // 设置首选方向，避免旋转时的渲染问题
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
   /// 浅色主题配置

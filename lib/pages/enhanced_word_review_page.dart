@@ -12,6 +12,7 @@ import '../utils/cache_service.dart';
 import '../utils/sound_service.dart';
 import '../widgets/custom_date_picker.dart';
 import 'word_detail_page.dart';
+import '../utils/compatible_page_route.dart';
 
 /// 每日学习数据模型
 class DailyLearningData {
@@ -1730,11 +1731,11 @@ class _EnhancedWordReviewPageState extends State<EnhancedWordReviewPage> with Si
 
   /// 显示单词详情
   void _showWordDetails(EnhancedWordLearningRecord record) {
-    Navigator.push(
+    CompatibleNavigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => WordDetailPage(record: record),
-      ),
+      WordDetailPage(record: record),
+      routeName: 'WordDetailPage',
+      transitionType: PageTransitionType.slideFromBottom,
     );
   }
 

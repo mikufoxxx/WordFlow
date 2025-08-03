@@ -15,9 +15,26 @@ import 'pages/library_page.dart';
 import 'utils/algorithm_manager.dart';
 import 'utils/auto_update_service.dart';
 import 'utils/performance_optimizer.dart';
+import 'utils/render_compatibility_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 强制初始化渲染兼容性设置，彻底解决GPU渲染问题
+  await RenderCompatibilityHelper.initialize();
+  
+  // 强制清理所有可能的渲染缓存
+  // 确保应用以最干净的状态启动
+  try {
+    // 多次强制清理，确保彻底
+    for (int i = 0; i < 3; i++) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+  } catch (e) {
+    // 忽略清理错误
+  }
   
   // 优化渲染性能，解决特定设备滑动闪烁问题
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -148,10 +165,8 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      // 优化滚动行为，解决特定设备滑动闪烁问题
-      scrollBehavior: const MaterialScrollBehavior().copyWith(
-        physics: const ClampingScrollPhysics(),
-      ),
+      // 使用兼容性优化的滚动行为，解决GPU渲染问题
+      scrollBehavior: RenderCompatibilityHelper.getCompatibleScrollBehavior(),
       // 本地化配置
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
