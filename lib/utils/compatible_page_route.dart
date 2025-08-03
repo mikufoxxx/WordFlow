@@ -13,10 +13,9 @@ class CompatiblePageRoute<T> extends PageRouteBuilder<T> {
     this.builder,
     required this.routeName,
     this.transitionType = PageTransitionType.fade,
-    RouteSettings? settings,
+    super.settings,
   }) : assert(child != null || builder != null, 'Either child or builder must be provided'),
         super(
-          settings: settings,
           pageBuilder: (context, animation, secondaryAnimation) => 
               child ?? builder!(context),
           transitionDuration: const Duration(milliseconds: 300),
@@ -199,10 +198,6 @@ class CompatibleNavigator {
       // 创建一个延迟构建的页面
       final route = CompatiblePageRoute<T>(
         builder: (context) {
-          // 在这里触发系统路由构建
-          final navigator = Navigator.of(context);
-          final settings = RouteSettings(name: routeName, arguments: arguments);
-          
           // 尝试获取路由表中的页面
           try {
             final app = context.findAncestorWidgetOfExactType<MaterialApp>();
@@ -229,12 +224,7 @@ class CompatibleNavigator {
     }
   }
 
-  /// 根据路由名称获取页面 - 返回null让系统使用默认路由
-  static Widget? _getRouteByName(BuildContext context, String routeName, Object? arguments) {
-    // 返回null，让系统使用默认的路由表
-    // 这样可以避免循环依赖问题，同时保持兼容性动画
-    return null;
-  }
+
 
   /// 创建错误页面
   static Widget _createErrorPage(String message) {
@@ -248,9 +238,11 @@ class CompatibleNavigator {
             const SizedBox(height: 16),
             Text(message),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Navigator.of(null as BuildContext).pop(),
-              child: const Text('返回'),
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('返回'),
+              ),
             ),
           ],
         ),

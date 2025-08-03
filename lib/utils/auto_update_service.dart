@@ -19,8 +19,8 @@ class AutoUpdateService {
   DateTime? _lastCheckTime;
   bool _isChecking = false;
   
-  // 检查间隔（小时）
-  static const int _checkIntervalHours = 6;
+  // 检查间隔（小时）- 延长到24小时，减少功耗和网络请求
+  static const int _checkIntervalHours = 24;
   
   /// 初始化自动更新服务
   Future<void> initialize() async {

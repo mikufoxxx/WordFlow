@@ -308,37 +308,61 @@ class PerformanceOptimizer {
     
     _lastMemoryCheck = now;
     
-    // 简单的内存压力检测：基于池的大小
-      final totalPoolSize = _controllerPool.values
-          .fold(0, (sum, pool) => sum + pool.length) +
-          _textPainterPool.length +
-          _tweenPool.values.fold(0, (sum, pool) => sum + pool.length) +
-          _curvedAnimationPool.length;
+    // 更精确的内存压力检测
+    final totalControllers = _controllerPool.values
+        .fold(0, (sum, pool) => sum + pool.length);
+    final totalTimers = _timerPool.values
+        .fold(0, (sum, pool) => sum + pool.where((timer) => timer.isActive).length);
+    final totalTextPainters = _textPainterPool.length;
+    final totalTweens = _tweenPool.values
+        .fold(0, (sum, pool) => sum + pool.length);
+    final totalCurvedAnimations = _curvedAnimationPool.length;
     
-    _isMemoryPressureHigh = totalPoolSize > 500;
+    final totalObjects = totalControllers + totalTimers + totalTextPainters + 
+                        totalTweens + totalCurvedAnimations;
     
-    // 如果内存压力高，清理一些缓存
+    // 如果总对象数超过阈值，触发内存压力状态
+    _isMemoryPressureHigh = totalObjects > 300; // 降低阈值，更早触发清理
+    
+    // 在内存压力高时，主动清理一些资源
     if (_isMemoryPressureHigh) {
-      _cleanupExcessObjects();
+      _performMemoryCleanup();
     }
   }
   
-  /// 清理多余对象
-   static void _cleanupExcessObjects() {
-     // 清理超过最大大小的池
-     if (_textPainterPool.length > 20) {
-       final excess = _textPainterPool.length - 20;
-       for (int i = 0; i < excess; i++) {
-         final painter = _textPainterPool.removeAt(0);
-         painter.dispose();
-       }
-     }
-     
-     // 清理旧的Widget缓存
-     final now = DateTime.now();
-     WidgetCache._cacheTimestamps.removeWhere((key, timestamp) => 
-         now.difference(timestamp) > WidgetCache._cacheTTL);
-   }
+  /// 执行内存清理
+  static void _performMemoryCleanup() {
+    // 清理过多的TextPainter
+    if (_textPainterPool.length > 10) {
+      final excess = _textPainterPool.length - 10;
+      for (int i = 0; i < excess; i++) {
+        final painter = _textPainterPool.removeAt(0);
+        painter.dispose();
+      }
+    }
+    
+    // 清理过多的CurvedAnimation
+    if (_curvedAnimationPool.length > 8) {
+      final excess = _curvedAnimationPool.length - 8;
+      for (int i = 0; i < excess; i++) {
+        final curved = _curvedAnimationPool.removeAt(0);
+        curved.dispose();
+      }
+    }
+    
+    // 清理过多的Tween对象
+    _tweenPool.forEach((key, pool) {
+      if (pool.length > 8) {
+        final excess = pool.length - 8;
+        pool.removeRange(0, excess);
+      }
+    });
+    
+    // 清理无效的Timer
+    _timerPool.forEach((key, pool) {
+      pool.removeWhere((timer) => !timer.isActive);
+    });
+  }
   
   /// 清理所有资源
   static void clearAll() {
@@ -461,26 +485,73 @@ class MemoryCache {
   static final Map<String, dynamic> _cache = {};
   static final Map<String, DateTime> _timestamps = {};
   static const Duration _defaultTTL = Duration(minutes: 10);
-  static const int _maxCacheSize = 100; // 限制缓存大小
-  
+  static const int _maxCacheSize = 50; // 减少最大缓存大小，降低内存压力
+  static DateTime _lastCleanup = DateTime.now();
+  static const Duration _cleanupInterval = Duration(minutes: 5); // 定期清理间隔
+
   /// 设置缓存
   static void set(String key, dynamic value, {Duration? ttl}) {
+    // 定期清理过期缓存
+    _performPeriodicCleanup();
+    
     // 限制缓存大小，防止内存泄漏
     if (_cache.length >= _maxCacheSize) {
-      _evictOldestEntries(10); // 清理最旧的10个条目
+      _evictOldestEntries((_maxCacheSize * 0.3).round()); // 清理30%的旧条目
     }
     
     _cache[key] = value;
     _timestamps[key] = DateTime.now();
+  }
+
+  /// 获取缓存
+  static T? get<T>(String key) {
+    final timestamp = _timestamps[key];
+    if (timestamp == null) return null;
     
-    // 清理过期缓存
-    _cleanExpired(ttl ?? _defaultTTL);
+    // 检查是否过期
+    final now = DateTime.now();
+    if (now.difference(timestamp) > _defaultTTL) {
+      _cache.remove(key);
+      _timestamps.remove(key);
+      return null;
+    }
+    
+    return _cache[key] as T?;
+  }
+
+  /// 检查缓存是否存在且未过期
+  static bool has(String key) {
+    return get(key) != null;
+  }
+
+  /// 移除指定缓存
+  static void remove(String key) {
+    _cache.remove(key);
+    _timestamps.remove(key);
+  }
+
+  /// 清理过期缓存
+  static void cleanExpired() {
+    final now = DateTime.now();
+    final expiredKeys = <String>[];
+    
+    _timestamps.forEach((key, timestamp) {
+      if (now.difference(timestamp) > _defaultTTL) {
+        expiredKeys.add(key);
+      }
+    });
+    
+    for (final key in expiredKeys) {
+      _cache.remove(key);
+      _timestamps.remove(key);
+    }
   }
 
   /// 清理最旧的条目
   static void _evictOldestEntries(int count) {
     if (_timestamps.isEmpty) return;
     
+    // 按时间戳排序，获取最旧的条目
     final sortedEntries = _timestamps.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
     
@@ -491,50 +562,30 @@ class MemoryCache {
     }
   }
   
-  /// 获取缓存
-  static T? get<T>(String key, {Duration? ttl}) {
-    final timestamp = _timestamps[key];
-    if (timestamp == null) return null;
-    
-    final maxAge = ttl ?? _defaultTTL;
-    if (DateTime.now().difference(timestamp) > maxAge) {
-      _cache.remove(key);
-      _timestamps.remove(key);
-      return null;
-    }
-    
-    return _cache[key] as T?;
-  }
-  
-  /// 清理过期缓存
-  static void _cleanExpired(Duration ttl) {
+  /// 定期清理
+  static void _performPeriodicCleanup() {
     final now = DateTime.now();
-    final keysToRemove = <String>[];
-    
-    _timestamps.forEach((key, timestamp) {
-      if (now.difference(timestamp) > ttl) {
-        keysToRemove.add(key);
-      }
-    });
-    
-    for (final key in keysToRemove) {
-      _cache.remove(key);
-      _timestamps.remove(key);
+    if (now.difference(_lastCleanup) > _cleanupInterval) {
+      cleanExpired();
+      _lastCleanup = now;
     }
   }
-  
+
   /// 清空所有缓存
   static void clear() {
     _cache.clear();
     _timestamps.clear();
   }
-  
+
   /// 获取缓存统计
   static Map<String, dynamic> getStats() {
     return {
       'totalItems': _cache.length,
-      'keys': _cache.keys.toList(),
-      'memoryUsage': _cache.toString().length, // 简单的内存估算
+      'maxSize': _maxCacheSize,
+      'utilizationRate': '${(_cache.length / _maxCacheSize * 100).toStringAsFixed(1)}%',
+      'oldestEntry': _timestamps.values.isNotEmpty 
+          ? _timestamps.values.reduce((a, b) => a.isBefore(b) ? a : b).toString()
+          : 'None',
     };
   }
 }

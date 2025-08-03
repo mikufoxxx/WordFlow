@@ -288,34 +288,41 @@ class _LibraryPageState extends State<LibraryPage>
   
   /// 搜索词库
   void _onSearchChanged() {
+    // 取消之前的搜索定时器
     if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      final query = _searchController.text.toLowerCase().trim();
-      
-      setState(() {
-        _isSearching = true;
+    
+    // 使用性能优化器创建防抖定时器
+    _searchDebounce = PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 300),
+      callback: () {
+        final query = _searchController.text.toLowerCase().trim();
         
-        if (query.isEmpty) {
-          _filteredWordBookItems = _allWordBookItems;
-        } else {
-          _filteredWordBookItems = _allWordBookItems.where((item) {
-            return item.wordBook.name.toLowerCase().contains(query);
-          }).toList();
-        }
+        setState(() {
+          _isSearching = true;
+          
+          if (query.isEmpty) {
+            _filteredWordBookItems = _allWordBookItems;
+          } else {
+            _filteredWordBookItems = _allWordBookItems.where((item) {
+              return item.wordBook.name.toLowerCase().contains(query);
+            }).toList();
+          }
+          
+          // 重置分页和动画状态
+          _currentPage = 0;
+          _displayedItems.clear();
+          
+          // 重置所有动画控制器
+          for (var item in _allWordBookItems) {
+            item.animationController?.reset();
+          }
+        });
         
-        // 重置分页和动画状态
-        _currentPage = 0;
-        _displayedItems.clear();
-        
-        // 重置所有动画控制器
-        for (var item in _allWordBookItems) {
-          item.animationController?.reset();
-        }
-      });
-      
-      // 重新加载第一页
-      _loadMoreItems();
-    });
+        // 重新加载第一页
+        _loadMoreItems();
+      },
+    );
   }
 
   /// 选择词库 - 支持缓存

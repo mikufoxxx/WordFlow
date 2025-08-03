@@ -47,24 +47,39 @@ class RenderCompatibilityHelper {
   
   /// 启动定期清理机制
   static void _startPeriodicCleanup() {
-    // 每30秒强制清理一次渲染缓存
-    // 防止渲染问题累积
+    // 延长清理间隔到2分钟，减少性能开销
+    // 防止渲染问题累积的同时降低功耗
     _cleanupTimer?.cancel();
-    _cleanupTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    _cleanupTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       try {
-        // 强制清理所有缓存
-        _clearAllRenderingCaches();
+        // 智能清理：只在必要时清理缓存
+        _performSmartCleanup();
         
-        // 强制垃圾回收
-        // 清理内存碎片
-        
-        debugPrint('RenderCompatibilityHelper: 定期清理完成');
+        debugPrint('RenderCompatibilityHelper: 智能清理完成');
       } catch (e) {
         debugPrint('RenderCompatibilityHelper: 定期清理失败 - $e');
       }
     });
     
     debugPrint('RenderCompatibilityHelper: 定期清理机制已启动');
+  }
+  
+  /// 智能清理：根据内存使用情况决定是否清理
+  static void _performSmartCleanup() {
+    final imageCache = PaintingBinding.instance.imageCache;
+    
+    // 只有当缓存使用率超过80%时才进行清理
+    final currentSize = imageCache.currentSizeBytes;
+    final maxSize = imageCache.maximumSizeBytes;
+    final utilizationRate = currentSize / maxSize;
+    
+    if (utilizationRate > 0.8) {
+      // 清理最旧的缓存项，而不是全部清理
+      imageCache.clearLiveImages();
+      debugPrint('RenderCompatibilityHelper: 执行缓存清理 (使用率: ${(utilizationRate * 100).toStringAsFixed(1)}%)');
+    } else {
+      debugPrint('RenderCompatibilityHelper: 跳过清理 (使用率: ${(utilizationRate * 100).toStringAsFixed(1)}%)');
+    }
   }
   
   /// 停止定期清理

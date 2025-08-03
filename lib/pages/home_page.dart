@@ -59,6 +59,14 @@ class _HomePageState extends State<HomePage>
   static const String _timerPoolKey = 'home_page_timers';
   static const String _audioTimerPoolKey = 'home_page_audio_timers'; // 独立的音频定时器池
   
+  // 性能优化：缓存计算结果，避免重复计算
+  Map<String, dynamic>? _cachedPhoneticData;
+  String? _lastPhoneticWord;
+  
+  // 性能优化：减少setState调用的状态合并
+  bool _needsStateUpdate = false;
+  Timer? _stateUpdateTimer;
+  
   // 当前学习的单词数量（无限流模式）
   int _todayStudiedCount = 0;
   int _totalStudiedCount = 0;
@@ -168,6 +176,50 @@ class _HomePageState extends State<HomePage>
       await AlgorithmManager.instance.initialize();
   }
 
+  /// 获取音标数据（带缓存优化）
+  Future<Map<String, dynamic>> _getPhoneticData(ExtendedWordData word) async {
+    // 如果是同一个单词且有缓存，直接返回
+    if (_lastPhoneticWord == word.word && _cachedPhoneticData != null) {
+      return _cachedPhoneticData!;
+    }
+    
+    final pronunciationType = await SettingsHelper.getPronunciationType();
+    final phonetic = await word.getPhonetic(pronunciationType);
+    final hasAudio = await word.hasAudio(pronunciationType);
+    
+    // 缓存结果
+    _cachedPhoneticData = {
+      'phonetic': phonetic,
+      'hasAudio': hasAudio,
+    };
+    _lastPhoneticWord = word.word;
+    
+    return _cachedPhoneticData!;
+  }
+  
+  /// 批量状态更新，减少setState调用频率
+  void _scheduleStateUpdate(VoidCallback updateFunction) {
+    _needsStateUpdate = true;
+    updateFunction();
+    
+    // 取消之前的定时器
+    _stateUpdateTimer?.cancel();
+    
+    // 延迟执行setState，合并多个状态更新
+    _stateUpdateTimer = PerformanceOptimizer.createTimer(
+      poolKey: _timerPoolKey,
+      duration: const Duration(milliseconds: 16), // 一帧的时间
+      callback: () {
+        if (_needsStateUpdate && mounted) {
+          setState(() {
+            // 状态已在updateFunction中更新
+          });
+          _needsStateUpdate = false;
+        }
+      },
+    );
+  }
+
   /// 更新学习统计
   Future<void> _updateLearningStats() async {
     if (_currentWordBookName == null) return;
@@ -182,10 +234,11 @@ class _HomePageState extends State<HomePage>
                record.lastLearningTime.isBefore(todayEnd);
       }).toList();
       
-      setState(() {
-        _todayStudiedCount = todayRecords.length;
-        _totalStudiedCount = records.length;
-      });
+      // 使用批量状态更新
+       _scheduleStateUpdate(() {
+         _todayStudiedCount = todayRecords.length;
+         _totalStudiedCount = records.length;
+       });
   }
 
   /// 检查并重新加载词库（仅在词库发生变化时）
@@ -210,7 +263,7 @@ class _HomePageState extends State<HomePage>
   /// 加载选中词库的单词数据
   Future<void> _loadWordsFromSelectedWordBook() async {
     try {
-      setState(() {
+      _scheduleStateUpdate(() {
         _isLoadingWords = true;
         _errorMessage = null;
       });
@@ -219,7 +272,7 @@ class _HomePageState extends State<HomePage>
       final selectedWordBookName = await CacheService.getSelectedWordBook();
       
       if (selectedWordBookName == null || selectedWordBookName.isEmpty) {
-        setState(() {
+        _scheduleStateUpdate(() {
           _errorMessage = '请先选择一个词库';
           _isLoadingWords = false;
         });
@@ -230,14 +283,14 @@ class _HomePageState extends State<HomePage>
       final wordData = await CacheService.getCachedWordData(selectedWordBookName);
       
       if (wordData == null || wordData.isEmpty) {
-        setState(() {
+        _scheduleStateUpdate(() {
           _errorMessage = '词书好像空了，去收集一些新词汇吧';
           _isLoadingWords = false;
         });
         return;
       }
       
-      setState(() {
+      _scheduleStateUpdate(() {
         _words = wordData;
         _currentWordBookName = selectedWordBookName;
         _isLoadingWords = false;
@@ -253,7 +306,7 @@ class _HomePageState extends State<HomePage>
     _startWordAnimation();
       
     } catch (e) {
-      setState(() {
+      _scheduleStateUpdate(() {
         _errorMessage = '词汇好像迷路了: $e';
         _isLoadingWords = false;
       });
@@ -2404,17 +2457,7 @@ class _HomePageState extends State<HomePage>
     );
   }
   
-  /// 获取当前发音设置对应的音标和音频可用性
-  Future<Map<String, dynamic>> _getPhoneticData(ExtendedWordData word) async {
-    final pronunciationType = await SettingsHelper.getPronunciationType();
-    final phonetic = await word.getPhonetic(pronunciationType);
-    final hasAudio = await word.hasAudio(pronunciationType);
-    
-    return {
-      'phonetic': phonetic,
-      'hasAudio': hasAudio,
-    };
-  }
+
 
   /// 构建动画释义部分
   Widget _buildAnimatedMeaningSection(ExtendedWordData word) {
@@ -3890,6 +3933,13 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
+    // 清理状态更新定时器
+    _stateUpdateTimer?.cancel();
+    
+    // 清理缓存
+    _cachedPhoneticData = null;
+    _lastPhoneticWord = null;
+    
     // 清理FocusNode
     _inputFocusNode.dispose();
     
