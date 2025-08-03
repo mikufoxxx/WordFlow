@@ -576,17 +576,17 @@ class _HomePageState extends State<HomePage>
     }
     
     _wordSlideAnimations = _wordControllers.map((controller) =>
-      Tween<double>(begin: 15.0, end: 0.0).animate(
-        CurvedAnimation(
+      PerformanceOptimizer.getTween<double>('slide_tween', 12.0, 0.0).animate(
+        PerformanceOptimizer.getCurvedAnimation(
           parent: controller, 
-          curve: Curves.easeOutQuart,
+          curve: Curves.easeOutCubic,
         ),
       ),
     ).toList();
     
     _wordOpacityAnimations = _wordControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
+      PerformanceOptimizer.getTween<double>('opacity_tween', 0.0, 1.0).animate(
+        PerformanceOptimizer.getCurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutCubic,
         ),
@@ -603,16 +603,16 @@ class _HomePageState extends State<HomePage>
     );
     
     _translationSlideAnimations = _translationControllers.map((controller) =>
-      Tween<double>(begin: 12.0, end: 0.0).animate(
+      PerformanceOptimizer.getTween<double>('slide_tween', 12.0, 0.0).animate(
         CurvedAnimation(
           parent: controller, 
-          curve: Curves.easeOutQuart,
+          curve: Curves.easeOutCubic,
         ),
       ),
     ).toList();
     
     _translationOpacityAnimations = _translationControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
+      PerformanceOptimizer.getTween<double>('opacity_tween', 0.0, 1.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutCubic,
@@ -642,7 +642,7 @@ class _HomePageState extends State<HomePage>
     );
     
     _exampleSlideAnimations = _exampleControllers.map((controller) =>
-      Tween<double>(begin: 12.0, end: 0.0).animate(
+      PerformanceOptimizer.getTween<double>('slide_tween', 12.0, 0.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutQuart,
@@ -651,7 +651,7 @@ class _HomePageState extends State<HomePage>
     ).toList();
     
     _exampleOpacityAnimations = _exampleControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
+      PerformanceOptimizer.getTween<double>('opacity_tween', 0.0, 1.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutCubic,
@@ -669,16 +669,16 @@ class _HomePageState extends State<HomePage>
     );
     
     _exampleTranslationSlideAnimations = _exampleTranslationControllers.map((controller) =>
-      Tween<double>(begin: 10.0, end: 0.0).animate(
+      PerformanceOptimizer.getTween<double>('slide_tween', 12.0, 0.0).animate(
         CurvedAnimation(
           parent: controller, 
-          curve: Curves.easeOutQuart,
+          curve: Curves.easeOutCubic,
         ),
       ),
     ).toList();
     
     _exampleTranslationOpacityAnimations = _exampleTranslationControllers.map((controller) =>
-      Tween<double>(begin: 0.0, end: 1.0).animate(
+      PerformanceOptimizer.getTween<double>('opacity_tween', 0.0, 1.0).animate(
         CurvedAnimation(
           parent: controller, 
           curve: Curves.easeOutCubic,
@@ -2596,13 +2596,14 @@ class _HomePageState extends State<HomePage>
                       offset: Offset(0, slideAnimations[index].value),
                       child: Opacity(
                         opacity: opacityAnimations[index].value,
-                        child: OptimizedText(
-                          text[index],
-                          style: style,
-                        ),
+                        child: child,
                       ),
                     );
                   },
+                  child: OptimizedText(
+                    text[index],
+                    style: style,
+                  ),
                 ),
               );
             }),
@@ -2612,8 +2613,19 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// 测量文本宽度的辅助方法
+  // 文本宽度缓存
+  static final Map<String, double> _textWidthCache = {};
+  
+  /// 测量文本宽度的辅助方法（带缓存）
   double _measureTextWidth(String text, TextStyle style) {
+    // 创建缓存键，包含文本和样式信息
+    final cacheKey = '${text}_${style.fontSize}_${style.fontFamily}_${style.fontWeight}';
+    
+    // 检查缓存
+    if (_textWidthCache.containsKey(cacheKey)) {
+      return _textWidthCache[cacheKey]!;
+    }
+    
     final textSpan = TextSpan(text: text, style: style);
     final textPainter = PerformanceOptimizer.getTextPainter(
       textSpan: textSpan,
@@ -2622,6 +2634,12 @@ class _HomePageState extends State<HomePage>
     textPainter.layout();
     final width = textPainter.size.width;
     PerformanceOptimizer.returnTextPainter(textPainter);
+    
+    // 缓存结果，限制缓存大小
+    if (_textWidthCache.length < 200) {
+      _textWidthCache[cacheKey] = width;
+    }
+    
     return width;
   }
 
@@ -2685,13 +2703,14 @@ class _HomePageState extends State<HomePage>
                 offset: Offset(0, slideAnimations[index].value),
                 child: Opacity(
                   opacity: opacityAnimations[index].value,
-                  child: OptimizedText(
-                    words[index],
-                    style: style,
-                  ),
+                  child: child,
                 ),
               );
             },
+            child: OptimizedText(
+              words[index],
+              style: style,
+            ),
           );
         }),
         // 结束引号
@@ -2885,13 +2904,14 @@ class _HomePageState extends State<HomePage>
                   offset: Offset(0, slideAnimations[lastSlideIndex].value),
                   child: Opacity(
                     opacity: opacityAnimations[lastOpacityIndex].value,
-                    child: OptimizedText(
-                      char,
-                      style: style,
-                    ),
+                    child: child,
                   ),
                 );
               },
+              child: OptimizedText(
+                char,
+                style: style,
+              ),
             );
           } else {
             return OptimizedText(
@@ -2912,13 +2932,14 @@ class _HomePageState extends State<HomePage>
               offset: Offset(0, slideAnimations[globalIndex].value),
               child: Opacity(
                 opacity: opacityAnimations[globalIndex].value,
-                child: OptimizedText(
-                  char,
-                  style: style,
-                ),
+                child: child,
               ),
             );
           },
+          child: OptimizedText(
+            char,
+            style: style,
+          ),
         );
       }),
     );
@@ -3952,6 +3973,10 @@ class _HomePageState extends State<HomePage>
     _disposeBetterSentenceControllers();
     _sentenceInputController.dispose();
     _audioPlayer.dispose();
+    
+    // 清理文本宽度缓存
+    _textWidthCache.clear();
+    
     super.dispose();
   }
 }

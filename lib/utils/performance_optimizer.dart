@@ -285,20 +285,19 @@ class PerformanceOptimizer {
       ));
     }
     
-    // 预热Tween池
-     final preWarmTweens = _preWarmPoolSizes['opacity_tween'] ?? 0;
-     for (int i = 0; i < preWarmTweens; i++) {
-       final key = 'preWarm_opacity_$i';
-       final pool = _tweenPool[key] ??= [];
-       pool.add(Tween<double>(begin: 0.0, end: 1.0));
-     }
-     
-     final preWarmSlideTweens = _preWarmPoolSizes['slide_tween'] ?? 0;
-     for (int i = 0; i < preWarmSlideTweens; i++) {
-       final key = 'preWarm_slide_$i';
-       final pool = _tweenPool[key] ??= [];
-       pool.add(Tween<Offset>(begin: Offset.zero, end: Offset.zero));
-     }
+    // 预热opacity Tween池
+    final opacityPool = _tweenPool['opacity_tween'] ??= [];
+    final preWarmOpacityTweens = _preWarmPoolSizes['opacity_tween'] ?? 0;
+    for (int i = 0; i < preWarmOpacityTweens; i++) {
+      opacityPool.add(Tween<double>(begin: 0.0, end: 1.0));
+    }
+    
+    // 预热slide Tween池
+    final slidePool = _tweenPool['slide_tween'] ??= [];
+    final preWarmSlideTweens = _preWarmPoolSizes['slide_tween'] ?? 0;
+    for (int i = 0; i < preWarmSlideTweens; i++) {
+      slidePool.add(Tween<double>(begin: 0.0, end: 12.0));
+    }
   }
   
   /// 检查内存压力
