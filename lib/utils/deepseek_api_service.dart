@@ -116,6 +116,12 @@ class DeepSeekApiService {
 3. 句子意思是否清晰
 4. 是否符合英语表达习惯
 
+**评价指导原则：**
+- 提供个性化、具体的建议，避免模板化的评价
+- 即使句子正确，也要根据具体情况给出有针对性的建议
+- 关注句子的表达水平、词汇丰富度、语言地道性等方面
+- 如果句子基础正确但可以改进，在suggestions中提供具体的改进方向
+
 **重要要求：**
 - 这是一个单词学习练习，用户必须使用目标单词"$word"
 - 在提供修改建议和更好的句子时，必须保持目标单词"$word"不变
@@ -127,15 +133,12 @@ class DeepSeekApiService {
   "isCorrect": true/false,
   "score": 0-100,
   "errors": [
-    {
-      "type": "语法错误/用法错误/拼写错误/表达问题",
-      "description": "错误描述",
-      "position": "错误位置"
-    }
+    "具体的错误描述1",
+    "具体的错误描述2"
   ],
   "suggestions": [
-    "修改建议1",
-    "修改建议2"
+    "针对这个句子的具体建议1",
+    "针对这个句子的具体建议2"
   ],
   "betterSentences": [
     "更好的句子示例1（必须包含目标单词$word）",
@@ -143,7 +146,10 @@ class DeepSeekApiService {
   ]
 }
 
-如果句子完全正确，errors数组为空，suggestions可以提供一些让句子更地道的建议。
+注意：
+- errors数组：只有在句子有明显错误时才填入，描述具体的语法、用法或表达问题
+- suggestions数组：即使句子正确，也要提供有价值的改进建议，如让表达更地道、更丰富、更准确等
+- 避免使用"您的句子语法正确，用词恰当"这样的通用评价，要针对具体句子给出个性化反馈
 ''';
   }
   
@@ -165,7 +171,19 @@ class DeepSeekApiService {
       
       final isCorrect = jsonData['isCorrect'] ?? false;
       final score = jsonData['score'] ?? 0;
+      
+      // 正确解析errors数组
       final errors = <String>[];
+      if (jsonData['errors'] != null) {
+        final errorsData = jsonData['errors'] as List;
+        for (final error in errorsData) {
+          if (error is String) {
+            errors.add(error);
+          } else if (error is Map && error['description'] != null) {
+            errors.add(error['description'].toString());
+          }
+        }
+      }
       
       final suggestions = (jsonData['suggestions'] as List?)?.map((s) => s.toString()).toList() ?? [];
       final betterSentences = (jsonData['betterSentences'] as List?)?.map((s) => s.toString()).toList() ?? [];

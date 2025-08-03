@@ -3622,23 +3622,38 @@ class _HomePageState extends State<HomePage>
               ),
             )),
           ] else ...[
-            Text(
-              '• 您的句子语法正确，用词恰当',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
-                height: 1.4,
+            // 显示API返回的实际建议，如果没有建议则显示默认正确评价
+            if (_judgmentResult!.suggestions.isNotEmpty) ...[
+              ..._judgmentResult!.suggestions.map((suggestion) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '• $suggestion',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                    height: 1.4,
+                  ),
+                ),
+              )),
+            ] else ...[
+              Text(
+                '• 您的句子语法正确，用词恰当',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                  height: 1.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '• 参考句子提供了更地道的表达方式',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
-                height: 1.4,
+              const SizedBox(height: 4),
+              Text(
+                '• 句子表达清晰，符合英语习惯',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                  height: 1.4,
+                ),
               ),
-            ),
+            ],
           ],
         ],
       ),
