@@ -48,11 +48,13 @@ void main() async {
   // 初始化自动更新服务
   await AutoUpdateService.instance.initialize();
   
-  // 预热性能优化器对象池
-  PerformanceOptimizer.preWarmPools();
-  
   // 检查API Key和学习模式的兼容性
   await _validateLearningModeAndApiKey();
+  
+  // 延迟预热性能优化器对象池到首帧后，减少启动卡顿
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PerformanceOptimizer.preWarmPools();
+  });
   
   runApp(const WordFlowApp());
 }
@@ -116,10 +118,7 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
       // 加载主题偏好
       _loadThemePreference();
       
-      // 初始化学习数据服务
-      await LearningDataService.instance.initialize();
-      
-      // 初始化算法管理器
+      // 初始化算法管理器（LearningDataService 已在 main() 中初始化）
       await AlgorithmManager.instance.initialize();
 
   }
@@ -129,15 +128,17 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
     final prefs = await SharedPreferences.getInstance();
     final isDarkMode = prefs.getBool('enable_dark_mode') ?? false;
     
-    setState(() {
-      _isDarkMode = isDarkMode;
-    });
-    
-    // 立即设置对应的系统UI覆盖层
-    if (isDarkMode) {
-      AppTheme.setDarkSystemUIOverlay();
-    } else {
-      AppTheme.setLightSystemUIOverlay();
+    if (_isDarkMode != isDarkMode) {
+      setState(() {
+        _isDarkMode = isDarkMode;
+      });
+      
+      // 设置对应的系统UI覆盖层
+      if (isDarkMode) {
+        AppTheme.setDarkSystemUIOverlay();
+      } else {
+        AppTheme.setLightSystemUIOverlay();
+      }
     }
   }
 
