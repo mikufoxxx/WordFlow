@@ -22,6 +22,46 @@ class DeepSeekApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('deepseek_api_key', apiKey);
   }
+
+  /// 测试API连接
+  static Future<bool> testApiConnection() async {
+    try {
+      final apiKey = await getApiKey();
+      if (apiKey == null || apiKey.isEmpty) {
+        return false;
+      }
+      
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+        'User-Agent': 'WordFlow/1.0',
+      };
+      
+      final body = jsonEncode({
+        'model': 'deepseek-chat',
+        'messages': [
+          {
+            'role': 'user',
+            'content': 'Hello, this is a test.',
+          },
+        ],
+        'temperature': 0.1,
+        'max_tokens': 10,
+        'stream': false,
+      });
+      
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: headers,
+        body: body,
+      ).timeout(Duration(seconds: 10));
+      
+      return response.statusCode == 200;
+      
+    } catch (e) {
+      return false;
+    }
+  }
   
   /// 判断用户造句是否正确
   /// 
@@ -287,21 +327,20 @@ class DeepSeekApiService {
   /// 构建例句生成提示词
   static String _buildExamplePrompt(String word, String translation) {
     return '''
-请为以下英语单词生成一个简洁明了的例句：
+请为以下英语单词生成一个简洁、实用的例句：
 
 目标单词：$word
 单词释义：$translation
 
 要求：
-1. 例句要简短（不超过15个单词）
-2. 语法正确，表达自然
-3. 能够清楚体现单词的含义和用法
-4. 适合英语学习者理解
-5. 使用常见词汇，避免过于复杂的表达
+1. 例句要简洁明了，适合学习者理解
+2. 要体现该单词的主要含义
+3. 句子长度适中，不要过于复杂
+4. 提供准确的中文翻译
 
-请严格按照以下JSON格式返回结果：
+请按照以下JSON格式返回结果：
 {
-  "example": "包含目标单词的英文例句",
+  "example": "包含目标单词的英语例句",
   "translation": "例句的中文翻译"
 }
 ''';
@@ -310,7 +349,6 @@ class DeepSeekApiService {
   /// 解析例句生成结果
   static ExampleSentenceResult _parseExampleResult(String content, String word) {
     try {
-      // 尝试提取JSON部分
       final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(content);
       if (jsonMatch == null) {
         return ExampleSentenceResult(
@@ -323,8 +361,8 @@ class DeepSeekApiService {
       final jsonStr = jsonMatch.group(0)!;
       final jsonData = jsonDecode(jsonStr);
       
-      final example = jsonData['example'] ?? "No example available for '$word'.";
-      final translation = jsonData['translation'] ?? "暂无例句，请填入API Key获取更多例句";
+      final example = jsonData['example']?.toString() ?? "No example available for '$word'.";
+      final translation = jsonData['translation']?.toString() ?? "暂无例句，请填入API Key获取更多例句";
       
       return ExampleSentenceResult(
         example: example,
@@ -340,43 +378,112 @@ class DeepSeekApiService {
     }
   }
 
-  /// 测试API连接
-  static Future<bool> testApiConnection() async {
+  /// 生成同根词/近义词/根词
+  ///
+  /// - 在没有API Key时返回null（调用方据此不显示）
+  /// - 最多返回1个根词、至多[maxRelatives]个同根词、至多[maxSynonyms]个近义词
+  static Future<WordRelationsResult?> generateWordRelations({
+    required String word,
+    required String translation,
+    int maxRelatives = 3,
+    int maxSynonyms = 3,
+  }) async {
     try {
       final apiKey = await getApiKey();
       if (apiKey == null || apiKey.isEmpty) {
-        return false;
+        // 无Key则不显示
+        return null;
       }
-      
+
+      final prompt = _buildRelationsPrompt(word, translation, maxRelatives, maxSynonyms);
+
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $apiKey',
         'User-Agent': 'WordFlow/1.0',
       };
-      
+
       final body = jsonEncode({
         'model': 'deepseek-chat',
         'messages': [
           {
+            'role': 'system',
+            'content': '你是一个专业的英语词源与词汇专家，帮助学习者提供简洁的同根词、近义词信息。只返回JSON。',
+          },
+          {
             'role': 'user',
-            'content': 'Hello, this is a test.',
+            'content': prompt,
           },
         ],
-        'temperature': 0.1,
-        'max_tokens': 10,
+        'temperature': 0.5,
+        'max_tokens': 300,
         'stream': false,
       });
-      
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: headers,
-        body: body,
-      ).timeout(Duration(seconds: 10));
-      
-      return response.statusCode == 200;
-      
+
+      final response = await http
+          .post(Uri.parse(_baseUrl), headers: headers, body: body)
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData['choices'] != null && jsonData['choices'].isNotEmpty) {
+          final content = jsonData['choices'][0]['message']['content'];
+          return _parseRelationsResult(content, maxRelatives, maxSynonyms);
+        }
+      }
     } catch (e) {
-      return false;
+      // 忽略异常，返回null以便不显示
+    }
+    return null;
+  }
+
+  static String _buildRelationsPrompt(String word, String translation, int maxRelatives, int maxSynonyms) {
+    return '''
+请为以下英语单词提供同根词与近义词信息，并尽量简洁：
+
+目标单词：$word
+单词释义：$translation
+
+要求：
+1. root：最多给出1个该词的"词根/来源词"（若无法确定则置空字符串）
+2. relatives：给出$maxRelatives个以内的同根词（派生/词形变化等），仅列出单词本身
+3. synonyms：给出$maxSynonyms个以内的近义词，仅列出单词本身
+4. 返回严格JSON，字段名固定：root、relatives、synonyms
+5. 示例：
+{
+  "root": "",
+  "relatives": ["related1", "related2"],
+  "synonyms": ["syn1", "syn2"]
+}
+''';
+  }
+
+  static WordRelationsResult? _parseRelationsResult(String content, int maxRelatives, int maxSynonyms) {
+    try {
+      final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(content);
+      if (jsonMatch == null) return null;
+      final jsonStr = jsonMatch.group(0)!;
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+      String? root = (data['root']?.toString() ?? '').trim();
+      if (root.isEmpty) root = null;
+
+      final relList = (data['relatives'] as List<dynamic>? ?? [])
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      final synList = (data['synonyms'] as List<dynamic>? ?? [])
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      return WordRelationsResult(
+        root: root,
+        relatives: relList.take(maxRelatives).toList(),
+        synonyms: synList.take(maxSynonyms).toList(),
+      );
+    } catch (e) {
+      return null;
     }
   }
 }
@@ -400,8 +507,6 @@ class SentenceJudgmentResult {
   });
 }
 
-
-
 /// 例句生成结果
 class ExampleSentenceResult {
   final String example;
@@ -413,4 +518,13 @@ class ExampleSentenceResult {
     required this.exampleTranslation,
     this.errorMessage,
   });
+}
+
+/// 同根/近义词生成结果
+class WordRelationsResult {
+  final String? root; // 词根/来源词（可选）
+  final List<String> relatives; // 同根词
+  final List<String> synonyms; // 近义词
+
+  WordRelationsResult({this.root, this.relatives = const [], this.synonyms = const []});
 }

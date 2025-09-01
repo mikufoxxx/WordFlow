@@ -9,6 +9,7 @@ import '../utils/responsive_helper.dart';
 import '../utils/sound_service.dart';
 import '../utils/performance_optimizer.dart';
 
+
 /// 单词详情页面
 /// 显示单词的完整学习历史和时间轴
 class WordDetailPage extends StatefulWidget {
@@ -25,61 +26,63 @@ class WordDetailPage extends StatefulWidget {
 
 class _WordDetailPageState extends State<WordDetailPage> {
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkBackgroundColor 
-          : AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: OptimizedText(
-          widget.record.word,
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkAccentGreen 
-                : AppTheme.darkGray,
-          ),
-        ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? AppTheme.darkBackgroundColor 
-            : AppTheme.backgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new, 
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkPrimaryGray 
-                : AppTheme.primaryGray,
-          ),
-          onPressed: () {
-            SoundService.playTapOffSound();
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        padding: ResponsiveHelper.getResponsivePadding(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 单词基本信息卡片
-            _buildWordInfoCard(),
-            
+  void initState() {
+    super.initState();
+  }
+ 
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+       backgroundColor: Theme.of(context).brightness == Brightness.dark 
+           ? AppTheme.darkBackgroundColor 
+           : AppTheme.backgroundColor,
+       appBar: AppBar(
+         title: OptimizedText(
+           widget.record.word,
+           style: TextStyle(
+             color: Theme.of(context).brightness == Brightness.dark 
+                 ? AppTheme.darkAccentGreen 
+                 : AppTheme.darkGray,
+           ),
+         ),
+         backgroundColor: Theme.of(context).brightness == Brightness.dark 
+             ? AppTheme.darkBackgroundColor 
+             : AppTheme.backgroundColor,
+         elevation: 0,
+         scrolledUnderElevation: 0,
+         leading: IconButton(
+           icon: Icon(
+             Icons.arrow_back_ios_new, 
+             color: Theme.of(context).brightness == Brightness.dark 
+                 ? AppTheme.darkPrimaryGray 
+                 : AppTheme.primaryGray,
+           ),
+           onPressed: () {
+             SoundService.playTapOffSound();
+             Navigator.pop(context);
+           },
+         ),
+       ),
+       body: SingleChildScrollView(
+         physics: const ClampingScrollPhysics(),
+         padding: ResponsiveHelper.getResponsivePadding(context),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+             // 单词基本信息卡片
+             _buildWordInfoCard(),
             const SizedBox(height: 20),
             
             // 学习状态概览
             _buildLearningOverview(),
-            
             const SizedBox(height: 20),
-            
             // 学习时间轴
             _buildLearningTimeline(),
-          ],
-        ),
-      ),
-    );
-  }
+           ],
+         ),
+       ),
+     );
+   }
 
   /// 构建单词基本信息卡片
   Widget _buildWordInfoCard() {

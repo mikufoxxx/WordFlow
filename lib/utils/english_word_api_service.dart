@@ -50,6 +50,9 @@ class WordDetailResponse {
   final List<WordSentence> sentences;
   final List<WordPhrase> phrases;
   final String bookId;
+  // 新增：同根词/同义词
+  final List<WordRelGroup> relWords;
+  final List<WordSynGroup> synonyms;
   
   WordDetailResponse({
     required this.word,
@@ -61,6 +64,8 @@ class WordDetailResponse {
     required this.sentences,
     required this.phrases,
     required this.bookId,
+    this.relWords = const [],
+    this.synonyms = const [],
   });
   
   factory WordDetailResponse.fromJson(Map<String, dynamic> json) {
@@ -80,14 +85,20 @@ class WordDetailResponse {
           ?.map((e) => WordPhrase.fromJson(e))
           .toList() ?? [],
       bookId: json['bookId'] ?? '',
+      relWords: (json['relWords'] as List<dynamic>?)
+              ?.map((e) => WordRelGroup.fromJson(e))
+              .toList() ?? [],
+      synonyms: (json['synonyms'] as List<dynamic>?)
+              ?.map((e) => WordSynGroup.fromJson(e))
+              .toList() ?? [],
     );
   }
 }
 
 /// 单词翻译模型
 class WordTranslation {
-  final String pos;      // 词性
-  final String tranCn;   // 中文翻译
+  final String pos;         // 词性
+  final String tranCn;      // 中文翻译
   
   WordTranslation({
     required this.pos,
@@ -96,16 +107,16 @@ class WordTranslation {
   
   factory WordTranslation.fromJson(Map<String, dynamic> json) {
     return WordTranslation(
-      pos: json['pos'] ?? '',
-      tranCn: json['tran_cn'] ?? '',
+      pos: json['pos']?.toString() ?? '',
+      tranCn: json['tran_cn']?.toString() ?? '',
     );
   }
 }
 
 /// 单词例句模型
 class WordSentence {
-  final String sContent;   // 英文例句
-  final String sCn;        // 中文翻译
+  final String sContent;    // 英文例句
+  final String sCn;         // 中文翻译
   
   WordSentence({
     required this.sContent,
@@ -114,8 +125,8 @@ class WordSentence {
   
   factory WordSentence.fromJson(Map<String, dynamic> json) {
     return WordSentence(
-      sContent: json['s_content'] ?? '',
-      sCn: json['s_cn'] ?? '',
+      sContent: json['s_content']?.toString() ?? '',
+      sCn: json['s_cn']?.toString() ?? '',
     );
   }
 }
@@ -134,6 +145,66 @@ class WordPhrase {
     return WordPhrase(
       pContent: json['p_content'] ?? '',
       pCn: json['p_cn'] ?? '',
+    );
+  }
+}
+
+/// 同根词分组（按词性）
+class WordRelGroup {
+  final String pos; // 词性，注意API可能返回Pos
+  final List<RelHwd> hwds;
+
+  WordRelGroup({required this.pos, required this.hwds});
+
+  factory WordRelGroup.fromJson(Map<String, dynamic> json) {
+    final rawHwds = (json['Hwds'] as List<dynamic>?) ?? [];
+    return WordRelGroup(
+      pos: (json['Pos'] ?? json['pos'] ?? '').toString(),
+      hwds: rawHwds.map((e) => RelHwd.fromJson(e)).toList(),
+    );
+  }
+}
+
+class RelHwd {
+  final String hwd;  // 单词
+  final String tran; // 翻译
+
+  RelHwd({required this.hwd, required this.tran});
+
+  factory RelHwd.fromJson(Map<String, dynamic> json) {
+    return RelHwd(
+      hwd: json['hwd']?.toString() ?? '',
+      tran: json['tran']?.toString() ?? '',
+    );
+  }
+}
+
+/// 近义词分组
+class WordSynGroup {
+  final String pos; // 词性
+  final String tran; // 翻译概述
+  final List<SynHwd> hwds;
+
+  WordSynGroup({required this.pos, required this.tran, required this.hwds});
+
+  factory WordSynGroup.fromJson(Map<String, dynamic> json) {
+    final rawHwds = (json['Hwds'] as List<dynamic>?) ?? [];
+    return WordSynGroup(
+      pos: (json['pos'] ?? json['Pos'] ?? '').toString(),
+      tran: (json['tran'] ?? json['tran_cn'] ?? '').toString(),
+      hwds: rawHwds.map((e) => SynHwd.fromJson(e)).toList(),
+    );
+  }
+}
+
+class SynHwd {
+  final String word;
+
+  SynHwd({required this.word});
+
+  factory SynHwd.fromJson(Map<String, dynamic> json) {
+    return SynHwd(
+      word: (json['word'] ?? json['hwd'] ?? '').toString(),
     );
   }
 }

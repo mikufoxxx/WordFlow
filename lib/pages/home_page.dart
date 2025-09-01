@@ -127,6 +127,12 @@ class _HomePageState extends State<HomePage>
   // 当前显示的单词（扩展版本，包含音标、例句等）
   ExtendedWordData? _currentWord;
   
+  // 同根词/近义词状态
+  bool _relationsLoading = false;
+  String? _rootWord;
+  List<String> _relatives = [];
+  List<String> _synonyms = [];
+  
   // 撤回功能相关
   ExtendedWordData? _previousWord;
   
@@ -260,6 +266,68 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  /// 加载单词关系（同根词/近义词）
+  Future<void> _loadWordRelations() async {
+    if (_currentWord == null) return;
+    
+    setState(() => _relationsLoading = true);
+
+    try {
+      // 先从词典API获取
+      final detail = await EnglishWordApiService.getWordDetails(_currentWord!.word);
+      if (detail != null) {
+        final rels = <String>[];
+        for (final group in detail.relWords) {
+          for (final h in group.hwds) {
+            if (h.hwd.trim().isNotEmpty) rels.add(h.hwd.trim());
+          }
+        }
+        final syns = <String>[];
+        for (final group in detail.synonyms) {
+          for (final h in group.hwds) {
+            if (h.word.trim().isNotEmpty) syns.add(h.word.trim());
+          }
+        }
+
+        if (rels.isNotEmpty || syns.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _relatives = rels.toSet().toList();
+              _synonyms = syns.toSet().toList();
+              _relationsLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
+      // 若没有相应字段，则尝试用DeepSeek生成（无API Key则返回null，不显示）
+      final ai = await DeepSeekApiService.generateWordRelations(
+        word: _currentWord!.word,
+        translation: _currentWord!.translation,
+        maxRelatives: 3,
+        maxSynonyms: 3,
+      );
+
+      if (!mounted) return;
+      if (ai != null) {
+        setState(() {
+          _rootWord = ai.root;
+          _relatives = ai.relatives;
+          _synonyms = ai.synonyms;
+          _relationsLoading = false;
+        });
+      } else {
+        setState(() => _relationsLoading = false);
+      }
+    } catch (e) {
+      debugPrint('加载词汇关系失败: $e');
+      if (mounted) {
+        setState(() => _relationsLoading = false);
+      }
+    }
+  }
+
   /// 加载选中词库的单词数据
   Future<void> _loadWordsFromSelectedWordBook() async {
     try {
@@ -358,6 +426,9 @@ class _HomePageState extends State<HomePage>
       
       // 创建扩展的单词数据（从API获取详细信息）
       _currentWord = await ExtendedWordData.fromWordData(selectedWordData, pronunciationType);
+      
+      // 加载单词关系（同根词/近义词）
+      _loadWordRelations();
     } catch (e) {
       // 如果推荐算法出错，回退到随机选择
       debugPrint('智能推荐失败，使用随机选择: $e');
@@ -366,6 +437,9 @@ class _HomePageState extends State<HomePage>
       
       final pronunciationType = await SettingsHelper.getPronunciationType();
       _currentWord = await ExtendedWordData.fromWordData(wordData, pronunciationType);
+      
+      // 加载单词关系（同根词/近义词）
+      _loadWordRelations();
     }
   }
 
@@ -2497,6 +2571,9 @@ class _HomePageState extends State<HomePage>
                       
                       const SizedBox(height: 8), // 统一间距为8，与音标-释义间距保持一致
                       
+                      // 同根词/近义词部分（在释义下面，例句上面）
+                      _buildRelationsSection(),
+                      
                       // 例句容器
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
@@ -2556,6 +2633,117 @@ class _HomePageState extends State<HomePage>
           ),
         );
       },
+    );
+  }
+
+  /// 构建关系词展示区域（主页）
+  Widget _buildRelationsSection() {
+    final hasData = (_rootWord != null && _rootWord!.isNotEmpty) || _relatives.isNotEmpty || _synonyms.isNotEmpty;
+    if (!hasData && !_relationsLoading) return const SizedBox.shrink();
+
+    final titleStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
+    );
+
+    // 芯片文本使用与音标相同的字号
+    final chipTextStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      fontSize: 16,
+    );
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Theme.of(context).cardColor.withOpacity(0.5)
+            : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            width: 4,
+            color: Theme.of(context).primaryColor,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_tree_outlined, size: 18, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 6),
+              Text('同根词 / 近义词', style: titleStyle),
+              const Spacer(),
+              if (_relationsLoading)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (_rootWord != null && _rootWord!.isNotEmpty) ...[
+            Text('词根', style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                Chip(
+                  label: Text(_rootWord!, style: chipTextStyle),
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white10
+                      : Colors.grey.shade200,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_relatives.isNotEmpty) ...[
+            Text('同根词', style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _relatives.take(12).map((r) => Chip(
+                label: Text(r, style: chipTextStyle),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10
+                    : Colors.grey.shade200,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_synonyms.isNotEmpty) ...[
+            Text('近义词', style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _synonyms.take(12).map((s) => Chip(
+                label: Text(s, style: chipTextStyle),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10
+                    : Colors.grey.shade200,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+              )).toList(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
