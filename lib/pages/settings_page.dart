@@ -8,7 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../utils/app_theme.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/english_word_api_service.dart';
-import '../utils/deepseek_api_service.dart';
+import '../utils/llm_api_service.dart';
 import '../utils/settings_helper.dart';
 import '../utils/learning_data_service.dart';
 import '../utils/cache_service.dart';
@@ -19,11 +19,12 @@ import '../utils/performance_optimizer.dart';
 import '../utils/auto_update_service.dart';
 import '../utils/render_compatibility_helper.dart';
 import '../utils/compatible_page_route.dart';
+import '../widgets/ai_provider_settings_card.dart';
 import '../main.dart';
 
 /// 导入模式枚举
 enum ImportMode {
-  update,    // 数据更新：只更新学习进度更好的记录
+  update, // 数据更新：只更新学习进度更好的记录
   overwrite, // 全部覆盖：清空现有数据，完全替换
 }
 
@@ -42,16 +43,14 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _smartSyncEnabled = true; // 智能同步开关状态
   PronunciationType _pronunciationType = PronunciationType.uk;
   LearningMode? _learningMode; // 改为可空类型，避免默认值闪烁
-  
+
   // 版本信息
   String _appVersion = '加载中...';
 // 当前应用版本
-  
-  // DeepSeek API设置
-  final TextEditingController _deepSeekApiKeyController = TextEditingController();
-  bool _isApiKeyValid = false;
-  bool _showApiKey = false;
-  
+
+  // AI 接口设置
+  bool _isAiConfigValid = false;
+
   // 学习算法设置
 
   @override
@@ -59,69 +58,11 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     _loadSettings();
     _loadAppVersion();
-    _deepSeekApiKeyController.addListener(_onApiKeyChanged);
   }
-  
+
   @override
   void dispose() {
-    _deepSeekApiKeyController.dispose();
     super.dispose();
-  }
-  
-  /// API Key 变化监听
-  void _onApiKeyChanged() {
-    final apiKey = _deepSeekApiKeyController.text.trim();
-    final isValid = apiKey.isNotEmpty && apiKey.length >= 10;
-    
-    if (isValid != _isApiKeyValid) {
-      setState(() {
-        _isApiKeyValid = isValid;
-      });
-      
-      // 如果API Key变为无效且当前是深入学习模式，自动切换到快速学习模式
-      if (!isValid && _learningMode == LearningMode.deepLearning) {
-        setState(() {
-          _learningMode = LearningMode.quickMemory;
-        });
-        _saveSettings();
-        
-        // 显示提示信息
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.warning_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OptimizedText(
-                    'API Key无效，已自动切换到快速学习模式',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -129,8 +70,8 @@ class _SettingsPageState extends State<SettingsPage> {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkBackgroundColor 
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkBackgroundColor
               : AppTheme.backgroundColor,
           appBar: AcrylicAppBar(
             title: '设置',
@@ -171,7 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                   // 学习模式设置部分
                   _buildSectionHeader('学习模式'),
-                  if (_learningMode != null) 
+                  if (_learningMode != null)
                     _buildSettingsCard([
                       _buildRadioListTile<LearningMode>(
                         title: '快速记忆',
@@ -189,55 +130,61 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       _buildRadioListTile<LearningMode>(
                         title: '深入学习',
-                        subtitle: _isApiKeyValid 
-                          ? '包含造句练习和AI评估功能'
-                          : '需要配置DeepSeek API Key才能使用此功能',
+                        subtitle: _isAiConfigValid
+                            ? '包含造句练习和 AI 评估功能'
+                            : '需要先完成 AI 接口配置才能使用此功能',
                         value: LearningMode.deepLearning,
                         groupValue: _learningMode!,
-                        onChanged: _isApiKeyValid ? (LearningMode? value) {
-                          if (value != null) {
-                            setState(() {
-                              _learningMode = value;
-                            });
-                            _saveSettings();
-                          }
-                        } : (LearningMode? value) {
-                          // API Key无效时，显示提示但不执行任何操作
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_outlined,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: RenderCompatibilityHelper.createCompatibleText(
-                                      '请先配置有效的DeepSeek API Key',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          color: Theme.of(context).brightness == Brightness.dark
-                                              ? Colors.white
-                                              : Colors.black87
-                                      ),
+                        onChanged: _isAiConfigValid
+                            ? (LearningMode? value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _learningMode = value;
+                                  });
+                                  _saveSettings();
+                                }
+                              }
+                            : (LearningMode? value) {
+                                // API Key无效时，显示提示但不执行任何操作
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_outlined,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: RenderCompatibilityHelper
+                                              .createCompatibleText(
+                                            '请先完成有效的 AI 接口配置',
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white
+                                                    : Colors.black87),
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    backgroundColor:
+                                        Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppTheme.coolGray600
+                                            : AppTheme.coolGray300,
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.all(16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    duration: const Duration(seconds: 2),
                                   ),
-                                ],
-                              ),
-                              backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                  ? AppTheme.coolGray600
-                                  : AppTheme.coolGray300,
-                              behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.all(16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
+                                );
+                              },
                       ),
                     ])
                   else
@@ -253,12 +200,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ),
                         ),
-                        title: RenderCompatibilityHelper.createCompatibleText('正在加载学习模式设置...'),
+                        title: RenderCompatibilityHelper.createCompatibleText(
+                            '正在加载学习模式设置...'),
                         dense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                       ),
                     ]),
-                    
+
                   const SizedBox(height: 16),
 
                   // 发音设置部分
@@ -291,7 +240,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ]),
 
                   const SizedBox(height: 16),
-                  
+
                   // AI设置部分
                   _buildSectionHeader('AI设置'),
                   _buildSettingsCard([
@@ -356,28 +305,31 @@ class _SettingsPageState extends State<SettingsPage> {
                               children: [
                                 Icon(
                                   value ? Icons.sync : Icons.sync_disabled,
-                                  color: Theme.of(context).brightness == Brightness.dark
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? Colors.white
                                       : Colors.black87,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: RenderCompatibilityHelper.createCompatibleText(
+                                  child: RenderCompatibilityHelper
+                                      .createCompatibleText(
                                     value ? '智能同步已开启' : '智能同步已关闭',
                                     style: TextStyle(
                                         fontSize: 14,
-                                        color: Theme.of(context).brightness == Brightness.dark
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
                                             ? Colors.white
-                                            : Colors.black87
-                                    ),
+                                            : Colors.black87),
                                   ),
                                 ),
                               ],
                             ),
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                ? AppTheme.darkCardColor
-                                : AppTheme.cardColor,
+                            backgroundColor:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.darkCardColor
+                                    : AppTheme.cardColor,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.all(16),
                             shape: RoundedRectangleBorder(
@@ -445,17 +397,18 @@ class _SettingsPageState extends State<SettingsPage> {
                                     '这是一个彩蛋...',
                                     style: TextStyle(
                                         fontSize: 14,
-                                        color: Theme.of(context).brightness == Brightness.dark
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
                                             ? Colors.white
-                                            : Colors.black87
-                                    ),
+                                            : Colors.black87),
                                   ),
                                 ),
                               ],
                             ),
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                ? AppTheme.coolGray600
-                                : AppTheme.coolGray300,
+                            backgroundColor:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.coolGray600
+                                    : AppTheme.coolGray300,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.all(16),
                             shape: RoundedRectangleBorder(
@@ -483,9 +436,10 @@ class _SettingsPageState extends State<SettingsPage> {
       child: OptimizedText(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryTextColor),
-        ),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.getPrimaryTitleColor(context,
+                  lightColor: AppTheme.primaryTextColor),
+            ),
       ),
     );
   }
@@ -494,25 +448,25 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsCard(List<Widget> children) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkCardColor 
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkCardColor
           : AppTheme.cardColor,
       elevation: 0, // 移除默认阴影，使用自定义阴影
       shadowColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkCardColor 
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
               : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: Theme.of(context).brightness == Brightness.dark 
-              ? null 
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
               : [
-            BoxShadow(
-              color: AppTheme.coolGray200.withOpacity(0.25),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
+                  BoxShadow(
+                    color: AppTheme.coolGray200.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
                 ],
         ),
         child: Column(
@@ -567,7 +521,7 @@ class _SettingsPageState extends State<SettingsPage> {
       title: OptimizedText(
         title,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
+          color: Theme.of(context).brightness == Brightness.dark
               ? AppTheme.darkPrimaryTextColor
               : AppTheme.darkGray,
         ),
@@ -575,8 +529,8 @@ class _SettingsPageState extends State<SettingsPage> {
       subtitle: OptimizedText(
         subtitle,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.mediumGray 
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.mediumGray
               : AppTheme.coolGray500,
         ),
       ),
@@ -598,7 +552,7 @@ class _SettingsPageState extends State<SettingsPage> {
       activeTrackColor: Theme.of(context).brightness == Brightness.dark
           ? AppTheme.darkSecondaryTextColor
           : AppTheme.darkAccentGreen,
-      activeColor: Theme.of(context).brightness == Brightness.dark 
+      activeColor: Theme.of(context).brightness == Brightness.dark
           ? AppTheme.secondaryTextColor
           : AppTheme.secondaryTextColor,
       dense: true,
@@ -618,7 +572,7 @@ class _SettingsPageState extends State<SettingsPage> {
       title: OptimizedText(
         title,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
+          color: Theme.of(context).brightness == Brightness.dark
               ? AppTheme.darkPrimaryTextColor
               : AppTheme.darkGray,
         ),
@@ -626,8 +580,8 @@ class _SettingsPageState extends State<SettingsPage> {
       subtitle: OptimizedText(
         subtitle,
         style: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.mediumGray 
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.mediumGray
               : AppTheme.coolGray500,
         ),
       ),
@@ -639,274 +593,101 @@ class _SettingsPageState extends State<SettingsPage> {
         }
         onChanged(newValue);
       },
-      activeColor: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkPrimaryGray 
+      activeColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkPrimaryGray
           : AppTheme.primaryGray,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 
-
-
-  /// 构建API Key设置项
+  /// 构建 AI 接口设置项
   Widget _buildApiKeyTile() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.vpn_key_outlined,
-                size: 20,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 8),
-              OptimizedText(
-                'DeepSeek API Key',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.darkPrimaryTextColor 
-                      : AppTheme.primaryTextColor,
-                ),
-              ),
-              if (_isApiKeyValid)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: Theme.of(context).brightness == Brightness.dark 
-                        ? null 
-                        : [
-                            BoxShadow(
-                              color: AppTheme.coolGray200.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                  ),
-                  child: OptimizedText(
-                    '已配置',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _deepSeekApiKeyController,
-            decoration: InputDecoration(
-              hintText: '请输入DeepSeek API Key',
-              hintStyle: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkSecondaryTextColor 
-                    : AppTheme.secondaryTextColor,
-                fontSize: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                  width: 1,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: Theme.of(context).primaryColor,
-                  width: 2,
-                ),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isApiKeyValid)
-                    Icon(
-                      Icons.check_circle_outlined,
-                      color: Colors.green.shade600,
-                      size: 20,
-                    ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.paste,
-                      size: 20,
-                    ),
-                    onPressed: _pasteApiKey,
-                    tooltip: '粘贴API Key',
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _showApiKey ? Icons.visibility_off : Icons.visibility,
-                      size: 20,
-                      color: Theme.of(context).brightness == Brightness.dark 
-                          ? AppTheme.darkSecondaryTextColor 
-                          : AppTheme.secondaryTextColor,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showApiKey = !_showApiKey;
-                      });
-                    },
-                    tooltip: _showApiKey ? '隐藏API Key' : '显示API Key',
-                  ),
-                ],
-              ),
-            ),
-            style: const TextStyle(fontSize: 14),
-            obscureText: !_showApiKey,
-            onChanged: (_) => _saveSettings(),
-          ),
-          const SizedBox(height: 6),
-          OptimizedText(
-            '用于AI造句判断功能，请在DeepSeek官网获取API Key',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkSecondaryTextColor 
-                  : AppTheme.secondaryTextColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: _testApiConnection,
-                icon: Icon(
-                  Icons.network_check, 
-                  size: 16,
-                  color: Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.darkPrimaryGray 
-                      : AppTheme.primaryGray,
-                ),
-                label: OptimizedText(
-                  '测试连接',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? AppTheme.darkPrimaryGray 
-                        : AppTheme.primaryGray,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () => _showApiKeyHelp(),
-                icon: Icon(
-                  Icons.help_outline, 
-                  size: 16,
-                  color: Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.darkPrimaryGray 
-                      : AppTheme.primaryGray,
-                ),
-                label: OptimizedText(
-                  '获取帮助',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? AppTheme.darkPrimaryGray 
-                        : AppTheme.primaryGray,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return AiProviderSettingsCard(
+      key: const ValueKey('ai_provider_settings_card'),
+      onAvailabilityChanged: (isAvailable) {
+        if (!mounted) {
+          return;
+        }
+
+        final shouldFallbackToQuickMode =
+            !isAvailable && _learningMode == LearningMode.deepLearning;
+
+        setState(() {
+          _isAiConfigValid = isAvailable;
+          if (shouldFallbackToQuickMode) {
+            _learningMode = LearningMode.quickMemory;
+          }
+        });
+
+        _saveSettings();
+      },
     );
   }
-
-
 
   /// 加载设置
   void _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final apiKey = await DeepSeekApiService.getApiKey();
+    final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
     final learningMode = await SettingsHelper.getLearningMode();
-    
-    // 加载算法配置
 
-    if (mounted) {
-      final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
-      
-      // 如果API Key无效且当前是深入学习模式，自动切换到快速学习模式
-      LearningMode finalLearningMode = learningMode;
-      if (!isApiKeyValid && learningMode == LearningMode.deepLearning) {
-        finalLearningMode = LearningMode.quickMemory;
-        // 保存切换后的模式
-        await SettingsHelper.setLearningMode(finalLearningMode);
-      }
-      
-      setState(() {
-        _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
-        _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
-        _smartSyncEnabled = prefs.getBool('smart_sync_enabled') ?? true;
-        final pronunciationTypeStr = prefs.getString('pronunciation_type') ?? 'uk';
-        _pronunciationType = pronunciationTypeStr == 'us' ? PronunciationType.us : PronunciationType.uk;
-        _learningMode = finalLearningMode;
-        
-        // 加载DeepSeek API key
-        _deepSeekApiKeyController.text = apiKey ?? '';
-        _isApiKeyValid = isApiKeyValid;
-        
-        // 加载算法配置
-      });
-      
-      // 如果自动切换了学习模式，显示提示信息
-      if (!isApiKeyValid && learningMode == LearningMode.deepLearning) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.white,
-                  size: 20,
+    if (!mounted) {
+      return;
+    }
+
+    LearningMode finalLearningMode = learningMode;
+    if (!hasUsableAiConfig && learningMode == LearningMode.deepLearning) {
+      finalLearningMode = LearningMode.quickMemory;
+      await SettingsHelper.setLearningMode(finalLearningMode);
+    }
+
+    setState(() {
+      _autoPlayPronunciation = prefs.getBool('auto_play_pronunciation') ?? true;
+      _enableDarkMode = prefs.getBool('enable_dark_mode') ?? false;
+      _smartSyncEnabled = prefs.getBool('smart_sync_enabled') ?? true;
+      final pronunciationTypeStr =
+          prefs.getString('pronunciation_type') ?? 'uk';
+      _pronunciationType = pronunciationTypeStr == 'us'
+          ? PronunciationType.us
+          : PronunciationType.uk;
+      _learningMode = finalLearningMode;
+      _isAiConfigValid = hasUsableAiConfig;
+    });
+
+    if (!hasUsableAiConfig && learningMode == LearningMode.deepLearning) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '检测到无效的 AI 接口配置，已自动切换到快速学习模式',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '检测到无效的API Key，已自动切换到快速学习模式',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
+              ),
+            ],
           ),
-        );
-      }
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.coolGray600
+              : AppTheme.coolGray300,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -917,16 +698,14 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setBool('smart_sync_enabled', _smartSyncEnabled);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
-    
-    // 只在学习模式不为null时保存，且确保API Key有效时才能保存深入学习模式
+
     if (_learningMode != null) {
-      // 如果API Key无效且尝试保存深入学习模式，强制切换到快速学习模式
-      if (!_isApiKeyValid && _learningMode == LearningMode.deepLearning) {
+      if (!_isAiConfigValid && _learningMode == LearningMode.deepLearning) {
         setState(() {
           _learningMode = LearningMode.quickMemory;
         });
         await SettingsHelper.setLearningMode(LearningMode.quickMemory);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -939,13 +718,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'API Key无效，无法使用深入学习模式',
+                    'AI 接口配置无效，无法使用深入学习模式',
                     style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.black87
-                    ),
+                            : Colors.black87),
                   ),
                 ),
               ],
@@ -965,21 +743,16 @@ class _SettingsPageState extends State<SettingsPage> {
         await SettingsHelper.setLearningMode(_learningMode!);
       }
     }
-    
-    // 保存DeepSeek API key
-    final apiKey = _deepSeekApiKeyController.text.trim();
-    if (apiKey.isNotEmpty) {
-      await DeepSeekApiService.setApiKey(apiKey);
-    }
   }
 
   /// 显示重置对话框
   void _showResetDialog() {
     showDialog(
-      
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkCardColor
+            : AppTheme.cardColor,
         title: const Text('重置学习进度'),
         content: const Text('确定要清除所有学习记录吗？此操作不可撤销。'),
         actions: [
@@ -1000,8 +773,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _resetProgress();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkAccentRed 
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkAccentRed
                   : AppTheme.accentRed,
               foregroundColor: Colors.white,
               elevation: 0.5,
@@ -1022,7 +795,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       // 使用新的学习数据服务清除所有学习数据
       await LearningDataService.instance.clearLearningData();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1040,8 +813,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1075,8 +847,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1094,354 +865,6 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
   }
-  
-  /// 测试API连接
-  void _testApiConnection() async {
-    if (!_isApiKeyValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '请先输入有效的API Key',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.coolGray600
-              : AppTheme.coolGray300,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    
-    // 显示加载对话框
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
-        content: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('正在测试连接...'),
-          ],
-        ),
-      ),
-    );
-    
-    try {
-      final isConnected = await DeepSeekApiService.testApiConnection();
-      Navigator.pop(context); // 关闭加载对话框
-      
-      if (isConnected) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.gpp_good_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'API连接成功！',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'API连接失败，请检查API Key是否正确',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.pop(context); // 关闭加载对话框
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '测试失败: $e',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.coolGray600
-              : AppTheme.coolGray300,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-  
-  /// 粘贴API Key
-  void _pasteApiKey() async {
-    try {
-      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-      if (data != null && data.text != null && data.text!.isNotEmpty) {
-        setState(() {
-          _deepSeekApiKeyController.text = data.text!;
-        });
-        _saveSettings();
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '✅ API Key已粘贴',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '❌ 剪贴板为空',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black87
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppTheme.coolGray600
-                : AppTheme.coolGray300,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '❌ 粘贴失败: $e',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.coolGray600
-              : AppTheme.coolGray300,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  /// 显示API Key帮助
-  void _showApiKeyHelp() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
-        title: const Text('如何获取DeepSeek API Key'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('1. 访问DeepSeek官网：'),
-              SelectableText(
-                'https://platform.deepseek.com',
-                style: TextStyle(
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text('2. 注册并登录账户'),
-              SizedBox(height: 8),
-              Text('3. 进入API Keys页面'),
-              SizedBox(height: 8),
-              Text('4. 创建新的API Key'),
-              SizedBox(height: 8),
-              Text('5. 复制API Key并粘贴到此处'),
-              SizedBox(height: 16),
-              Text(
-                '注意：请妥善保管您的API Key，不要分享给他人',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryGray,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('知道了'),
-          ),
-        ],
-      ),
-    );
-  }
-
-
 
   /// 导出学习数据
   void _exportLearningData() async {
@@ -1466,8 +889,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.black87
-                    ),
+                            : Colors.black87),
                   ),
                 ),
               ],
@@ -1491,7 +913,9 @@ class _SettingsPageState extends State<SettingsPage> {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
           content: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1505,16 +929,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // 获取公共单词本的CSV数据（传入null表示导出全局记录）
       final csvData = await LearningDataService.instance.getLearningDataCsv();
-      
+
       // 生成文件名
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'WordFlow_公共单词本_$timestamp.csv';
-      
+
       // 保存文件到选择的目录
-      final filePath = await FileHelper.saveFile(selectedDirectory, fileName, csvData);
-      
+      final filePath =
+          await FileHelper.saveFile(selectedDirectory, fileName, csvData);
+
       Navigator.of(context).pop(); // 关闭加载对话框
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           action: SnackBarAction(
@@ -1538,8 +963,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1574,8 +998,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1617,8 +1040,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.black87
-                    ),
+                            : Colors.black87),
                   ),
                 ),
               ],
@@ -1638,14 +1060,16 @@ class _SettingsPageState extends State<SettingsPage> {
       }
 
       // 显示导入中的提示
-    showDialog(
-      context: context,
+      showDialog(
+        context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkCardColor
+              : AppTheme.cardColor,
           content: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+            mainAxisSize: MainAxisSize.min,
+            children: [
               CircularProgressIndicator(),
               SizedBox(width: 16),
               Text('正在读取文件...'),
@@ -1689,8 +1113,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1711,13 +1134,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 显示导入确认对话框
   void _showImportConfirmation(dynamic file, String csvData) {
-    final lines = csvData.split('\n').where((line) => line.trim().isNotEmpty).length;
+    final lines =
+        csvData.split('\n').where((line) => line.trim().isNotEmpty).length;
     final fileSize = file.bytes?.length ?? 0;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardColor : AppTheme.cardColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkCardColor
+            : AppTheme.cardColor,
         title: const Text('确认导入'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1780,7 +1206,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.refresh, size: 16, color: AppTheme.accentGreen),
+                      Icon(Icons.refresh,
+                          size: 16, color: AppTheme.accentGreen),
                       const SizedBox(width: 8),
                       Text(
                         '全部覆盖',
@@ -1807,50 +1234,60 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
         actions: [
-          Row(children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.getSecondaryTextColor(context),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.getSecondaryTextColor(context),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  child: const Text('取消'),
                 ),
-                child: const Text('取消'),
               ),
-            ),
-            SizedBox(width: 8,),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _performImport(csvData, ImportMode.update);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.darkGray,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              SizedBox(
+                width: 8,
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await _performImport(csvData, ImportMode.update);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.darkGray,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  ),
+                  child: const Text('数据更新'),
                 ),
-                child: const Text('数据更新'),
               ),
-            ),
-            SizedBox(width: 8,),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _performImport(csvData, ImportMode.overwrite);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              SizedBox(
+                width: 8,
+              ),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await _performImport(csvData, ImportMode.overwrite);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentGreen,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  ),
+                  child: const Text('全部覆盖'),
                 ),
-                child: const Text('全部覆盖'),
               ),
-            ),],)
+            ],
+          )
         ],
       ),
     );
@@ -1876,8 +1313,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -1898,8 +1334,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       // 导入到公共单词本（传入null表示导入到全局记录）
-      final result = await LearningDataService.instance.importLearningDataFromCsv(csvData, null, importMode);
-      
+      final result = await LearningDataService.instance
+          .importLearningDataFromCsv(csvData, null, importMode);
+
       if (result.success) {
         final modeText = importMode == ImportMode.update ? '数据更新' : '全部覆盖';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1919,8 +1356,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.black87
-                    ),
+                            : Colors.black87),
                   ),
                 ),
               ],
@@ -1954,8 +1390,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         fontSize: 14,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : Colors.black87
-                    ),
+                            : Colors.black87),
                   ),
                 ),
               ],
@@ -1990,8 +1425,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -2009,8 +1443,6 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
   }
-
-
 
   /// 打开单词回溯页面
   void _openWordReviewPage() async {
@@ -2033,8 +1465,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -2088,5 +1519,4 @@ class _SettingsPageState extends State<SettingsPage> {
     // 使用自动更新服务进行手动检查
     await AutoUpdateService.instance.checkManually(context);
   }
-
 }

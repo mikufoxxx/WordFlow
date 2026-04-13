@@ -10,7 +10,7 @@ import 'pages/algorithm_settings_page.dart';
 import 'utils/app_theme.dart';
 import 'utils/learning_data_service.dart';
 import 'utils/settings_helper.dart';
-import 'utils/deepseek_api_service.dart';
+import 'utils/llm_api_service.dart';
 import 'pages/library_page.dart';
 import 'utils/algorithm_manager.dart';
 import 'utils/auto_update_service.dart';
@@ -19,10 +19,10 @@ import 'utils/render_compatibility_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 强制初始化渲染兼容性设置，彻底解决GPU渲染问题
   await RenderCompatibilityHelper.initialize();
-  
+
   // 强制清理所有可能的渲染缓存
   // 确保应用以最干净的状态启动
   try {
@@ -35,42 +35,41 @@ void main() async {
   } catch (e) {
     // 忽略清理错误
   }
-  
+
   // 优化渲染性能，解决特定设备滑动闪烁问题
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  
+
   // 立即设置默认的系统UI覆盖层（浅色模式）
   AppTheme.setLightSystemUIOverlay();
-  
+
   // 初始化学习数据服务
   await LearningDataService.instance.initialize();
-  
+
   // 初始化自动更新服务
   await AutoUpdateService.instance.initialize();
-  
-  // 检查API Key和学习模式的兼容性
-  await _validateLearningModeAndApiKey();
-  
+
+  // 检查 AI 接口配置和学习模式的兼容性
+  await _validateLearningModeAndAiConfig();
+
   // 延迟预热性能优化器对象池到首帧后，减少启动卡顿
   WidgetsBinding.instance.addPostFrameCallback((_) {
     PerformanceOptimizer.preWarmPools();
   });
-  
+
   runApp(const WordFlowApp());
 }
 
-/// 验证学习模式和API Key的兼容性
-Future<void> _validateLearningModeAndApiKey() async {
-    final learningMode = await SettingsHelper.getLearningMode();
-    if (learningMode == LearningMode.deepLearning) {
-      final apiKey = await DeepSeekApiService.getApiKey();
-      final isApiKeyValid = apiKey != null && apiKey.isNotEmpty && apiKey.length >= 10;
-      
-      if (!isApiKeyValid) {
-        // API Key无效，自动切换到快速学习模式
-        await SettingsHelper.setLearningMode(LearningMode.quickMemory);
-      }
-    }
+/// 验证学习模式和 AI 接口配置的兼容性
+Future<void> _validateLearningModeAndAiConfig() async {
+  final learningMode = await SettingsHelper.getLearningMode();
+  if (learningMode != LearningMode.deepLearning) {
+    return;
+  }
+
+  final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
+  if (!hasUsableAiConfig) {
+    await SettingsHelper.setLearningMode(LearningMode.quickMemory);
+  }
 }
 
 /// WordFlow应用的主入口类
@@ -102,7 +101,7 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // 当应用从后台恢复到前台时检查更新
     if (state == AppLifecycleState.resumed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -115,24 +114,23 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
 
   /// 初始化所有服务
   Future<void> _initServices() async {
-      // 加载主题偏好
-      _loadThemePreference();
-      
-      // 初始化算法管理器（LearningDataService 已在 main() 中初始化）
-      await AlgorithmManager.instance.initialize();
+    // 加载主题偏好
+    _loadThemePreference();
 
+    // 初始化算法管理器（LearningDataService 已在 main() 中初始化）
+    await AlgorithmManager.instance.initialize();
   }
 
   /// 加载主题偏好设置
   void _loadThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     final isDarkMode = prefs.getBool('enable_dark_mode') ?? false;
-    
+
     if (_isDarkMode != isDarkMode) {
       setState(() {
         _isDarkMode = isDarkMode;
       });
-      
+
       // 设置对应的系统UI覆盖层
       if (isDarkMode) {
         AppTheme.setDarkSystemUIOverlay();
@@ -149,7 +147,7 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
       _isDarkMode = !_isDarkMode;
     });
     await prefs.setBool('enable_dark_mode', _isDarkMode);
-    
+
     // 更新系统UI覆盖层
     if (_isDarkMode) {
       AppTheme.setDarkSystemUIOverlay();
@@ -187,9 +185,9 @@ class _WordFlowAppState extends State<WordFlowApp> with WidgetsBindingObserver {
         '/home': (context) => const HomePage(),
         '/library': (context) => const LibraryPage(),
         '/settings': (context) => ThemeProvider(
-          toggleTheme: _toggleTheme,
-          child: const SettingsPage(),
-        ),
+              toggleTheme: _toggleTheme,
+              child: const SettingsPage(),
+            ),
         '/enhanced_word_review': (context) => const EnhancedWordReviewPage(),
         '/algorithm_settings': (context) => const AlgorithmSettingsPage(),
       },
@@ -256,7 +254,7 @@ class _AppInitializerState extends State<AppInitializer> {
             ),
           );
         }
-        
+
         // 根据是否完成初始设置决定显示的页面
         if (snapshot.data == true) {
           return const HomePage();

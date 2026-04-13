@@ -9,11 +9,11 @@ import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 
 /// 造句测试页面
-/// 用户需要用给定的单词造句，AI会判断句子的正确性
+/// 用户需要用给定的单词造句，由 AI 接口判断句子的正确性
 class SentenceTestPage extends StatefulWidget {
   final WordData wordData;
   final VoidCallback onNext;
-  
+
   const SentenceTestPage({
     super.key,
     required this.wordData,
@@ -29,7 +29,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
   SentenceJudgmentResult? _judgmentResult;
   bool _isLoading = false;
   bool _hasSubmitted = false;
-  
+
   @override
   void dispose() {
     _sentenceController.dispose();
@@ -41,27 +41,27 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
     return ResponsiveBuilder(
       builder: (context, deviceType) {
         return Scaffold(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.darkBackgroundColor 
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkBackgroundColor
               : AppTheme.backgroundColor,
           appBar: AppBar(
             title: OptimizedText(
               '造句测试',
               style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkPrimaryTextColor 
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkPrimaryTextColor
                     : AppTheme.primaryTextColor,
               ),
             ),
-            backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkBackgroundColor 
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBackgroundColor
                 : AppTheme.backgroundColor,
             elevation: 0,
             leading: IconButton(
               icon: Icon(
                 Icons.arrow_back_ios_new,
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkPrimaryGray 
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkPrimaryGray
                     : AppTheme.primaryGray,
               ),
               onPressed: () => Navigator.pop(context),
@@ -79,21 +79,21 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildWordCard(),
-                    const SizedBox(height: 24),
-                    _buildInstructionCard(),
-                    const SizedBox(height: 24),
-                    _buildSentenceInput(),
-                    const SizedBox(height: 24),
-                    _buildSubmitButton(),
-                    if (_judgmentResult != null) ...[
+                    children: [
+                      _buildWordCard(),
                       const SizedBox(height: 24),
-                      _buildJudgmentResult(),
+                      _buildInstructionCard(),
+                      const SizedBox(height: 24),
+                      _buildSentenceInput(),
+                      const SizedBox(height: 24),
+                      _buildSubmitButton(),
+                      if (_judgmentResult != null) ...[
+                        const SizedBox(height: 24),
+                        _buildJudgmentResult(),
+                      ],
+                      const SizedBox(height: 24),
                     ],
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                  ),
                 ),
               ),
             ),
@@ -276,19 +276,19 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
   /// 构建判断结果
   Widget _buildJudgmentResult() {
     if (_judgmentResult == null) return const SizedBox();
-    
+
     final result = _judgmentResult!;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // 判断结果卡片
         Card(
-          color: result.isCorrect 
-              ? (Theme.of(context).brightness == Brightness.dark 
+          color: result.isCorrect
+              ? (Theme.of(context).brightness == Brightness.dark
                   ? AppTheme.darkAccentGreen.withOpacity(0.1)
                   : AppTheme.accentGreen.withOpacity(0.1))
-              : (Theme.of(context).brightness == Brightness.dark 
+              : (Theme.of(context).brightness == Brightness.dark
                   ? AppTheme.darkAccentRed.withOpacity(0.1)
                   : AppTheme.accentRed.withOpacity(0.1)),
           child: Padding(
@@ -300,11 +300,11 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   children: [
                     Icon(
                       result.isCorrect ? Icons.check_circle : Icons.error,
-                      color: result.isCorrect 
-                          ? (Theme.of(context).brightness == Brightness.dark 
+                      color: result.isCorrect
+                          ? (Theme.of(context).brightness == Brightness.dark
                               ? AppTheme.darkAccentGreen
                               : AppTheme.accentGreen)
-                          : (Theme.of(context).brightness == Brightness.dark 
+                          : (Theme.of(context).brightness == Brightness.dark
                               ? AppTheme.darkAccentRed
                               : AppTheme.accentRed),
                       size: 24,
@@ -315,11 +315,11 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: result.isCorrect 
-                            ? (Theme.of(context).brightness == Brightness.dark 
+                        color: result.isCorrect
+                            ? (Theme.of(context).brightness == Brightness.dark
                                 ? AppTheme.darkAccentGreen
                                 : AppTheme.accentGreen)
-                            : (Theme.of(context).brightness == Brightness.dark 
+                            : (Theme.of(context).brightness == Brightness.dark
                                 ? AppTheme.darkAccentRed
                                 : AppTheme.accentRed),
                       ),
@@ -327,13 +327,14 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     if (result.score > 0) ...[
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: result.isCorrect 
-                              ? (Theme.of(context).brightness == Brightness.dark 
+                          color: result.isCorrect
+                              ? (Theme.of(context).brightness == Brightness.dark
                                   ? AppTheme.darkAccentGreen
                                   : AppTheme.accentGreen)
-                              : (Theme.of(context).brightness == Brightness.dark 
+                              : (Theme.of(context).brightness == Brightness.dark
                                   ? AppTheme.darkAccentOrange
                                   : AppTheme.accentOrange),
                           borderRadius: BorderRadius.circular(12),
@@ -356,7 +357,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                     result.errorMessage!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).brightness == Brightness.dark 
+                      color: Theme.of(context).brightness == Brightness.dark
                           ? AppTheme.darkAccentRed
                           : AppTheme.accentRed,
                     ),
@@ -366,7 +367,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
             ),
           ),
         ),
-        
+
         // 错误信息
         if (result.errors.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -397,21 +398,21 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   ),
                   const SizedBox(height: 8),
                   ...result.errors.map((error) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: OptimizedText(
-                      '• $error',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.orange.shade700,
-                      ),
-                    ),
-                  )),
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: OptimizedText(
+                          '• $error',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      )),
                 ],
               ),
             ),
           ),
         ],
-        
+
         // 建议
         if (result.suggestions.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -442,21 +443,21 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   ),
                   const SizedBox(height: 8),
                   ...result.suggestions.map((suggestion) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: OptimizedText(
-                      '• $suggestion',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  )),
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: OptimizedText(
+                          '• $suggestion',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      )),
                 ],
               ),
             ),
           ),
         ],
-        
+
         // 更好的句子示例
         if (result.betterSentences.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -487,77 +488,82 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                   ),
                   const SizedBox(height: 8),
                   ...result.betterSentences.map((sentence) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.coolGray200),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OptimizedText(
-                            sentence,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.coolGray700,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardColor,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.coolGray200),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.copy, size: 18),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: sentence));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle_outline,
-                                      color: Theme.of(context).brightness == Brightness.dark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: OptimizedText(
-                                        '已复制到剪贴板',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Theme.of(context).brightness == Brightness.dark
-                                                ? Colors.white
-                                                : Colors.black87
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OptimizedText(
+                                sentence,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppTheme.coolGray700,
+                                  fontStyle: FontStyle.italic,
                                 ),
-                                backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                    ? AppTheme.darkCardColor
-                                    : AppTheme.cardColor,
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.all(16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                duration: const Duration(seconds: 2),
                               ),
-                            );
-                          },
-                          color: AppTheme.coolGray500,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 18),
+                              onPressed: () {
+                                Clipboard.setData(
+                                    ClipboardData(text: sentence));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle_outline,
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white
+                                              : Colors.black87,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: OptimizedText(
+                                            '已复制到剪贴板',
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.white
+                                                    : Colors.black87),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppTheme.darkCardColor
+                                            : AppTheme.cardColor,
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.all(16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              color: AppTheme.coolGray500,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )),
+                      )),
                 ],
               ),
             ),
           ),
         ],
-        
+
         // 操作按钮
         const SizedBox(height: 24),
         Row(
@@ -619,8 +625,7 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -662,7 +667,6 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
       } else {
         HapticFeedback.heavyImpact();
       }
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -678,13 +682,12 @@ class _SentenceTestPageState extends State<SentenceTestPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: OptimizedText(
-                  '判断失败: $e',
+                  'AI 分析失败: $e',
                   style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : Colors.black87
-                  ),
+                          : Colors.black87),
                 ),
               ),
             ],
