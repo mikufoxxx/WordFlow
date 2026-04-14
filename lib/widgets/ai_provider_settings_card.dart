@@ -32,6 +32,7 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
   bool _isLoadingModels = false;
   bool _isTestingConnection = false;
   bool _isInitializing = true;
+  bool _isHydratingConfig = false;
   String? _statusMessage;
 
   @override
@@ -60,6 +61,7 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
       return;
     }
 
+    _isHydratingConfig = true;
     setState(() {
       _provider = config.provider;
       _baseUrlController.text = config.baseUrl.isEmpty
@@ -70,11 +72,16 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
       _isInitializing = false;
       _statusMessage = config.provider.helpText;
     });
+    _isHydratingConfig = false;
 
     _notifyAvailability();
 
     if (_hasCredentials) {
-      await _loadModels(showFeedback: false, saveSelection: false);
+      await _loadModels(
+        showFeedback: false,
+        saveSelection: true,
+        preserveSelectionOnFailure: true,
+      );
     }
   }
 
@@ -93,6 +100,10 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
   String get _normalizedApiKey => _apiKeyController.text.trim();
 
   Future<void> _handleDraftChanged() async {
+    if (_isHydratingConfig) {
+      return;
+    }
+
     _debounceTimer?.cancel();
     await LlmApiService.updateConfig(
       provider: _provider,
@@ -229,6 +240,7 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
   Future<void> _loadModels({
     required bool showFeedback,
     required bool saveSelection,
+    bool preserveSelectionOnFailure = false,
   }) async {
     if (!_hasCredentials || _isLoadingModels) {
       return;
@@ -282,10 +294,14 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
       }
       setState(() {
         _models = const <LlmModelInfo>[];
-        _selectedModel = null;
+        if (!preserveSelectionOnFailure) {
+          _selectedModel = null;
+        }
         _statusMessage = error.message;
       });
-      await LlmApiService.updateConfig(model: '');
+      if (!preserveSelectionOnFailure) {
+        await LlmApiService.updateConfig(model: '');
+      }
       _notifyAvailability();
 
       if (showFeedback && mounted) {
@@ -297,10 +313,14 @@ class _AiProviderSettingsCardState extends State<AiProviderSettingsCard> {
       }
       setState(() {
         _models = const <LlmModelInfo>[];
-        _selectedModel = null;
+        if (!preserveSelectionOnFailure) {
+          _selectedModel = null;
+        }
         _statusMessage = '模型列表获取失败：$error';
       });
-      await LlmApiService.updateConfig(model: '');
+      if (!preserveSelectionOnFailure) {
+        await LlmApiService.updateConfig(model: '');
+      }
       _notifyAvailability();
 
       if (showFeedback && mounted) {
