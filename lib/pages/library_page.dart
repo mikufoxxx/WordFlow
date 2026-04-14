@@ -11,14 +11,15 @@ import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
+import 'word_book_import_page.dart';
 
 /// 词库状态枚举
 enum WordBookStatus {
-  notDownloaded,  // 未下载
-  downloading,    // 下载中
-  downloaded,     // 已下载
-  selected,       // 已选择（当前使用中）
-  error,         // 下载错误
+  notDownloaded, // 未下载
+  downloading, // 下载中
+  downloaded, // 已下载
+  selected, // 已选择（当前使用中）
+  error, // 下载错误
 }
 
 /// 词库项，包含状态信息和动画控制器
@@ -27,7 +28,7 @@ class WordBookItem {
   WordBookStatus status;
   List<WordData>? wordData;
   String? errorMessage;
-  
+
   // 独立的动画控制器
   AnimationController? animationController;
   Animation<double>? fadeAnimation;
@@ -39,14 +40,14 @@ class WordBookItem {
     this.wordData,
     this.errorMessage,
   });
-  
+
   /// 初始化动画
   void initializeAnimation(TickerProvider vsync) {
     animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: vsync,
     );
-    
+
     // 透明度动画 - 使用贝塞尔曲线
     fadeAnimation = Tween<double>(
       begin: 0.0,
@@ -55,7 +56,7 @@ class WordBookItem {
       parent: animationController!,
       curve: const Cubic(0.4, 0.0, 0.2, 1.0), // 贝塞尔曲线
     ));
-    
+
     // 向上滑动动画 - 减少滑动距离，使用贝塞尔曲线
     slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.15), // 减少移动距离
@@ -65,7 +66,7 @@ class WordBookItem {
       curve: const Cubic(0.4, 0.0, 0.2, 1.0), // 贝塞尔曲线
     ));
   }
-  
+
   /// 启动动画
   void startAnimation({Duration delay = Duration.zero}) {
     if (animationController != null) {
@@ -74,12 +75,12 @@ class WordBookItem {
       });
     }
   }
-  
+
   /// 销毁动画控制器
   void dispose() {
     animationController?.dispose();
   }
-  
+
   /// 更新单词数量
   void updateWordCount(int count) {
     wordBook = WordBook(
@@ -98,36 +99,35 @@ class LibraryPage extends StatefulWidget {
   State<LibraryPage> createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> 
+class _LibraryPageState extends State<LibraryPage>
     with TickerProviderStateMixin {
-  
   // 性能优化：使用池化的key
   static const String _animationPoolKey = 'library_page_animations';
   static const String _timerPoolKey = 'library_page_timers';
-  
+
   // 词库数据
   List<WordBookItem> _allWordBookItems = [];
   List<WordBookItem> _filteredWordBookItems = [];
-  
+
   // 分页控制
   static const int _pageSize = 20;
   int _currentPage = 0;
   final List<WordBookItem> _displayedItems = [];
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
-  
+
   // 搜索相关
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   bool _isSearching = false;
-  
+
   // 加载状态
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   // 主动画控制器
   late AnimationController _fadeController;
-  
+
   // 添加选中的词库索引
 
   @override
@@ -138,25 +138,25 @@ class _LibraryPageState extends State<LibraryPage>
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     _searchDebounce?.cancel();
     _scrollController.dispose();
-    
+
     // 使用性能优化器清理资源
     PerformanceOptimizer.cancelTimers(_timerPoolKey);
     PerformanceOptimizer.disposeAnimationControllers(_animationPoolKey);
-    
+
     // 销毁所有词库卡片的动画控制器
     for (var item in _allWordBookItems) {
       item.dispose();
     }
-    
+
     super.dispose();
   }
-  
+
   /// 初始化动画控制器
   void _initializeAnimations() {
     _fadeController = PerformanceOptimizer.getAnimationController(
@@ -165,35 +165,40 @@ class _LibraryPageState extends State<LibraryPage>
       vsync: this,
     );
   }
-  
+
   /// 滚动监听 - 实现无限滚动
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
+    if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       _loadMoreItems();
     }
   }
-  
+
   /// 加载词库数据 - 支持缓存
   Future<void> _loadWordBooks() async {
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
+        _displayedItems.clear();
       });
-      
+
       // 首先尝试从缓存加载
       List<WordBook> cachedWordBooks = await CacheService.getCachedWordBooks();
-      List<WordBook> wordBooks;
-      
+      List<WordBook> remoteWordBooks;
+
       if (cachedWordBooks.isNotEmpty) {
-        wordBooks = cachedWordBooks;
+        remoteWordBooks = cachedWordBooks;
       } else {
-        wordBooks = await GitHubApiService.getWordBooks();
+        remoteWordBooks = await GitHubApiService.getWordBooks();
         // 缓存词库列表
-        await CacheService.cacheWordBooks(wordBooks);
+        await CacheService.cacheWordBooks(remoteWordBooks);
       }
-      
+
+      final customWordBooks = await CacheService.getCustomWordBooks();
+      final wordBooks = _mergeWordBooks(remoteWordBooks, customWordBooks);
+      final selectedWordBook = await CacheService.getSelectedWordBook();
+
       // 转换为WordBookItem并初始化动画
       final wordBookItems = await Future.wait(
         wordBooks.map((book) async {
@@ -201,43 +206,43 @@ class _LibraryPageState extends State<LibraryPage>
             wordBook: book,
             status: WordBookStatus.notDownloaded,
           );
-          
+
           // 检查是否已下载
-          final isDownloaded = await CacheService.isWordBookDownloaded(book.name);
+          final isDownloaded =
+              await CacheService.isWordBookDownloaded(book.name);
           if (isDownloaded) {
-            final cachedWordData = await CacheService.getCachedWordData(book.name);
+            final cachedWordData =
+                await CacheService.getCachedWordData(book.name);
             if (cachedWordData != null) {
               item.wordData = cachedWordData;
               item.status = WordBookStatus.downloaded;
               item.updateWordCount(cachedWordData.length);
             }
           }
-          
+
           // 检查是否已选中
-          final selectedWordBook = await CacheService.getSelectedWordBook();
           if (selectedWordBook == book.name) {
             item.status = WordBookStatus.selected;
           }
-          
+
           item.initializeAnimation(this);
           return item;
         }),
       );
-      
+
       setState(() {
         _allWordBookItems = wordBookItems;
         _filteredWordBookItems = wordBookItems;
         _isLoading = false;
         _currentPage = 0;
       });
-      
+
       // 启动主动画
-      _fadeController.forward();
-      
+      _fadeController.forward(from: 0);
+
       // 延迟加载第一页数据，让搜索栏先显示
       await Future.delayed(const Duration(milliseconds: 300));
       _loadMoreItems();
-      
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -245,32 +250,98 @@ class _LibraryPageState extends State<LibraryPage>
       });
     }
   }
-  
+
+  List<WordBook> _mergeWordBooks(
+    List<WordBook> remoteWordBooks,
+    List<WordBook> customWordBooks,
+  ) {
+    final mergedBooks = <String, WordBook>{
+      for (final book in remoteWordBooks) book.name: book,
+    };
+
+    for (final book in customWordBooks) {
+      mergedBooks[book.name] = book;
+    }
+
+    return mergedBooks.values.toList();
+  }
+
+  Future<void> _openWordBookImportPage() async {
+    SoundService.playTapSound();
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (context) => const WordBookImportPage(),
+      ),
+    );
+
+    if (imported == true && mounted) {
+      await _loadWordBooks();
+      _showImportSuccessSnackBar();
+    }
+  }
+
+  void _showImportSuccessSnackBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.library_add_check_rounded,
+              color: isDarkMode ? Colors.white : Colors.black87,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '自定义单词本已导入到词库列表',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor:
+            isDarkMode ? AppTheme.darkCardColor : AppTheme.cardColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// 加载更多项目 - 分页加载并启动独立动画
   void _loadMoreItems() {
     if (_isLoadingMore) return;
-    
+
     setState(() {
       _isLoadingMore = true;
     });
-    
+
     // 模拟网络延迟
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
-      
+
       final startIndex = _currentPage * _pageSize;
-      final endIndex = (startIndex + _pageSize).clamp(0, _filteredWordBookItems.length);
-      
+      final endIndex =
+          (startIndex + _pageSize).clamp(0, _filteredWordBookItems.length);
+
       if (startIndex < _filteredWordBookItems.length) {
         final newItems = _filteredWordBookItems.sublist(startIndex, endIndex);
-        
+
         setState(() {
           _displayedItems.addAll(newItems);
           _currentPage++;
           _isLoadingMore = false;
           _isSearching = false;
         });
-        
+
         // 为新添加的卡片启动流水般的独立动画
         for (int i = 0; i < newItems.length; i++) {
           final item = newItems[i];
@@ -285,22 +356,22 @@ class _LibraryPageState extends State<LibraryPage>
       }
     });
   }
-  
+
   /// 搜索词库
   void _onSearchChanged() {
     // 取消之前的搜索定时器
     if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
-    
+
     // 使用性能优化器创建防抖定时器
     _searchDebounce = PerformanceOptimizer.createTimer(
       poolKey: _timerPoolKey,
       duration: const Duration(milliseconds: 300),
       callback: () {
         final query = _searchController.text.toLowerCase().trim();
-        
+
         setState(() {
           _isSearching = true;
-          
+
           if (query.isEmpty) {
             _filteredWordBookItems = _allWordBookItems;
           } else {
@@ -308,17 +379,17 @@ class _LibraryPageState extends State<LibraryPage>
               return item.wordBook.name.toLowerCase().contains(query);
             }).toList();
           }
-          
+
           // 重置分页和动画状态
           _currentPage = 0;
           _displayedItems.clear();
-          
+
           // 重置所有动画控制器
           for (var item in _allWordBookItems) {
             item.animationController?.reset();
           }
         });
-        
+
         // 重新加载第一页
         _loadMoreItems();
       },
@@ -331,8 +402,9 @@ class _LibraryPageState extends State<LibraryPage>
     if (item.status == WordBookStatus.notDownloaded) {
       await _downloadWordBook(item);
     }
-    
-    if (item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected) {
+
+    if (item.status == WordBookStatus.downloaded ||
+        item.status == WordBookStatus.selected) {
       setState(() {
         // 取消之前选中的词库，但保持已下载状态
         for (var i = 0; i < _allWordBookItems.length; i++) {
@@ -340,17 +412,17 @@ class _LibraryPageState extends State<LibraryPage>
             _allWordBookItems[i].status = WordBookStatus.downloaded;
           }
         }
-        
+
         // 设置当前词库为选中状态
         item.status = WordBookStatus.selected;
       });
-      
+
       // 保存选中的词库到缓存
       await CacheService.saveSelectedWordBook(item.wordBook.name);
-      
+
       // 自动同步词书数据
       await LearningDataService.instance.autoSyncWordBook(item.wordBook.name);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -367,11 +439,10 @@ class _LibraryPageState extends State<LibraryPage>
                 child: Text(
                   '词库《${item.wordBook.name}》已选择',
                   style: TextStyle(
-                    fontSize: 14, 
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black87
-                  ),
+                      fontSize: 14,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black87),
                 ),
               ),
             ],
@@ -387,8 +458,6 @@ class _LibraryPageState extends State<LibraryPage>
           duration: const Duration(seconds: 2),
         ),
       );
-      
-
     } else if (item.status == WordBookStatus.error) {
       // 显示错误信息并提供重试选项
       final retry = await showDialog<bool>(
@@ -420,34 +489,35 @@ class _LibraryPageState extends State<LibraryPage>
           ],
         ),
       );
-      
+
       if (retry == true) {
         await _downloadWordBook(item);
       }
     }
   }
-  
+
   /// 下载词库内容 - 支持缓存
   Future<void> _downloadWordBook(WordBookItem item) async {
     setState(() {
       item.status = WordBookStatus.downloading;
       item.errorMessage = null;
     });
-    
-    try {
 
+    try {
       // 首先检查缓存
-      final cachedWordData = await CacheService.getCachedWordData(item.wordBook.name);
+      final cachedWordData =
+          await CacheService.getCachedWordData(item.wordBook.name);
       List<WordData> wordData;
-      
+
       if (cachedWordData != null) {
         wordData = cachedWordData;
       } else {
-        wordData = await GitHubApiService.getWordData(item.wordBook.translationUrl);
+        wordData =
+            await GitHubApiService.getWordData(item.wordBook.translationUrl);
         // 缓存下载的数据
         await CacheService.cacheWordData(item.wordBook.name, wordData);
       }
-      
+
       setState(() {
         item.wordData = wordData;
         item.status = WordBookStatus.downloaded;
@@ -456,155 +526,165 @@ class _LibraryPageState extends State<LibraryPage>
 
       // 播放下载成功音效
       SoundService.playDownloadSuccessSound();
-      
-
     } catch (e) {
       setState(() {
         item.status = WordBookStatus.error;
         item.errorMessage = e.toString();
       });
-      
     }
   }
 
   /// 查看已下载词库 - 修复黑色遮罩问题
   void _showDownloadedBooks() {
     final downloadedBooks = _allWordBookItems
-        .where((item) => item.status == WordBookStatus.downloaded || 
-                        item.status == WordBookStatus.selected)
+        .where((item) =>
+            item.status == WordBookStatus.downloaded ||
+            item.status == WordBookStatus.selected)
         .toList();
 
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
-      barrierColor: Colors.black54, // 使用正确的遮罩颜色
-      builder: (context) => GestureDetector(
-        // 点击空白区域关闭
-        onTap: () => Navigator.pop(context),
-        child: Container(
-          color: Colors.transparent, // 透明容器，用于接收点击事件
-          child: GestureDetector(
-            // 阻止点击内容区域时关闭
-            onTap: () {},
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          builder: (context, scrollController) => Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkBackgroundColor
-                  : AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: Theme.of(context).brightness == Brightness.dark 
-                      ? null 
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: Offset(0, -2),
-                          ),
-                        ],
-            ),
-            child: Column(
-              children: [
-                // 拖拽指示器
-                Container(
-                      margin: EdgeInsets.symmetric(vertical: 10), // 从12减少到10
-                      width: 36, // 从40减少到36
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.coolGray300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                
-                // 标题
-                Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 从8减少到6
-                  child: Row(
-                    children: [
-                      OptimizedText(
-                        '我的词书收藏',
-                        style: TextStyle(
-                              fontSize: 18, // 从20减少到18
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppTheme.darkPrimaryTextColor
-                              : AppTheme.primaryTextColor,
-                        ),
-                      ),
-                      Spacer(),
-                      OptimizedText(
-                        '${downloadedBooks.length} 个',
-                        style: TextStyle(
-                              fontSize: 14, // 从16减少到14
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppTheme.darkSecondaryTextColor
-                              : AppTheme.secondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                    SizedBox(height: 8,),
-                
-                    // 分割线 - 类似指示器的圆角样式
-                    Container(
-                      margin: EdgeInsets.fromLTRB(20,8,20,0),
-                      height: 2,
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        isDismissible: true,
+        enableDrag: true,
+        barrierColor: Colors.black54, // 使用正确的遮罩颜色
+        builder: (context) => GestureDetector(
+              // 点击空白区域关闭
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                color: Colors.transparent, // 透明容器，用于接收点击事件
+                child: GestureDetector(
+                  // 阻止点击内容区域时关闭
+                  onTap: () {},
+                  child: DraggableScrollableSheet(
+                    initialChildSize: 0.7,
+                    maxChildSize: 0.9,
+                    minChildSize: 0.5,
+                    builder: (context, scrollController) => Container(
                       decoration: BoxDecoration(
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? AppTheme.coolGray300.withOpacity(0.3)
-                            : AppTheme.coolGray300.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(0.5),
+                            ? AppTheme.darkBackgroundColor
+                            : AppTheme.backgroundColor,
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
+                        boxShadow:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: Offset(0, -2),
+                                    ),
+                                  ],
+                      ),
+                      child: Column(
+                        children: [
+                          // 拖拽指示器
+                          Container(
+                            margin:
+                                EdgeInsets.symmetric(vertical: 10), // 从12减少到10
+                            width: 36, // 从40减少到36
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: AppTheme.coolGray300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+
+                          // 标题
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 6), // 从8减少到6
+                            child: Row(
+                              children: [
+                                OptimizedText(
+                                  '我的词书收藏',
+                                  style: TextStyle(
+                                    fontSize: 18, // 从20减少到18
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? AppTheme.darkPrimaryTextColor
+                                        : AppTheme.primaryTextColor,
+                                  ),
+                                ),
+                                Spacer(),
+                                OptimizedText(
+                                  '${downloadedBooks.length} 个',
+                                  style: TextStyle(
+                                    fontSize: 14, // 从16减少到14
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? AppTheme.darkSecondaryTextColor
+                                        : AppTheme.secondaryTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            height: 8,
+                          ),
+
+                          // 分割线 - 类似指示器的圆角样式
+                          Container(
+                            margin: EdgeInsets.fromLTRB(20, 8, 20, 0),
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppTheme.coolGray300.withOpacity(0.3)
+                                  : AppTheme.coolGray300.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(0.5),
+                            ),
+                          ),
+
+                          // 词库列表
+                          Expanded(
+                            child: downloadedBooks.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.download_outlined,
+                                          size: 52, // 从64减少到52
+                                          color: AppTheme.coolGray300,
+                                        ),
+                                        SizedBox(height: 12), // 从16减少到12
+                                        Text(
+                                          '暂无已下载的词库',
+                                          style: TextStyle(
+                                            color: AppTheme.coolGray500,
+                                            fontSize: 14, // 从16减少到14
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    controller: scrollController,
+                                    physics: const ClampingScrollPhysics(),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8), // 从20减少到16，添加垂直padding
+                                    itemCount: downloadedBooks.length,
+                                    itemBuilder: (context, index) =>
+                                        _buildDownloadedBookCard(
+                                      downloadedBooks[index],
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
-                
-                // 词库列表
-                Expanded(
-                  child: downloadedBooks.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.download_outlined,
-                                size: 52, // 从64减少到52
-                                color: AppTheme.coolGray300,
-                              ),
-                              SizedBox(height: 12), // 从16减少到12
-                              Text(
-                                '暂无已下载的词库',
-                                style: TextStyle(
-                                  color: AppTheme.coolGray500,
-                                  fontSize: 14, // 从16减少到14
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: scrollController,
-                          physics: const ClampingScrollPhysics(),
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 从20减少到16，添加垂直padding
-                          itemCount: downloadedBooks.length,
-                          itemBuilder: (context, index) => _buildDownloadedBookCard(
-                            downloadedBooks[index],
-                          ),
-                        ),
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-        ),
-      )
-    );
+              ),
+            ));
   }
 
   /// 构建已下载词库卡片
@@ -615,11 +695,12 @@ class _LibraryPageState extends State<LibraryPage>
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
         border: Border.all(
-          color: item.status == WordBookStatus.selected ? AppTheme.accentGreen : Colors.transparent, 
-          width: 2
-        ),
-        boxShadow: Theme.of(context).brightness == Brightness.dark 
-            ? null 
+            color: item.status == WordBookStatus.selected
+                ? AppTheme.accentGreen
+                : Colors.transparent,
+            width: 2),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? null
             : [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04), // 从0.05减少到0.04
@@ -649,7 +730,8 @@ class _LibraryPageState extends State<LibraryPage>
           style: TextStyle(
             fontSize: 15, // 从16减少到15
             fontWeight: FontWeight.w600,
-            color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.primaryTextColor),
+            color: AppTheme.getPrimaryTitleColor(context,
+                lightColor: AppTheme.primaryTextColor),
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -658,14 +740,15 @@ class _LibraryPageState extends State<LibraryPage>
           '${item.wordBook.wordCount} 个单词',
           style: TextStyle(
             fontSize: 13, // 从14减少到13
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkSecondaryTextColor 
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkSecondaryTextColor
                 : AppTheme.secondaryTextColor,
           ),
         ),
         trailing: item.status == WordBookStatus.selected
             ? Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+                padding: EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4), // 从12,6减少到10,4
                 decoration: BoxDecoration(
                   color: AppTheme.accentGreen.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16), // 从20减少到16
@@ -727,8 +810,8 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建手机端布局
   Widget _buildMobileLayout() {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkBackgroundColor 
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkBackgroundColor
           : AppTheme.backgroundColor,
       appBar: _buildAppBar(),
       body: _buildBody(),
@@ -738,8 +821,8 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建平板端布局
   Widget _buildTabletLayout() {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? AppTheme.darkBackgroundColor 
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkBackgroundColor
           : AppTheme.backgroundColor,
       appBar: _buildAppBar(),
       body: Center(
@@ -752,25 +835,28 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建应用栏 - 添加查看已下载按钮
   PreferredSizeWidget _buildAppBar() {
     final downloadedCount = _allWordBookItems
-        .where((item) => item.status == WordBookStatus.downloaded || 
-                        item.status == WordBookStatus.selected)
+        .where((item) =>
+            item.status == WordBookStatus.downloaded ||
+            item.status == WordBookStatus.selected)
         .length;
 
     return AcrylicAppBar(
       title: '词库选择 (${_allWordBookItems.length})',
       leading: Padding(
-        padding: EdgeInsets.only(left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+        padding: EdgeInsets.only(
+            left: ResponsiveHelper.getResponsiveSpacing(context, 10)),
         child: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
+          icon:
+              const Icon(Icons.arrow_back_ios_new, color: AppTheme.primaryGray),
           iconSize: ResponsiveHelper.getResponsiveIconSize(context, 26),
-        onPressed: () {
-          SoundService.playTapOffSound();
-          Navigator.pop(context);
-        },
+          onPressed: () {
+            SoundService.playTapOffSound();
+            Navigator.pop(context);
+          },
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(
             minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
@@ -779,55 +865,77 @@ class _LibraryPageState extends State<LibraryPage>
         ),
       ),
       actions: [
+        Padding(
+          padding: EdgeInsets.only(
+              right: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+          child: IconButton(
+            key: const Key('libraryImportButton'),
+            icon: Icon(
+              Icons.file_upload_outlined,
+              color: AppTheme.primaryGray,
+              size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+            ),
+            onPressed: _openWordBookImportPage,
+            tooltip: '导入自定义单词本',
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(
+              minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
+              minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
+            ),
+          ),
+        ),
         // 查看已下载词库按钮
         Padding(
-          padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+          padding: EdgeInsets.only(
+              right: ResponsiveHelper.getResponsiveSpacing(context, 10)),
           child: Stack(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.download_done_rounded,
-                color: AppTheme.primaryGray,
+            children: [
+              IconButton(
+                key: const Key('libraryDownloadedButton'),
+                icon: Icon(
+                  Icons.download_done_rounded,
+                  color: AppTheme.primaryGray,
                   size: ResponsiveHelper.getResponsiveIconSize(context, 26),
-              ),
-              onPressed: () {
-                SoundService.playTapSound();
-                _showDownloadedBooks();
-              },
-              tooltip: '查看我的词书收藏',
+                ),
+                onPressed: () {
+                  SoundService.playTapSound();
+                  _showDownloadedBooks();
+                },
+                tooltip: '查看我的词书收藏',
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(
                   minWidth: ResponsiveHelper.getResponsiveIconSize(context, 40),
-                  minHeight: ResponsiveHelper.getResponsiveIconSize(context, 40),
-                ),
-            ),
-            if (downloadedCount > 0)
-              Positioned(
-                  right: 6, // 从8减少到6，适应新的图标大小
-                  top: 6, // 从8减少到6，适应新的图标大小
-                child: Container(
-                    padding: EdgeInsets.all(3), // 从4减少到3
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: BoxConstraints(
-                      minWidth: 14, // 从16减少到14
-                      minHeight: 14, // 从16减少到14
-                  ),
-                  child: OptimizedText(
-                    '$downloadedCount',
-                    style: TextStyle(
-                      color: Colors.white,
-                        fontSize: 9, // 从10减少到9
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  minHeight:
+                      ResponsiveHelper.getResponsiveIconSize(context, 40),
                 ),
               ),
-          ],
-        ),
+              if (downloadedCount > 0)
+                Positioned(
+                  right: 6, // 从8减少到6，适应新的图标大小
+                  top: 6, // 从8减少到6，适应新的图标大小
+                  child: Container(
+                    padding: EdgeInsets.all(3), // 从4减少到3
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 14, // 从16减少到14
+                      minHeight: 14, // 从16减少到14
+                    ),
+                    child: OptimizedText(
+                      '$downloadedCount',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9, // 从10减少到9
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -848,12 +956,13 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建搜索栏
   Widget _buildSearchBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 12), // 从20,8,20,8减少到16,6,16,6
+      margin:
+          const EdgeInsets.fromLTRB(16, 12, 16, 12), // 从20,8,20,8减少到16,6,16,6
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12), // 从16减少到12
@@ -882,8 +991,8 @@ class _LibraryPageState extends State<LibraryPage>
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: isDark 
-                        ? AppTheme.coolGray500 
+                    color: isDark
+                        ? AppTheme.coolGray500
                         : AppTheme.primaryGray.withOpacity(0.6),
                     size: 20, // 添加图标大小限制
                   ),
@@ -894,21 +1003,25 @@ class _LibraryPageState extends State<LibraryPage>
               : null,
           border: InputBorder.none,
           filled: false,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14), // 从16,14减少到14,12
-          ),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14, vertical: 14), // 从16,14减少到14,12
+        ),
         style: TextStyle(
           fontSize: 16, // 从16减少到14
-          color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.darkGray),
+          color: AppTheme.getPrimaryTitleColor(context,
+              lightColor: AppTheme.darkGray),
         ),
       ),
     );
   }
-  
+
   /// 构建统计栏
   Widget _buildStatsBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12), // 从20,0,20,16减少到16,0,16,12
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 从20,12减少到16,10
+      margin:
+          const EdgeInsets.fromLTRB(16, 0, 16, 12), // 从20,0,20,16减少到16,0,16,12
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 10), // 从20,12减少到16,10
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12), // 从16减少到12
@@ -929,7 +1042,7 @@ class _LibraryPageState extends State<LibraryPage>
               Container(
                 padding: const EdgeInsets.all(6), // 从8减少到6
                 decoration: BoxDecoration(
-                    color: AppTheme.accentGreen.withOpacity(0.1),
+                  color: AppTheme.accentGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8), // 从10减少到8
                 ),
                 child: Icon(
@@ -939,17 +1052,18 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-          OptimizedText(
+              OptimizedText(
                 '总计: ${_allWordBookItems.length}',
-            style: TextStyle(
+                style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                  color: AppTheme.getSecondaryTitleColor(context,
+                      lightColor: AppTheme.coolGray600),
                   fontWeight: FontWeight.w500,
-            ),
-          ),
+                ),
+              ),
             ],
           ),
-          
+
           // 已下载数量
           Row(
             children: [
@@ -966,21 +1080,22 @@ class _LibraryPageState extends State<LibraryPage>
                 ),
               ),
               const SizedBox(width: 8),
-            OptimizedText(
+              OptimizedText(
                 '已下载: ${_allWordBookItems.where((item) => item.status == WordBookStatus.downloaded || item.status == WordBookStatus.selected).length}',
-              style: TextStyle(
+                style: TextStyle(
                   fontSize: 13, // 从14减少到13
-                  color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.coolGray600),
+                  color: AppTheme.getSecondaryTitleColor(context,
+                      lightColor: AppTheme.coolGray600),
                   fontWeight: FontWeight.w500,
-              ),
+                ),
               ),
             ],
-            ),
+          ),
         ],
       ),
     );
   }
-  
+
   /// 构建内容区域
   Widget _buildContent() {
     if (_isLoading) {
@@ -995,7 +1110,7 @@ class _LibraryPageState extends State<LibraryPage>
       return _buildWordBookList();
     }
   }
-  
+
   /// 构建搜索状态
   Widget _buildSearchingState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1009,16 +1124,16 @@ class _LibraryPageState extends State<LibraryPage>
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation<Color>(
-                AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray)
-              ),
+                  AppTheme.getSecondaryTitleColor(context,
+                      lightColor: AppTheme.primaryGray)),
             ),
           ),
           const SizedBox(height: 16),
           OptimizedText(
             '正在寻找词书...',
             style: TextStyle(
-              color: isDark 
-                  ? AppTheme.darkSecondaryTextColor 
+              color: isDark
+                  ? AppTheme.darkSecondaryTextColor
                   : AppTheme.primaryGray.withOpacity(0.8),
               fontSize: 14,
             ),
@@ -1027,7 +1142,7 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建加载状态
   Widget _buildLoadingState() {
     return Center(
@@ -1041,15 +1156,16 @@ class _LibraryPageState extends State<LibraryPage>
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation<Color>(
-                AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray)
-              ),
+                  AppTheme.getSecondaryTitleColor(context,
+                      lightColor: AppTheme.primaryGray)),
             ),
           ),
           const SizedBox(height: 24),
           OptimizedText(
             '词书正在赶来的路上...',
             style: TextStyle(
-              color: AppTheme.getSecondaryTitleColor(context, lightColor: AppTheme.primaryGray),
+              color: AppTheme.getSecondaryTitleColor(context,
+                  lightColor: AppTheme.primaryGray),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -1067,7 +1183,7 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建错误状态
   Widget _buildErrorState() {
     return Center(
@@ -1111,7 +1227,7 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建空状态
   Widget _buildEmptyState() {
     return const Center(
@@ -1135,13 +1251,14 @@ class _LibraryPageState extends State<LibraryPage>
       ),
     );
   }
-  
+
   /// 构建词库列表
   Widget _buildWordBookList() {
     return ListView.builder(
       controller: _scrollController,
       physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // 从20,0,20,20减少到16,0,16,16
+      padding:
+          const EdgeInsets.fromLTRB(16, 0, 16, 16), // 从20,0,20,20减少到16,0,16,16
       itemCount: _displayedItems.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == _displayedItems.length) {
@@ -1154,20 +1271,20 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           );
         }
-        
+
         return _buildAnimatedWordBookCard(_displayedItems[index]);
       },
     );
   }
-  
+
   /// 构建带动画的词库卡片
   Widget _buildAnimatedWordBookCard(WordBookItem item) {
-    if (item.animationController == null || 
-        item.fadeAnimation == null || 
+    if (item.animationController == null ||
+        item.fadeAnimation == null ||
         item.slideAnimation == null) {
       return _buildWordBookCard(item);
     }
-    
+
     return AnimatedBuilder(
       animation: item.animationController!,
       builder: (context, child) {
@@ -1185,25 +1302,24 @@ class _LibraryPageState extends State<LibraryPage>
   /// 构建词库卡片 - 修改单词数量显示逻辑
   Widget _buildWordBookCard(WordBookItem item) {
     final isSelected = item.status == WordBookStatus.selected;
-    final isDownloaded = item.status == WordBookStatus.downloaded || 
-                        item.status == WordBookStatus.selected;
-    
+    final isDownloaded = item.status == WordBookStatus.downloaded ||
+        item.status == WordBookStatus.selected;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12), // 从16减少到12
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? AppTheme.darkCardColor 
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkCardColor
             : AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16), // 从20减少到16
         border: Border.all(
-          color: isSelected ? AppTheme.accentGreen : Colors.transparent, 
-          width: 2
-        ),
-        boxShadow: Theme.of(context).brightness == Brightness.dark 
-            ? null 
+            color: isSelected ? AppTheme.accentGreen : Colors.transparent,
+            width: 2),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? null
             : [
                 BoxShadow(
-                  color: isSelected 
+                  color: isSelected
                       ? AppTheme.accentGreen.withOpacity(0.15) // 从0.2减少到0.15
                       : AppTheme.coolGray200.withOpacity(0.25), // 从0.3减少到0.25
                   blurRadius: isSelected ? 12 : 8, // 从16,12减少到12,8
@@ -1227,7 +1343,7 @@ class _LibraryPageState extends State<LibraryPage>
                     // 优化的封面设计
                     _buildModernCover(item),
                     const SizedBox(width: 14), // 从16减少到14
-                    
+
                     // 词库信息
                     Expanded(
                       child: Column(
@@ -1239,21 +1355,24 @@ class _LibraryPageState extends State<LibraryPage>
                             style: TextStyle(
                               fontSize: 16, // 从18减少到16
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.getPrimaryTitleColor(context, lightColor: AppTheme.coolGray800),
+                              color: AppTheme.getPrimaryTitleColor(context,
+                                  lightColor: AppTheme.coolGray800),
                               height: 1.2,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6), // 从8减少到6
-                          
+
                           // 单词数量 - 只有下载后才显示
                           if (isDownloaded && item.wordBook.wordCount > 0)
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 从10,4减少到8,3
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3), // 从10,4减少到8,3
                               decoration: BoxDecoration(
                                 color: AppTheme.accentGreen.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10), // 从12减少到10
+                                borderRadius:
+                                    BorderRadius.circular(10), // 从12减少到10
                               ),
                               child: OptimizedText(
                                 '${item.wordBook.wordCount} 个单词',
@@ -1267,14 +1386,14 @@ class _LibraryPageState extends State<LibraryPage>
                         ],
                       ),
                     ),
-                    
+
                     // 状态指示器
                     _buildStatusIndicator(item.status),
                   ],
                 ),
-                
+
                 const SizedBox(height: 14), // 从16减少到14
-                
+
                 // 操作区域
                 _buildActionArea(item),
               ],
@@ -1293,8 +1412,8 @@ class _LibraryPageState extends State<LibraryPage>
       decoration: BoxDecoration(
         color: Color(item.wordBook.coverColor),
         borderRadius: BorderRadius.circular(14), // 从16减少到14
-        boxShadow: Theme.of(context).brightness == Brightness.dark 
-            ? null 
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? null
             : [
                 BoxShadow(
                   color: Color(item.wordBook.coverColor).withOpacity(0.3),
@@ -1302,11 +1421,11 @@ class _LibraryPageState extends State<LibraryPage>
                   offset: const Offset(0, 3), // 从4减少到3
                 ),
               ],
-        ),
-        child: Center(
-          child: Icon(
-            Icons.menu_book_rounded,
-            color: Color(item.wordBook.iconColor),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.menu_book_rounded,
+          color: Color(item.wordBook.iconColor),
           size: 26, // 从32减少到26
         ),
       ),
@@ -1328,8 +1447,8 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark 
-                ? null 
+            boxShadow: Theme.of(context).brightness == Brightness.dark
+                ? null
                 : [
                     BoxShadow(
                       color: AppTheme.accentGreen.withOpacity(0.25),
@@ -1379,7 +1498,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.downloading:
         return Container(
           width: double.infinity,
@@ -1387,13 +1506,14 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark 
-                ? null 
+            boxShadow: Theme.of(context).brightness == Brightness.dark
+                ? null
                 : [
                     BoxShadow(
-                      color: (Theme.of(context).brightness == Brightness.dark 
-                          ? AppTheme.darkAccentYellow
-                          : AppTheme.accentYellow).withOpacity(0.2),
+                      color: (Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkAccentYellow
+                              : AppTheme.accentYellow)
+                          .withOpacity(0.2),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -1409,12 +1529,13 @@ class _LibraryPageState extends State<LibraryPage>
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
                 const SizedBox(width: 8),
                 const SizedBox(
-                  width: 128, // 固定文本宽度 
+                  width: 128, // 固定文本宽度
                   child: OptimizedText(
                     '收集中...',
                     textAlign: TextAlign.center,
@@ -1429,7 +1550,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.downloaded:
         return Container(
           width: double.infinity,
@@ -1437,8 +1558,8 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark 
-                ? null 
+            boxShadow: Theme.of(context).brightness == Brightness.dark
+                ? null
                 : [
                     BoxShadow(
                       color: AppTheme.coolGray600.withOpacity(0.25),
@@ -1501,8 +1622,8 @@ class _LibraryPageState extends State<LibraryPage>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark 
-                ? null 
+            boxShadow: Theme.of(context).brightness == Brightness.dark
+                ? null
                 : [
                     BoxShadow(
                       color: AppTheme.accentGreen.withOpacity(0.25),
@@ -1542,7 +1663,7 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.error:
         return Container(
           width: double.infinity,
@@ -1550,20 +1671,23 @@ class _LibraryPageState extends State<LibraryPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentRed
-                    : AppTheme.accentRed).withOpacity(0.2),
-                (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentRed
-                    : AppTheme.accentRed).withOpacity(0.8),
+                (Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkAccentRed
+                        : AppTheme.accentRed)
+                    .withOpacity(0.2),
+                (Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkAccentRed
+                        : AppTheme.accentRed)
+                    .withOpacity(0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: (Theme.of(context).brightness == Brightness.dark 
-                    ? AppTheme.darkAccentRed
-                    : AppTheme.accentRed).withOpacity(0.2),
+                color: (Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkAccentRed
+                        : AppTheme.accentRed)
+                    .withOpacity(0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1615,7 +1739,8 @@ class _LibraryPageState extends State<LibraryPage>
     switch (status) {
       case WordBookStatus.notDownloaded:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
                 ? AppTheme.coolGray600
@@ -1633,31 +1758,34 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.downloading:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: (Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkAccentYellow 
-                : AppTheme.accentYellow).withOpacity(0.2),
+            color: (Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkAccentYellow
+                    : AppTheme.accentYellow)
+                .withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: OptimizedText(
             '收集中',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkAccentYellow 
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkAccentYellow
                   : AppTheme.accentYellow,
               fontWeight: FontWeight.w500,
             ),
           ),
         );
-        
+
       case WordBookStatus.downloaded:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
@@ -1673,10 +1801,11 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.selected:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
             color: AppTheme.accentGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
@@ -1692,22 +1821,24 @@ class _LibraryPageState extends State<LibraryPage>
             ),
           ),
         );
-        
+
       case WordBookStatus.error:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 从12,6减少到10,4
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 4), // 从12,6减少到10,4
           decoration: BoxDecoration(
-            color: (Theme.of(context).brightness == Brightness.dark 
-                ? AppTheme.darkAccentRed 
-                : AppTheme.accentRed).withOpacity(0.2),
+            color: (Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkAccentRed
+                    : AppTheme.accentRed)
+                .withOpacity(0.2),
             borderRadius: BorderRadius.circular(16), // 从20减少到16
           ),
           child: OptimizedText(
             '错误',
             style: TextStyle(
               fontSize: 11, // 从12减少到11
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.darkAccentRed 
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkAccentRed
                   : AppTheme.accentRed,
               fontWeight: FontWeight.w500,
             ),
