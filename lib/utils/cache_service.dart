@@ -121,6 +121,36 @@ class CacheService {
     await cacheWordData(wordBook.name, wordData);
   }
 
+  /// 更新自定义词库的单词内容，并同步词书统计信息
+  static Future<void> updateCustomWordBookWords(
+    String wordBookName,
+    List<WordData> wordData,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final customWordBooks = await getCustomWordBooks();
+    final updatedWordBooks = List<WordBook>.from(customWordBooks);
+    final existingIndex =
+        updatedWordBooks.indexWhere((book) => book.name == wordBookName);
+
+    if (existingIndex < 0) {
+      throw Exception('未找到可编辑的自定义词书：$wordBookName');
+    }
+
+    final existingBook = updatedWordBooks[existingIndex];
+    updatedWordBooks[existingIndex] = WordBook(
+      name: existingBook.name,
+      translationUrl: existingBook.translationUrl,
+      wordCount: wordData.length,
+    );
+
+    final wordBooksJson =
+        updatedWordBooks.map((book) => book.toJson()).toList();
+    await prefs.setString(_customWordBooksKey, jsonEncode(wordBooksJson));
+    MemoryCache.set(_customWordBooksKey, updatedWordBooks);
+
+    await cacheWordData(wordBookName, wordData);
+  }
+
   /// 获取自定义词库列表
   static Future<List<WordBook>> getCustomWordBooks() async {
     final cachedList = MemoryCache.get<List<WordBook>>(_customWordBooksKey);

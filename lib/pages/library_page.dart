@@ -11,6 +11,7 @@ import '../utils/responsive_helper.dart';
 import '../utils/performance_optimizer.dart';
 import '../utils/sound_service.dart';
 import '../widgets/acrylic_app_bar.dart';
+import 'custom_word_book_editor_page.dart';
 import 'word_book_import_page.dart';
 
 /// 词库状态枚举
@@ -296,6 +297,66 @@ class _LibraryPageState extends State<LibraryPage>
             Expanded(
               child: Text(
                 '自定义单词本已导入到词库列表',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor:
+            isDarkMode ? AppTheme.darkCardColor : AppTheme.cardColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  bool _isCustomWordBook(WordBookItem item) {
+    return item.wordBook.translationUrl.startsWith('import://');
+  }
+
+  Future<void> _openCustomWordBookEditor(WordBookItem item) async {
+    if (!_isCustomWordBook(item)) {
+      return;
+    }
+
+    SoundService.playTapSound();
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (context) => CustomWordBookEditorPage(
+          wordBookName: item.wordBook.name,
+        ),
+      ),
+    );
+
+    if (changed == true && mounted) {
+      await _loadWordBooks();
+      _showCustomBookUpdatedSnackBar(item.wordBook.name);
+    }
+  }
+
+  void _showCustomBookUpdatedSnackBar(String bookName) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.edit_note_rounded,
+              color: isDarkMode ? Colors.white : Colors.black87,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '《$bookName》内容已更新',
                 style: TextStyle(
                   fontSize: 14,
                   color: isDarkMode ? Colors.white : Colors.black87,
@@ -757,6 +818,55 @@ class _LibraryPageState extends State<LibraryPage>
     );
   }
 
+  Widget _buildEditSecondaryButton(WordBookItem item) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: Container(
+        key: Key('wordBookEditAction_${item.wordBook.name}'),
+        height: 42,
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? AppTheme.darkCardColor.withValues(alpha: 0.96)
+              : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.accentGreen.withValues(alpha: 0.24),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openCustomWordBookEditor(item),
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.edit_rounded,
+                    color: AppTheme.accentGreen,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '编辑词书',
+                    style: TextStyle(
+                      color: AppTheme.accentGreen,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 加载更多项目 - 分页加载并启动独立动画
   void _loadMoreItems() {
     if (_isLoadingMore) return;
@@ -1192,6 +1302,35 @@ class _LibraryPageState extends State<LibraryPage>
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_isCustomWordBook(item)) ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: Key('downloadedBookEditButton_${item.wordBook.name}'),
+                  onTap: () => _openCustomWordBookEditor(item),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? AppTheme.darkCardColor.withValues(alpha: 0.92)
+                          : AppTheme.cardColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: AppTheme.accentGreen,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -2034,6 +2173,10 @@ class _LibraryPageState extends State<LibraryPage>
         return Row(
           children: [
             _buildPreviewSecondaryButton(item),
+            if (_isCustomWordBook(item)) ...[
+              const SizedBox(width: 10),
+              _buildEditSecondaryButton(item),
+            ],
             const SizedBox(width: 10),
             Expanded(
               child: Container(
@@ -2100,6 +2243,10 @@ class _LibraryPageState extends State<LibraryPage>
         return Row(
           children: [
             _buildPreviewSecondaryButton(item),
+            if (_isCustomWordBook(item)) ...[
+              const SizedBox(width: 10),
+              _buildEditSecondaryButton(item),
+            ],
             const SizedBox(width: 10),
             Expanded(
               child: Container(

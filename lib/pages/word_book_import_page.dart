@@ -9,6 +9,7 @@ import '../utils/app_theme.dart';
 import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
 import '../utils/llm_api_service.dart';
+import '../utils/settings_helper.dart';
 import '../widgets/acrylic_app_bar.dart';
 
 class WordBookImportPage extends StatefulWidget {
@@ -27,6 +28,7 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
   bool _isAiAnalyzing = false;
   bool _isImporting = false;
   bool _hasUsableAiConfig = false;
+  bool _aiAutoParseEnabled = true;
 
   @override
   void initState() {
@@ -51,12 +53,18 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
 
   Future<void> _loadAiAvailability() async {
     final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
+    final aiAutoParseEnabled = await SettingsHelper.getAiAutoParseEnabled();
     if (!mounted) {
       return;
     }
     setState(() {
       _hasUsableAiConfig = hasUsableAiConfig;
+      _aiAutoParseEnabled = aiAutoParseEnabled;
     });
+  }
+
+  bool get _canUseAiAutoParse {
+    return _hasUsableAiConfig && _aiAutoParseEnabled;
   }
 
   Future<void> _pickFileAndParse() async {
@@ -89,7 +97,7 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
       try {
         preview = _parseWordBookContent(rawContent);
       } catch (localError) {
-        if (!_hasUsableAiConfig) {
+        if (!_canUseAiAutoParse) {
           rethrow;
         }
 
@@ -496,9 +504,11 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      _hasUsableAiConfig
+                                      _canUseAiAutoParse
                                           ? '支持按当前词库格式导入本地 .csv / .txt 文件；若格式复杂或不兼容，将自动调用 AI 生成转换脚本并完成适配。'
-                                          : '支持按当前词库格式导入本地 .csv / .txt 文件。导入后会直接出现在词库页，并作为已下载词库可立即使用。',
+                                          : _hasUsableAiConfig
+                                              ? '当前已配置 AI，但自动解析开关已关闭，将仅按标准格式进行本地解析。'
+                                              : '支持按当前词库格式导入本地 .csv / .txt 文件。导入后会直接出现在词库页，并作为已下载词库可立即使用。',
                                       style:
                                           theme.textTheme.bodyMedium?.copyWith(
                                         color: theme.textTheme.bodyMedium?.color
@@ -528,13 +538,57 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                                 icon: Icons.verified_rounded,
                                 label: 'UTF-8 编码推荐',
                               ),
-                              if (_hasUsableAiConfig)
+                              if (_canUseAiAutoParse)
                                 const _FormatHintChip(
                                   icon: Icons.auto_awesome_rounded,
                                   label: 'AI 智能适配',
                                 ),
+                              if (_canUseAiAutoParse)
+                                const _FormatHintChip(
+                                  icon: Icons.toll_rounded,
+                                  label: '可能产生 token',
+                                ),
                             ],
                           ),
+                          if (_hasUsableAiConfig) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: tertiaryColor.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: tertiaryColor.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    _aiAutoParseEnabled
+                                        ? Icons.info_outline_rounded
+                                        : Icons.toggle_off_rounded,
+                                    color: tertiaryColor,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _aiAutoParseEnabled
+                                          ? '已开启 AI 自动解析：仅当标准格式解析失败时才会触发，可能产生 token 消耗。你可以在设置页的 AI 设置中随时关闭。'
+                                          : 'AI 自动解析当前已关闭：本页只会执行本地标准格式解析，不会自动触发 AI，也不会产生额外 token 消耗。',
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.textTheme.bodySmall?.color
+                                            ?.withValues(alpha: 0.86),
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -665,9 +719,11 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            _hasUsableAiConfig
-                                ? '标准格式会优先本地解析；遇到复杂格式时会自动使用 AI 生成兼容转换脚本。'
-                                : '当前未检测到可用 AI 配置，将仅按标准格式进行本地解析。',
+                            _canUseAiAutoParse
+                                ? '标准格式会优先本地解析；遇到复杂格式时会自动使用 AI 生成兼容转换脚本，可能产生 token 消耗。'
+                                : _hasUsableAiConfig
+                                    ? '当前 AI 自动解析已关闭，将仅按标准格式进行本地解析。'
+                                    : '当前未检测到可用 AI 配置，将仅按标准格式进行本地解析。',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.textTheme.bodySmall?.color
                                   ?.withValues(alpha: 0.75),

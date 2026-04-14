@@ -50,6 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // AI 接口设置
   bool _isAiConfigValid = false;
+  bool _aiAutoParseEnabled = true;
 
   // 学习算法设置
 
@@ -245,6 +246,21 @@ class _SettingsPageState extends State<SettingsPage> {
                   _buildSectionHeader('AI设置'),
                   _buildSettingsCard([
                     _buildApiKeyTile(),
+                    _buildSwitchTile(
+                      title: '导入时自动使用 AI 解析',
+                      subtitle: _isAiConfigValid
+                          ? (_aiAutoParseEnabled
+                              ? '遇到复杂格式时自动调用 AI 适配，可能产生 token 消耗'
+                              : '关闭后仅按标准格式本地解析，不会自动触发 AI 适配')
+                          : '需要先完成 AI 接口配置；开启后在导入复杂格式时可能产生 token 消耗',
+                      value: _aiAutoParseEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _aiAutoParseEnabled = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
                   ]),
 
                   const SizedBox(height: 16),
@@ -630,6 +646,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
     final learningMode = await SettingsHelper.getLearningMode();
+    final aiAutoParseEnabled = await SettingsHelper.getAiAutoParseEnabled();
 
     if (!mounted) {
       return;
@@ -652,6 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
           : PronunciationType.uk;
       _learningMode = finalLearningMode;
       _isAiConfigValid = hasUsableAiConfig;
+      _aiAutoParseEnabled = aiAutoParseEnabled;
     });
 
     if (!hasUsableAiConfig && learningMode == LearningMode.deepLearning) {
@@ -698,6 +716,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('enable_dark_mode', _enableDarkMode);
     await prefs.setBool('smart_sync_enabled', _smartSyncEnabled);
     await prefs.setString('pronunciation_type', _pronunciationType.code);
+    await SettingsHelper.setAiAutoParseEnabled(_aiAutoParseEnabled);
 
     if (_learningMode != null) {
       if (!_isAiConfigValid && _learningMode == LearningMode.deepLearning) {
