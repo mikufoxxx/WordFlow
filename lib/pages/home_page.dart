@@ -1072,6 +1072,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     Padding(
                       padding: EdgeInsets.only(
                           right: ResponsiveHelper.getResponsiveSpacing(
+                              context, 4)),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                        ),
+                        child: IconButton(
+                          key:
+                              const ValueKey<String>('home_lookup_word_button'),
+                          enableFeedback: false,
+                          icon: const Icon(Icons.manage_search_outlined),
+                          iconSize: ResponsiveHelper.getResponsiveIconSize(
+                              context, 26),
+                          onPressed: _showWordLookupDialog,
+                          tooltip: '查单词',
+                          color: Theme.of(context).primaryColor,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(
+                            minWidth: ResponsiveHelper.getResponsiveIconSize(
+                                context, 40),
+                            minHeight: ResponsiveHelper.getResponsiveIconSize(
+                                context, 40),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          right: ResponsiveHelper.getResponsiveSpacing(
                               context, 10)),
                       child: Theme(
                         data: Theme.of(context).copyWith(
@@ -1081,6 +1112,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           focusColor: Colors.transparent,
                         ),
                         child: IconButton(
+                          key: const ValueKey<String>('home_settings_button'),
                           enableFeedback: false,
                           icon: const Icon(Icons.settings_outlined),
                           iconSize: ResponsiveHelper.getResponsiveIconSize(
@@ -1094,6 +1126,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   PageTransitionType.slideFromBottom,
                             );
                           },
+                          tooltip: '设置',
                           color: Theme.of(context).primaryColor,
                           padding: EdgeInsets.zero,
                           constraints: BoxConstraints(
@@ -3126,6 +3159,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  /// 显示查单词对话框
+  Future<void> _showWordLookupDialog() async {
+    SoundService.playTapSound();
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return const _WordLookupDialog(
+          key: ValueKey<String>('word_lookup_dialog'),
+        );
+      },
+    );
+  }
+
   /// 显示编辑浮层
   void _showInputOverlay() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -4185,6 +4231,310 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _textWidthCache.clear();
 
     super.dispose();
+  }
+}
+
+class _WordLookupDialog extends StatefulWidget {
+  const _WordLookupDialog({super.key});
+
+  @override
+  State<_WordLookupDialog> createState() => _WordLookupDialogState();
+}
+
+class _WordLookupDialogState extends State<_WordLookupDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  WordDetailResponse? _result;
+  String? _errorText;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _performLookup() async {
+    final keyword = _controller.text.trim();
+    if (keyword.isEmpty) {
+      setState(() {
+        _errorText = '请输入要查询的单词';
+        _result = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    final response = await EnglishWordApiService.getWordDetails(keyword);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _result = response;
+      _errorText = response == null ? '未查询到该单词，请检查拼写后重试' : null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color dialogBackground =
+        isDark ? AppTheme.darkCardColor : AppTheme.cardColor;
+    final Color sectionBackground =
+        isDark ? AppTheme.coolGray700 : AppTheme.coolGray100;
+    final Color titleColor =
+        isDark ? AppTheme.darkPrimaryTextColor : AppTheme.darkGray;
+    final Color secondaryColor =
+        isDark ? AppTheme.mediumGray : AppTheme.coolGray500;
+
+    return AlertDialog(
+      backgroundColor: dialogBackground,
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      title: Text(
+        '查单词',
+        key: const ValueKey<String>('lookup_word_dialog_title'),
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: titleColor,
+        ),
+      ),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: sectionBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey<String>('lookup_word_text_field'),
+                        controller: _controller,
+                        autofocus: true,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _performLookup(),
+                        decoration: InputDecoration(
+                          hintText: '输入英文单词，如 design',
+                          hintStyle: TextStyle(color: secondaryColor),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: titleColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      key: const ValueKey<String>('lookup_word_submit_button'),
+                      onPressed: _isLoading ? null : _performLookup,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('查询'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (_errorText != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: sectionBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _errorText!,
+                    key: const ValueKey<String>('lookup_word_error_text'),
+                    style: TextStyle(
+                      color: secondaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              if (_result != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: sectionBackground,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _result!.word,
+                        key: const ValueKey<String>('lookup_word_result_title'),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_result!.ukPhone.isNotEmpty ||
+                          _result!.usPhone.isNotEmpty)
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            if (_result!.ukPhone.isNotEmpty)
+                              Text(
+                                '英 /${_result!.ukPhone}/',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: secondaryColor,
+                                ),
+                              ),
+                            if (_result!.usPhone.isNotEmpty)
+                              Text(
+                                '美 /${_result!.usPhone}/',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: secondaryColor,
+                                ),
+                              ),
+                          ],
+                        ),
+                      if (_result!.translations.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '释义',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._result!.translations.map(
+                          (WordTranslation item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              '${item.pos}. ${item.tranCn}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.5,
+                                color: secondaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_result!.phrases.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '短语',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._result!.phrases.take(3).map(
+                              (WordPhrase item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  '${item.pContent}：${item.pCn}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color: secondaryColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ],
+                      if (_result!.sentences.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '例句',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _result!.sentences.first.sContent,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: titleColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _result!.sentences.first.sCn,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: secondaryColor,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const ValueKey<String>('lookup_word_close_button'),
+          onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            foregroundColor: secondaryColor,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 10,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('关闭'),
+        ),
+      ],
+    );
   }
 }
 
