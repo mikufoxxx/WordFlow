@@ -316,6 +316,447 @@ class _LibraryPageState extends State<LibraryPage>
     );
   }
 
+  Future<void> _showWordBookPreviewSheet(WordBookItem item) async {
+    SoundService.playTapSound();
+    final cachedWordData =
+        await CacheService.getCachedWordData(item.wordBook.name);
+
+    if (!mounted) {
+      return;
+    }
+
+    final previewWords = cachedWordData ?? item.wordData ?? const <WordData>[];
+    final visibleWords = previewWords.take(100).toList(growable: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Container(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: () {},
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.78,
+              maxChildSize: 0.92,
+              minChildSize: 0.52,
+              expand: false,
+              builder: (context, scrollController) {
+                final isDarkMode =
+                    Theme.of(context).brightness == Brightness.dark;
+                final bottomInset = MediaQuery.of(context).padding.bottom;
+
+                return Container(
+                  key: Key('wordBookPreviewSheet_${item.wordBook.name}'),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? AppTheme.darkBackgroundColor
+                        : AppTheme.backgroundColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    boxShadow: isDarkMode
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              offset: const Offset(0, -4),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppTheme.coolGray300,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Color(item.wordBook.coverColor),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                Icons.auto_stories_rounded,
+                                color: Color(item.wordBook.iconColor),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  OptimizedText(
+                                    item.wordBook.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                      color: isDarkMode
+                                          ? AppTheme.darkPrimaryTextColor
+                                          : AppTheme.primaryTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '已导入词书内容预览',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDarkMode
+                                          ? AppTheme.darkSecondaryTextColor
+                                          : AppTheme.secondaryTextColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              key: Key(
+                                  'wordBookPreviewCloseButton_${item.wordBook.name}'),
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: isDarkMode
+                                    ? AppTheme.darkSecondaryTextColor
+                                    : AppTheme.secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildPreviewMetaChip(
+                              icon: Icons.layers_rounded,
+                              label: '${previewWords.length} 个单词',
+                            ),
+                            _buildPreviewMetaChip(
+                              icon: item.status == WordBookStatus.selected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.inventory_2_rounded,
+                              label: _getWordBookStatusLabel(item.status),
+                            ),
+                            if (previewWords.length > visibleWords.length)
+                              _buildPreviewMetaChip(
+                                icon: Icons.visibility_rounded,
+                                label: '展示前 ${visibleWords.length} 条',
+                              ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: previewWords.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.menu_book_outlined,
+                                        size: 52,
+                                        color: AppTheme.coolGray300,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        '当前词书暂无可预览内容',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDarkMode
+                                              ? AppTheme.darkSecondaryTextColor
+                                              : AppTheme.secondaryTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                physics: const ClampingScrollPhysics(),
+                                padding: EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  bottomInset + 20,
+                                ),
+                                itemCount: visibleWords.length +
+                                    (previewWords.length > visibleWords.length
+                                        ? 1
+                                        : 0),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  if (index >= visibleWords.length) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? AppTheme.darkCardColor
+                                            : AppTheme.cardColor,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppTheme.accentGreen
+                                              .withValues(alpha: 0.16),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.more_horiz_rounded,
+                                            color: AppTheme.accentGreen,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              '为保证浏览流畅，仅展示前 ${visibleWords.length} 条词条',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: isDarkMode
+                                                    ? AppTheme
+                                                        .darkSecondaryTextColor
+                                                    : AppTheme
+                                                        .secondaryTextColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  return _buildPreviewWordTile(
+                                    wordData: visibleWords[index],
+                                    index: index,
+                                    bookName: item.wordBook.name,
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewMetaChip({
+    required IconData icon,
+    required String label,
+  }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? AppTheme.darkCardColor.withValues(alpha: 0.9)
+            : AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppTheme.accentGreen.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: AppTheme.accentGreen,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode
+                  ? AppTheme.darkPrimaryTextColor
+                  : AppTheme.primaryTextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewWordTile({
+    required WordData wordData,
+    required int index,
+    required String bookName,
+  }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      key: Key('previewWordTile_${bookName}_$index'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDarkMode ? AppTheme.darkCardColor : AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: isDarkMode
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.accentGreen.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${index + 1}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.accentGreen,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  wordData.word,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode
+                        ? AppTheme.darkPrimaryTextColor
+                        : AppTheme.primaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  wordData.translation,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: isDarkMode
+                        ? AppTheme.darkSecondaryTextColor
+                        : AppTheme.secondaryTextColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getWordBookStatusLabel(WordBookStatus status) {
+    switch (status) {
+      case WordBookStatus.notDownloaded:
+        return '未下载';
+      case WordBookStatus.downloading:
+        return '收集中';
+      case WordBookStatus.downloaded:
+        return '已下载';
+      case WordBookStatus.selected:
+        return '使用中';
+      case WordBookStatus.error:
+        return '错误';
+    }
+  }
+
+  Widget _buildPreviewSecondaryButton(WordBookItem item) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: Container(
+        key: Key('wordBookPreviewAction_${item.wordBook.name}'),
+        height: 42,
+        decoration: BoxDecoration(
+          color: isDarkMode ? AppTheme.darkCardColor : AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDarkMode
+                ? AppTheme.coolGray300.withValues(alpha: 0.16)
+                : AppTheme.coolGray400.withValues(alpha: 0.32),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showWordBookPreviewSheet(item),
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.visibility_rounded,
+                    color: isDarkMode
+                        ? AppTheme.darkPrimaryTextColor
+                        : AppTheme.primaryTextColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '预览词书',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? AppTheme.darkPrimaryTextColor
+                          : AppTheme.primaryTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 加载更多项目 - 分页加载并启动独立动画
   void _loadMoreItems() {
     if (_isLoadingMore) return;
@@ -689,46 +1130,49 @@ class _LibraryPageState extends State<LibraryPage>
 
   /// 构建已下载词库卡片
   Widget _buildDownloadedBookCard(WordBookItem item) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      margin: EdgeInsets.only(bottom: 10), // 从12减少到10
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(14), // 从16减少到14
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: item.status == WordBookStatus.selected
-                ? AppTheme.accentGreen
-                : Colors.transparent,
-            width: 2),
-        boxShadow: Theme.of(context).brightness == Brightness.dark
+          color: item.status == WordBookStatus.selected
+              ? AppTheme.accentGreen
+              : Colors.transparent,
+          width: 2,
+        ),
+        boxShadow: isDarkMode
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04), // 从0.05减少到0.04
-                  blurRadius: 6, // 从8减少到6
-                  offset: Offset(0, 2),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.all(14), // 从16减少到14
-        dense: true, // 启用紧凑模式
+        contentPadding: const EdgeInsets.all(14),
+        dense: true,
         leading: Container(
-          width: 44, // 从48减少到44
-          height: 44, // 从48减少到44
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: Color(item.wordBook.coverColor),
-            borderRadius: BorderRadius.circular(10), // 从12减少到10
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.menu_book_rounded,
             color: Color(item.wordBook.iconColor),
-            size: 22, // 从24减少到22
+            size: 22,
           ),
         ),
         title: OptimizedText(
           item.wordBook.name,
           style: TextStyle(
-            fontSize: 15, // 从16减少到15
+            fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppTheme.getPrimaryTitleColor(context,
                 lightColor: AppTheme.primaryTextColor),
@@ -739,57 +1183,92 @@ class _LibraryPageState extends State<LibraryPage>
         subtitle: OptimizedText(
           '${item.wordBook.wordCount} 个单词',
           style: TextStyle(
-            fontSize: 13, // 从14减少到13
-            color: Theme.of(context).brightness == Brightness.dark
+            fontSize: 13,
+            color: isDarkMode
                 ? AppTheme.darkSecondaryTextColor
                 : AppTheme.secondaryTextColor,
           ),
         ),
-        trailing: item.status == WordBookStatus.selected
-            ? Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4), // 从12,6减少到10,4
-                decoration: BoxDecoration(
-                  color: AppTheme.accentGreen.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16), // 从20减少到16
-                ),
-                child: Text(
-                  '使用中',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? AppTheme.darkPrimaryTextColor
-                        : AppTheme.darkGray,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
-            : GestureDetector(
-                onTap: () {
-                  SoundService.playChooseBookSound();
-                  Navigator.pop(context);
-                  _selectWordBook(item);
-                },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: Key('downloadedBookPreviewButton_${item.wordBook.name}'),
+                onTap: () => _showWordBookPreviewSheet(item),
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: AppTheme.accentGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: isDarkMode
+                        ? AppTheme.darkCardColor.withValues(alpha: 0.92)
+                        : AppTheme.cardColor,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: AppTheme.accentGreen.withOpacity(0.3),
-                      width: 1,
+                      color: AppTheme.coolGray400.withValues(alpha: 0.28),
                     ),
                   ),
-                  child: Text(
-                    '选择',
-                    style: TextStyle(
-                      color: AppTheme.accentGreen,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Icon(
+                    Icons.visibility_rounded,
+                    color: isDarkMode
+                        ? AppTheme.darkPrimaryTextColor
+                        : AppTheme.primaryTextColor,
+                    size: 18,
                   ),
                 ),
               ),
+            ),
+            const SizedBox(width: 8),
+            item.status == WordBookStatus.selected
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '使用中',
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? AppTheme.darkPrimaryTextColor
+                            : AppTheme.darkGray,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () {
+                      SoundService.playChooseBookSound();
+                      Navigator.pop(context);
+                      _selectWordBook(item);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppTheme.accentGreen.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '选择',
+                        style: TextStyle(
+                          color: AppTheme.accentGreen,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+          ],
+        ),
       ),
     );
   }
@@ -1552,116 +2031,130 @@ class _LibraryPageState extends State<LibraryPage>
         );
 
       case WordBookStatus.downloaded:
-        return Container(
-          width: double.infinity,
-          height: 42, // 固定高度，避免抖动
-          decoration: BoxDecoration(
-            color: AppTheme.accentGreen.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark
-                ? null
-                : [
-                    BoxShadow(
-                      color: AppTheme.coolGray600.withOpacity(0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                SoundService.playChooseBookSound();
-                _selectWordBook(item);
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min, // 防止内容撑开
-                  children: [
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: Icon(
-                        Icons.touch_app_rounded,
-                        color: Colors.white,
-                        size: 18,
+        return Row(
+          children: [
+            _buildPreviewSecondaryButton(item),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreen.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: Theme.of(context).brightness == Brightness.dark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: AppTheme.coolGray600.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      SoundService.playChooseBookSound();
+                      _selectWordBook(item);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: Icon(
+                              Icons.touch_app_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          SizedBox(
+                            width: 64,
+                            child: OptimizedText(
+                              '选择词书',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const SizedBox(
-                      width: 64, // 固定文本宽度
-                      child: OptimizedText(
-                        '选择词书',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         );
 
       case WordBookStatus.selected:
-        return Container(
-          width: double.infinity,
-          height: 42, // 固定高度，避免抖动
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.darkGray,
-                AppTheme.darkGray.withOpacity(0.8),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: Theme.of(context).brightness == Brightness.dark
-                ? null
-                : [
-                    BoxShadow(
-                      color: AppTheme.accentGreen.withOpacity(0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min, // 防止内容撑开
-              children: [
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white,
-                    size: 18,
+        return Row(
+          children: [
+            _buildPreviewSecondaryButton(item),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.darkGray,
+                      AppTheme.darkGray.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: Theme.of(context).brightness == Brightness.dark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: AppTheme.accentGreen.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      SizedBox(
+                        width: 64,
+                        child: OptimizedText(
+                          '使用中',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const SizedBox(
-                  width: 64, // 固定文本宽度
-                  child: OptimizedText(
-                    '使用中',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         );
 
       case WordBookStatus.error:

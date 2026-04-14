@@ -4,9 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../models/word_book.dart';
+import '../utils/ai_word_book_import_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/cache_service.dart';
 import '../utils/file_helper.dart';
+import '../utils/llm_api_service.dart';
 import '../widgets/acrylic_app_bar.dart';
 
 class WordBookImportPage extends StatefulWidget {
@@ -22,12 +24,15 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
   PlatformFile? _selectedFile;
   _WordBookImportPreview? _preview;
   bool _isParsing = false;
+  bool _isAiAnalyzing = false;
   bool _isImporting = false;
+  bool _hasUsableAiConfig = false;
 
   @override
   void initState() {
     super.initState();
     _bookNameController.addListener(_handleBookNameChanged);
+    _loadAiAvailability();
   }
 
   @override
@@ -44,14 +49,25 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
     }
   }
 
+  Future<void> _loadAiAvailability() async {
+    final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _hasUsableAiConfig = hasUsableAiConfig;
+    });
+  }
+
   Future<void> _pickFileAndParse() async {
-    if (_isParsing || _isImporting) {
+    if (_isParsing || _isAiAnalyzing || _isImporting) {
       return;
     }
 
     try {
       setState(() {
         _isParsing = true;
+        _isAiAnalyzing = false;
       });
 
       final selectedFile = await FileHelper.selectImportFile();
@@ -67,7 +83,36 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
       }
 
       final rawContent = await _readSelectedFile(selectedFile);
-      final preview = _parseWordBookContent(rawContent);
+      _WordBookImportPreview preview;
+      String suggestedBookName = _suggestWordBookName(selectedFile.name);
+
+      try {
+        preview = _parseWordBookContent(rawContent);
+      } catch (localError) {
+        if (!_hasUsableAiConfig) {
+          rethrow;
+        }
+
+        if (mounted) {
+          setState(() {
+            _isAiAnalyzing = true;
+          });
+        }
+
+        final aiResult = await AiWordBookImportService.analyzeAndTransform(
+          rawContent: rawContent,
+          fileName: selectedFile.name,
+        );
+        preview = _buildAiPreview(aiResult);
+        suggestedBookName = aiResult.bookNameSuggestion;
+
+        if (mounted) {
+          _showSnackBar(
+            message: '标准解析失败，已通过 AI 自动生成兼容转换脚本',
+            icon: Icons.auto_awesome_rounded,
+          );
+        }
+      }
 
       if (!mounted) {
         return;
@@ -77,7 +122,7 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
         _selectedFile = selectedFile;
         _preview = preview;
         if (_bookNameController.text.trim().isEmpty) {
-          _bookNameController.text = _suggestWordBookName(selectedFile.name);
+          _bookNameController.text = suggestedBookName;
         }
       });
     } catch (e) {
@@ -93,6 +138,7 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
       if (mounted) {
         setState(() {
           _isParsing = false;
+          _isAiAnalyzing = false;
         });
       }
     }
@@ -159,6 +205,18 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
       sampleWords: samples,
       duplicateCount: duplicateCount,
       lineCount: rawLines.where((line) => line.trim().isNotEmpty).length,
+    );
+  }
+
+  _WordBookImportPreview _buildAiPreview(AiWordBookImportResult result) {
+    return _WordBookImportPreview(
+      words: result.words,
+      sampleWords: result.sampleWords,
+      duplicateCount: result.duplicateCount,
+      lineCount: result.lineCount,
+      usedAi: true,
+      aiSummary: result.summary,
+      scriptPreview: AiWordBookImportService.prettyPrintScript(result.script),
     );
   }
 
@@ -365,7 +423,9 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
         isDarkMode ? AppTheme.darkAccentBlue : AppTheme.accentBlue;
     final tertiaryColor =
         isDarkMode ? AppTheme.darkAccentOrange : AppTheme.accentTeal;
+    final isPickingFile = _isParsing || _isAiAnalyzing;
     final isImportEnabled = !_isImporting &&
+        !isPickingFile &&
         _preview != null &&
         _bookNameController.text.trim().isNotEmpty;
 
@@ -436,7 +496,9 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '支持按当前词库格式导入本地 .csv / .txt 文件。导入后会直接出现在词库页，并作为已下载词库可立即使用。',
+                                      _hasUsableAiConfig
+                                          ? '支持按当前词库格式导入本地 .csv / .txt 文件；若格式复杂或不兼容，将自动调用 AI 生成转换脚本并完成适配。'
+                                          : '支持按当前词库格式导入本地 .csv / .txt 文件。导入后会直接出现在词库页，并作为已下载词库可立即使用。',
                                       style:
                                           theme.textTheme.bodyMedium?.copyWith(
                                         color: theme.textTheme.bodyMedium?.color
@@ -450,22 +512,27 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Wrap(
+                          Wrap(
                             spacing: 10,
                             runSpacing: 10,
                             children: [
-                              _FormatHintChip(
+                              const _FormatHintChip(
                                 icon: Icons.table_rows_rounded,
                                 label: '两列结构',
                               ),
-                              _FormatHintChip(
+                              const _FormatHintChip(
                                 icon: Icons.translate_rounded,
                                 label: '单词 + 释义',
                               ),
-                              _FormatHintChip(
+                              const _FormatHintChip(
                                 icon: Icons.verified_rounded,
                                 label: 'UTF-8 编码推荐',
                               ),
+                              if (_hasUsableAiConfig)
+                                const _FormatHintChip(
+                                  icon: Icons.auto_awesome_rounded,
+                                  label: 'AI 智能适配',
+                                ),
                             ],
                           ),
                         ],
@@ -547,18 +614,65 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                               FilledButton.tonalIcon(
                                 key: const Key('wordBookImportPickFileButton'),
                                 onPressed:
-                                    _isParsing ? null : _pickFileAndParse,
-                                icon: _isParsing
+                                    isPickingFile ? null : _pickFileAndParse,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: isDarkMode
+                                      ? AppTheme.accentGreen
+                                          .withValues(alpha: 0.16)
+                                      : AppTheme.accentGreen
+                                          .withValues(alpha: 0.1),
+                                  foregroundColor: isDarkMode
+                                      ? AppTheme.darkPrimaryTextColor
+                                      : AppTheme.primaryTextColor,
+                                  disabledBackgroundColor: isDarkMode
+                                      ? AppTheme.coolGray800
+                                      : AppTheme.coolGray100,
+                                  disabledForegroundColor: isDarkMode
+                                      ? AppTheme.coolGray500
+                                      : AppTheme.coolGray500,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                    side: BorderSide(
+                                      color: isDarkMode
+                                          ? AppTheme.accentGreen
+                                              .withValues(alpha: 0.24)
+                                          : AppTheme.accentGreen
+                                              .withValues(alpha: 0.18),
+                                    ),
+                                  ),
+                                ),
+                                icon: isPickingFile
                                     ? const SizedBox(
                                         width: 16,
                                         height: 16,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2),
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
                                       )
                                     : const Icon(Icons.attach_file_rounded),
-                                label: Text(_isParsing ? '解析中' : '选择文件'),
+                                label: Text(
+                                  _isAiAnalyzing
+                                      ? 'AI 适配中'
+                                      : (_isParsing ? '解析中' : '选择文件'),
+                                ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _hasUsableAiConfig
+                                ? '标准格式会优先本地解析；遇到复杂格式时会自动使用 AI 生成兼容转换脚本。'
+                                : '当前未检测到可用 AI 配置，将仅按标准格式进行本地解析。',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withValues(alpha: 0.75),
+                              height: 1.45,
+                            ),
                           ),
                         ],
                       ),
@@ -577,6 +691,13 @@ class _WordBookImportPageState extends State<WordBookImportPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
+                            if (_preview!.usedAi) ...[
+                              _AiInsightCard(
+                                summary: _preview!.aiSummary,
+                                scriptPreview: _preview!.scriptPreview,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             Wrap(
                               spacing: 12,
                               runSpacing: 12,
@@ -913,16 +1034,104 @@ class _FormatBullet extends StatelessWidget {
   }
 }
 
+class _AiInsightCard extends StatelessWidget {
+  const _AiInsightCard({
+    required this.summary,
+    required this.scriptPreview,
+  });
+
+  final String summary;
+  final String scriptPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? AppTheme.darkAccentBlue.withValues(alpha: 0.14)
+            : AppTheme.accentBlue.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkMode
+              ? AppTheme.darkAccentBlue.withValues(alpha: 0.28)
+              : AppTheme.accentBlue.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color:
+                    isDarkMode ? AppTheme.darkAccentBlue : AppTheme.accentBlue,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'AI 智能适配已生效',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summary,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? AppTheme.coolGray800.withValues(alpha: 0.72)
+                  : AppTheme.coolGray50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDarkMode ? AppTheme.coolGray700 : AppTheme.coolGray200,
+              ),
+            ),
+            child: SelectableText(
+              scriptPreview,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.6,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WordBookImportPreview {
   const _WordBookImportPreview({
     required this.words,
     required this.sampleWords,
     required this.duplicateCount,
     required this.lineCount,
+    this.usedAi = false,
+    this.aiSummary = '',
+    this.scriptPreview = '',
   });
 
   final List<WordData> words;
   final List<WordData> sampleWords;
   final int duplicateCount;
   final int lineCount;
+  final bool usedAi;
+  final String aiSummary;
+  final String scriptPreview;
 }
