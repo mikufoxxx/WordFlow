@@ -1,10 +1,34 @@
 # GitHub Actions 自动构建和发布指南
 
-本项目已配置 GitHub Actions 工作流，可以自动构建 APK 并发布到 GitHub Releases。
+本项目配置了两类 GitHub Actions 工作流：持续集成会在每次提交和 Pull Request
+中检查代码质量；发布工作流会在版本标签推送后构建 Android APK 并创建 GitHub Release。
 
-## 工作流配置
+## 工作流总览
 
-工作流文件位于：`.github/workflows/build-and-release.yml`
+| 工作流 | 文件 | 触发条件 | 作用 |
+| --- | --- | --- | --- |
+| Verify WordFlow | `.github/workflows/ci.yml` | 推送或 PR 到 `dev` / `main`，或手动运行 | 静态分析和测试 |
+| Build and Release | `.github/workflows/build-and-release.yml` | 推送 `v*.*.*` 标签，或手动运行 | 构建 APK 并创建 GitHub Release |
+
+## 持续集成（CI）
+
+CI 会安装依赖并运行以下质量检查：
+
+```bash
+flutter pub get
+flutter analyze
+flutter test --reporter expanded
+```
+
+提交 Pull Request 前，还应在本地执行格式检查：
+
+```bash
+dart format <changed Dart files>
+```
+
+只有在 CI 通过后再合并，可以更早发现静态分析和回归问题。
+
+## Android 发布工作流
 
 ### 触发条件
 
@@ -15,7 +39,7 @@
 
 1. 检出代码
 2. 设置 Java 17 环境
-3. 设置 Flutter 3.24.0 稳定版
+3. 设置 Flutter 3.27.0 稳定版
 4. 获取项目依赖
 5. 构建 Release APK
 6. 从 pubspec.yaml 获取版本号
@@ -35,7 +59,7 @@
    ```bash
    git add .
    git commit -m "Release v1.0.1"
-   git push origin main
+   git push origin dev
    ```
 
 3. 创建并推送标签：
@@ -82,25 +106,30 @@ GitHub Actions 支持三种方式生成更新说明：
 ### 方法二：手动触发
 
 1. 访问 GitHub 仓库的 Actions 页面
-2. 选择 "Build and Release APK" 工作流
+2. 选择 "Build and Release" 工作流
 3. 点击 "Run workflow" 按钮
 4. 选择分支并运行
 
 ## 配置要求
 
-### 1. 更新 API 地址
+### 1. Android 签名密钥
 
-在 `lib/pages/settings_page.dart` 文件中，将以下地址中的 `your-username` 替换为实际的 GitHub 用户名：
+发布 APK 需要在仓库 Secrets 中配置以下值：
 
-```dart
-const String updateCheckUrl = 'https://api.github.com/repos/your-username/WordFlow/releases/latest';
-```
+- `SIGNING_KEY`：Android keystore 文件的 Base64 内容
+- `KEY_STORE_PASSWORD`
+- `KEY_PASSWORD`
+- `KEY_ALIAS`
+
+工作流会在构建时临时创建 `android/wordflow-key.jks` 和
+`android/key.properties`，不要将它们提交到仓库。
 
 ### 2. 仓库设置
 
-确保 GitHub 仓库具有以下权限：
+确保 GitHub 仓库具有以下权限和配置：
 - Actions 权限已启用
 - GITHUB_TOKEN 具有创建 Release 的权限（默认已有）
+- 默认开发分支为 `dev`；合并到 `main` 前也会执行 CI
 
 ## 输出文件
 

@@ -43,6 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _smartSyncEnabled = true; // 智能同步开关状态
   PronunciationType _pronunciationType = PronunciationType.uk;
   LearningMode? _learningMode; // 改为可空类型，避免默认值闪烁
+  int _dailyLearningGoal = LearningDataService.defaultDailyLearningGoal;
 
   // 版本信息
   String _appVersion = '加载中...';
@@ -106,6 +107,12 @@ class _SettingsPageState extends State<SettingsPage> {
                         });
                         _saveSettings();
                       },
+                    ),
+                    _buildCompactListTile(
+                      leading: const Icon(Icons.flag_outlined),
+                      title: '每日学习目标',
+                      subtitle: '每天学习 $_dailyLearningGoal 个单词',
+                      onTap: _showDailyLearningGoalDialog,
                     ),
                   ]),
 
@@ -641,12 +648,83 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _showDailyLearningGoalDialog() async {
+    final controller = TextEditingController(text: '$_dailyLearningGoal');
+    String? validationMessage;
+
+    final selectedGoal = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('设置每日学习目标'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: '每天学习的单词数量',
+                  helperText:
+                      '可设置 ${LearningDataService.minDailyLearningGoal}–${LearningDataService.maxDailyLearningGoal} 个单词',
+                  errorText: validationMessage,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final goal = int.tryParse(controller.text.trim());
+                    if (goal == null ||
+                        goal < LearningDataService.minDailyLearningGoal ||
+                        goal > LearningDataService.maxDailyLearningGoal) {
+                      setDialogState(() {
+                        validationMessage =
+                            '请输入 ${LearningDataService.minDailyLearningGoal}–${LearningDataService.maxDailyLearningGoal} 之间的数字';
+                      });
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(goal);
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
+
+    if (selectedGoal == null) return;
+
+    await LearningDataService.instance.setDailyLearningGoal(selectedGoal);
+    if (!mounted) return;
+
+    setState(() {
+      _dailyLearningGoal = selectedGoal;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('每日学习目标已设置为 $selectedGoal 个单词'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// 加载设置
   void _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final hasUsableAiConfig = await LlmApiService.hasUsableConfig();
     final learningMode = await SettingsHelper.getLearningMode();
     final aiAutoParseEnabled = await SettingsHelper.getAiAutoParseEnabled();
+    final dailyLearningGoal =
+        await LearningDataService.instance.getDailyLearningGoal();
 
     if (!mounted) {
       return;
@@ -670,6 +748,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _learningMode = finalLearningMode;
       _isAiConfigValid = hasUsableAiConfig;
       _aiAutoParseEnabled = aiAutoParseEnabled;
+      _dailyLearningGoal = dailyLearningGoal;
     });
 
     if (!hasUsableAiConfig && learningMode == LearningMode.deepLearning) {

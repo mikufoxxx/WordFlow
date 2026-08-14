@@ -69,6 +69,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // 当前学习的单词数量（无限流模式）
   int _todayStudiedCount = 0;
   int _totalStudiedCount = 0;
+  int _dailyLearningGoal = LearningDataService.defaultDailyLearningGoal;
+  int _currentStreak = 0;
 
   // 是否显示单词释义
   bool _showMeaning = false;
@@ -220,22 +222,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   /// 更新学习统计
   Future<void> _updateLearningStats() async {
     if (_currentWordBookName == null) return;
-    final records = await LearningDataService.instance
+    final learningData = LearningDataService.instance;
+    final records = await learningData
         .getWordBookRecords(_currentWordBookName!);
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+    final dailySummary =
+        await learningData.getDailyLearningSummary(_currentWordBookName!);
 
-    // 计算今日学习的单词数（基于最后学习时间）
-    final todayRecords = records.where((record) {
-      return record.lastLearningTime.isAfter(todayStart) &&
-          record.lastLearningTime.isBefore(todayEnd);
-    }).toList();
+    if (!mounted) return;
 
     // 使用批量状态更新
     _scheduleStateUpdate(() {
-      _todayStudiedCount = todayRecords.length;
+      _todayStudiedCount = dailySummary.todayStudiedWords;
       _totalStudiedCount = records.length;
+      _dailyLearningGoal = dailySummary.dailyGoal;
+      _currentStreak = dailySummary.currentStreak;
     });
   }
 
@@ -1117,14 +1117,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           icon: const Icon(Icons.settings_outlined),
                           iconSize: ResponsiveHelper.getResponsiveIconSize(
                               context, 26),
-                          onPressed: () {
+                          onPressed: () async {
                             SoundService.playTapSound();
-                            CompatibleNavigator.pushNamed(
+                            await CompatibleNavigator.pushNamed(
                               context,
                               '/settings',
                               transitionType:
                                   PageTransitionType.slideFromBottom,
                             );
+                            await _updateLearningStats();
                           },
                           tooltip: '设置',
                           color: Theme.of(context).primaryColor,
@@ -1498,7 +1499,96 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ],
         ),
+
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+
+        _buildDailyGoalCard(),
       ],
+    );
+  }
+
+  Widget _buildDailyGoalCard() {
+    final primaryColor = Theme.of(context).primaryColor;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isGoalComplete = _todayStudiedCount >= _dailyLearningGoal;
+    final remainingWords = max(0, _dailyLearningGoal - _todayStudiedCount);
+    final goalColor = isGoalComplete ? Colors.green : primaryColor;
+    final goalProgress =
+        (_todayStudiedCount / _dailyLearningGoal).clamp(0.0, 1.0).toDouble();
+
+    return Semantics(
+      label:
+          '每日学习目标：今天完成 $_todayStudiedCount / $_dailyLearningGoal 个单词，当前连续学习 $_currentStreak 天',
+      child: Container(
+        key: const ValueKey<String>('daily_learning_goal_card'),
+        width: double.infinity,
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)),
+        decoration: BoxDecoration(
+          color: goalColor.withOpacity(isDarkMode ? 0.16 : 0.08),
+          borderRadius: BorderRadius.circular(
+            ResponsiveHelper.getResponsiveBorderRadius(context, 14),
+          ),
+          border: Border.all(color: goalColor.withOpacity(0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isGoalComplete
+                      ? Icons.workspace_premium_outlined
+                      : Icons.flag_outlined,
+                  color: goalColor,
+                  size: ResponsiveHelper.getResponsiveIconSize(context, 18),
+                ),
+                SizedBox(
+                  width: ResponsiveHelper.getResponsiveSpacing(context, 8),
+                ),
+                Expanded(
+                  child: OptimizedText(
+                    isGoalComplete ? '今日目标已达成' : '每日学习目标',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode
+                              ? AppTheme.darkPrimaryTextColor
+                              : AppTheme.primaryTextColor,
+                        ),
+                  ),
+                ),
+                OptimizedText(
+                  '$_todayStudiedCount / $_dailyLearningGoal',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: goalColor,
+                      ),
+                ),
+              ],
+            ),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: goalProgress,
+                minHeight: ResponsiveHelper.getResponsiveSpacing(context, 7),
+                backgroundColor: goalColor.withOpacity(0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(goalColor),
+              ),
+            ),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+            OptimizedText(
+              isGoalComplete
+                  ? '保持节奏，明天继续点亮你的学习记录。'
+                  : '再学习 $remainingWords 个词，完成今天的目标。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDarkMode
+                        ? AppTheme.darkSecondaryTextColor
+                        : AppTheme.secondaryTextColor,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement that helps WordFlow learners or contributors.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A focused problem statement helps maintainers evaluate and prioritize a
+        feature request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What learner or contributor pain point does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Would you like to contribute an implementation?
+      options:
+        - I can open a pull request
+        - I can help test or design it
+        - I am reporting the idea only

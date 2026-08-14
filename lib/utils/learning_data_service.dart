@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/word_book.dart';
 import '../models/word_learning_record.dart';
 import '../pages/settings_page.dart'; // 导入ImportMode枚举
+import 'daily_learning_summary.dart';
 import 'spaced_repetition_service.dart';
 import 'settings_helper.dart';
 import 'cache_service.dart';
@@ -18,6 +19,11 @@ class LearningDataService {
   static const String _learningRecordsKey = 'learning_records';
   static const String _algorithmConfigKey = 'algorithm_config';
   static const String _globalWordRecordsKey = 'global_word_records';
+  static const String _dailyLearningGoalKey = 'daily_learning_goal';
+
+  static const int defaultDailyLearningGoal = 10;
+  static const int minDailyLearningGoal = 1;
+  static const int maxDailyLearningGoal = 100;
   
   static LearningDataService? _instance;
   static LearningDataService get instance => _instance ??= LearningDataService._();
@@ -113,6 +119,45 @@ class LearningDataService {
   Future<LearningStats> getLearningStats(String wordBookName) async {
     final records = await getWordBookRecords(wordBookName);
     return spacedRepetitionService.generateLearningStats(records);
+  }
+
+  /// 返回当前词书的每日目标与连续学习摘要。
+  ///
+  /// 学习数据只从本地已有复习记录中计算，不会上传任何活动数据。
+  Future<DailyLearningSummary> getDailyLearningSummary(
+    String wordBookName, {
+    DateTime? now,
+  }) async {
+    final records = await getWordBookRecords(wordBookName);
+    final dailyGoal = await getDailyLearningGoal();
+    return DailyLearningSummaryCalculator.calculate(
+      records,
+      dailyGoal: dailyGoal,
+      now: now,
+    );
+  }
+
+  /// 获取用户保存于本地的每日学习目标。
+  Future<int> getDailyLearningGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _normalizeDailyLearningGoal(
+      prefs.getInt(_dailyLearningGoalKey) ?? defaultDailyLearningGoal,
+    );
+  }
+
+  /// 保存每日学习目标，取值范围为 1–100 个单词。
+  Future<void> setDailyLearningGoal(int dailyGoal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      _dailyLearningGoalKey,
+      _normalizeDailyLearningGoal(dailyGoal),
+    );
+  }
+
+  static int _normalizeDailyLearningGoal(int dailyGoal) {
+    if (dailyGoal < minDailyLearningGoal) return minDailyLearningGoal;
+    if (dailyGoal > maxDailyLearningGoal) return maxDailyLearningGoal;
+    return dailyGoal;
   }
 
   /// 删除单词学习记录

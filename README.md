@@ -1,5 +1,8 @@
 # WordFlow
 
+[![Verify WordFlow](https://github.com/mikufoxxx/WordFlow/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/mikufoxxx/WordFlow/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+
 > Learn vocabulary on your terms with an endless, on-demand stream of words.
 
 一个基于Flutter开发的智能单词学习应用，采用间隔重复算法和AI技术，帮助用户高效记忆英语单词。
@@ -10,6 +13,7 @@
 - 支持多种记忆算法：间隔重复、艾宾浩斯遗忘曲线等
 - 根据学习表现动态调整复习间隔
 - 智能分析单词难度，优化学习路径
+- 每日学习目标与连续学习天数，帮助建立稳定的学习节奏
 
 ### 用户界面
 - 字符级动画效果，让文字浮现更生动
@@ -51,7 +55,7 @@
 
 - **框架**: Flutter 3.6.0+
 - **语言**: Dart
-- **状态管理**: Provider + SharedPreferences
+- **状态与持久化**: StatefulWidget + SharedPreferences
 - **数据可视化**: fl_chart
 - **网络请求**: http + dio
 - **本地存储**: shared_preferences + path_provider
@@ -76,6 +80,23 @@
 - Android Studio 或 VS Code
 - Git
 
+### 本地运行
+
+```bash
+git clone https://github.com/mikufoxxx/WordFlow.git
+cd WordFlow
+flutter pub get
+flutter run
+```
+
+### 质量检查
+
+```bash
+dart format <changed Dart files>
+flutter analyze
+flutter test
+```
+
 ## 配置说明
 
 ### DeepSeek API配置
@@ -87,13 +108,18 @@
 
 ## 贡献
 
-欢迎提交Issue和Pull Request来帮助改进项目。
+欢迎提交 Issue 和 Pull Request 来帮助改进项目。开始前请阅读
+[CONTRIBUTING.md](CONTRIBUTING.md)：其中包含本地运行、质量检查、学习数据与
+API 密钥保护要求，以及 UI 贡献的验收清单。
 
 1. Fork 本仓库
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 开启 Pull Request
+
+仓库提供了 Bug Report、Feature Request 和 Pull Request 模板，方便维护者与贡献者
+快速收集复现信息、讨论学习体验改进并完成代码评审。
 
 ## 开源协议
 

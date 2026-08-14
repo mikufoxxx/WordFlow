@@ -1,0 +1,58 @@
+name: Bug report
+description: Help us reproduce and fix a problem in WordFlow.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a problem. Please remove API
+        keys, personal learning records, and other sensitive information.
+  - type: input
+    id: version
+    attributes:
+      label: WordFlow version
+      description: Include the version shown in Settings > About when possible.
+      placeholder: "e.g. 1.0.10"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android
+        - iOS
+        - Windows
+        - macOS
+        - Web
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots, logs, or additional context
+      description: Remove personal data and credentials before uploading.
